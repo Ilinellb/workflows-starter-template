@@ -699,6 +699,8 @@ const App = () => {
 
 const AppContent = () => {
   const { user, logout, loading } = React.useContext(AuthContext);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   if (loading) {
     return (
@@ -715,17 +717,71 @@ const AppContent = () => {
     return <LoginPage />;
   }
 
+  const tabs = getTabsForRole(user.role);
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return <DashboardTab user={user} />;
+      case 'timetracking':
+        return <TimeTrackingTab />;
+      case 'team':
+        return <TeamManagementTab />;
+      case 'reports':
+        return <ReportsTab />;
+      case 'notifications':
+        return <NotificationsTab />;
+      case 'admin':
+        return <AdminTab />;
+      case 'profile':
+        return <ProfileTab user={user} />;
+      default:
+        return <DashboardTab user={user} />;
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b">
+      {/* Header with Navigation */}
+      <nav className="bg-white shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900" data-testid="app-title">
-                Time Tracker
+              <h1 className="text-xl font-semibold text-gray-900 mr-8" data-testid="app-title">
+                Time Tracker Pro
               </h1>
+              
+              {/* Desktop Tabs */}
+              <div className="hidden md:flex space-x-1">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                      activeTab === tab.id
+                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                    data-testid={`tab-${tab.id}`}
+                  >
+                    <span className="mr-2">{tab.icon}</span>
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Mobile Menu Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="md:hidden ml-4"
+                data-testid="mobile-menu-button"
+              >
+                ☰
+              </Button>
             </div>
+            
             <div className="flex items-center space-x-4">
               <div className="text-sm text-gray-700" data-testid="user-info">
                 <span className="font-medium">{user.name}</span>
@@ -738,22 +794,40 @@ const AppContent = () => {
               </Button>
             </div>
           </div>
+          
+          {/* Mobile Tabs */}
+          {isMobileMenuOpen && (
+            <div className="md:hidden pb-4">
+              <div className="flex flex-wrap gap-2">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                      activeTab === tab.id
+                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 border border-gray-200'
+                    }`}
+                    data-testid={`mobile-tab-${tab.id}`}
+                  >
+                    <span className="mr-2">{tab.icon}</span>
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
-      {/* Main Content */}
+      {/* Tab Content */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
-        <Routes>
-          <Route 
-            path="/" 
-            element={
-              user.role === 'employee' ? <EmployeeDashboard /> : 
-              user.role === 'manager' || user.role === 'super_admin' ? <ManagerDashboard /> :
-              <Navigate to="/" />
-            } 
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <div className="animate-fade-in">
+          {renderTabContent()}
+        </div>
       </main>
     </div>
   );

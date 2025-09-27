@@ -1,151 +1,357 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#000000" />
-        <meta name="description" content="A product of emergent.sh" />
-        <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-        <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
-
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-        <title>Emergent | Fullstack App</title>
-    </head>
-    <body>
-        <noscript>You need to enable JavaScript to run this app.</noscript>
-        <div id="root"></div>
-        <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
-
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
-
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
-        <a
-            id="emergent-badge"
-            target="_blank"
-            href="https://app.emergent.sh/?utm_source=emergent-badge"
-            style="
-                display: flex !important;
-                align-items: center !important;
-                position: fixed !important;
-                bottom: 20px;
-                right: 20px;
-                text-decoration: none;
-                padding: 6px 10px;
-                font-family: -apple-system, BlinkMacSystemFont,
-                    &quot;Segoe UI&quot;, Roboto, Oxygen, Ubuntu, Cantarell,
-                    &quot;Open Sans&quot;, &quot;Helvetica Neue&quot;,
-                    sans-serif !important;
-                font-size: 12px !important;
-                z-index: 9999 !important;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-                border-radius: 8px !important;
-                background-color: #ffffff !important;
-                border: 1px solid rgba(255, 255, 255, 0.25) !important;
-            "
-        >
-            <div
-                style="display: flex; flex-direction: row; align-items: center"
-            >
-                <img
-                    style="width: 20px; height: 20px; margin-right: 8px"
-                    src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4"
-                />
-                <p
-                    style="
-                        color: #000000;
-                        font-family: -apple-system, BlinkMacSystemFont,
-                            &quot;Segoe UI&quot;, Roboto, Oxygen, Ubuntu,
-                            Cantarell, &quot;Open Sans&quot;,
-                            &quot;Helvetica Neue&quot;, sans-serif !important;
-                        font-size: 12px !important;
-                        align-items: center;
-                        margin-bottom: 0;
-                    "
-                >
-                    Made with Emergent
-                </p>
-            </div>
-        </a>
-        <script>
-            !(function (t, e) {
-                var o, n, p, r;
-                e.__SV ||
-                    ((window.posthog = e),
-                    (e._i = []),
-                    (e.init = function (i, s, a) {
-                        function g(t, e) {
-                            var o = e.split(".");
-                            2 == o.length && ((t = t[o[0]]), (e = o[1])),
-                                (t[e] = function () {
-                                    t.push(
-                                        [e].concat(
-                                            Array.prototype.slice.call(
-                                                arguments,
-                                                0,
-                                            ),
-                                        ),
-                                    );
-                                });
-                        }
-                        ((p = t.createElement("script")).type =
-                            "text/javascript"),
-                            (p.crossOrigin = "anonymous"),
-                            (p.async = !0),
-                            (p.src =
-                                s.api_host.replace(
-                                    ".i.posthog.com",
-                                    "-assets.i.posthog.com",
-                                ) + "/static/array.js"),
-                            (r =
-                                t.getElementsByTagName(
-                                    "script",
-                                )[0]).parentNode.insertBefore(p, r);
-                        var u = e;
-                        for (
-                            void 0 !== a ? (u = e[a] = []) : (a = "posthog"),
-                                u.people = u.people || [],
-                                u.toString = function (t) {
-                                    var e = "posthog";
-                                    return (
-                                        "posthog" !== a && (e += "." + a),
-                                        t || (e += " (stub)"),
-                                        e
-                                    );
-                                },
-                                u.people.toString = function () {
-                                    return u.toString(1) + ".people (stub)";
-                                },
-                                o =
-                                    "init me ws ys ps bs capture je Di ks register register_once register_for_session unregister unregister_for_session Ps getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey canRenderSurveyAsync identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty Es $s createPersonProfile Is opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing Ss debug xs getPageViewId captureTraceFeedback captureTraceMetric".split(
-                                        " ",
-                                    ),
-                                n = 0;
-                            n < o.length;
-                            n++
-                        )
-                            g(u, o[n]);
-                        e._i.push([i, s, a]);
-                    }),
-                    (e.__SV = 1));
-            })(document, window.posthog || []);
-            posthog.init("phc_yJW1VjHGGwmCbbrtczfqqNxgBDbhlhOWcdzcIJEOTFE", {
-                api_host: "https://us.i.posthog.com",
-                person_profiles: "identified_only", // or 'always' to create profiles for anonymous users as well
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="description" content="Complete employee time tracking and success platform with geofencing, time off management, and performance tracking" />
+    <meta name="application-name" content="Time Tracker Pro" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Time Tracker Pro" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    <meta name="msapplication-TileColor" content="#3b82f6" />
+    <meta name="msapplication-config" content="%PUBLIC_URL%/browserconfig.xml" />
+    
+    <!-- Favicon and App Icons -->
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/icons/icon-192x192.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="%PUBLIC_URL%/icons/icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/icons/icon-192x192.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/icons/icon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/icons/icon-16x16.png" />
+    <link rel="mask-icon" href="%PUBLIC_URL%/icons/safari-pinned-tab.svg" color="#3b82f6" />
+    <link rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico" />
+    
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Time Tracker Pro - Employee Success Platform" />
+    <meta property="og:description" content="Complete employee time tracking with geofencing, time off management, performance tracking, and more." />
+    <meta property="og:image" content="%PUBLIC_URL%/icons/icon-512x512.png" />
+    <meta property="og:url" content="https://timetrackerpro.com" />
+    <meta property="og:site_name" content="Time Tracker Pro" />
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Time Tracker Pro - Employee Success Platform" />
+    <meta name="twitter:description" content="Complete employee time tracking with geofencing, time off management, and performance tracking." />
+    <meta name="twitter:image" content="%PUBLIC_URL%/icons/icon-512x512.png" />
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/static/css/main.css" as="style" />
+    <link rel="preload" href="/static/js/bundle.js" as="script" />
+    
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+    
+    <title>Time Tracker Pro - Employee Success Platform</title>
+    
+    <!-- Inline critical CSS for faster loading -->
+    <style>
+      /* Critical CSS for loading screen */
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        background-color: #f9fafb;
+      }
+      
+      .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        text-align: center;
+        padding: 2rem;
+      }
+      
+      .loading-logo {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+        animation: pulse 2s infinite;
+      }
+      
+      .loading-logo::before {
+        content: '⏰';
+        font-size: 2rem;
+      }
+      
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+      }
+      
+      .loading-text {
+        color: #374151;
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+      
+      .loading-subtitle {
+        color: #6b7280;
+        font-size: 0.875rem;
+      }
+      
+      .loading-spinner {
+        width: 32px;
+        height: 32px;
+        border: 3px solid #e5e7eb;
+        border-top-color: #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 1.5rem auto;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      
+      /* Install prompt styles */
+      .install-prompt {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        background: #3b82f6;
+        color: white;
+        padding: 1rem;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        transform: translateY(100px);
+        transition: transform 0.3s ease;
+        z-index: 1000;
+      }
+      
+      .install-prompt.show {
+        transform: translateY(0);
+      }
+      
+      .install-prompt-content {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+      
+      .install-prompt-icon {
+        font-size: 1.5rem;
+      }
+      
+      .install-prompt-text {
+        flex: 1;
+      }
+      
+      .install-prompt-title {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+      }
+      
+      .install-prompt-subtitle {
+        font-size: 0.875rem;
+        opacity: 0.9;
+      }
+      
+      .install-prompt-actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+      
+      .install-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      
+      .install-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+      
+      .install-btn.primary {
+        background: white;
+        color: #3b82f6;
+      }
+      
+      .install-btn.primary:hover {
+        background: #f3f4f6;
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-container">
+      <div class="loading-logo"></div>
+      <div class="loading-text">Time Tracker Pro</div>
+      <div class="loading-subtitle">Employee Success Platform</div>
+      <div class="loading-spinner"></div>
+    </div>
+    
+    <!-- App Root -->
+    <div id="root"></div>
+    
+    <!-- Install Prompt -->
+    <div id="install-prompt" class="install-prompt">
+      <div class="install-prompt-content">
+        <div class="install-prompt-icon">📱</div>
+        <div class="install-prompt-text">
+          <div class="install-prompt-title">Install Time Tracker Pro</div>
+          <div class="install-prompt-subtitle">Get the full app experience with offline access</div>
+        </div>
+        <div class="install-prompt-actions">
+          <button id="install-dismiss" class="install-btn">Later</button>
+          <button id="install-accept" class="install-btn primary">Install</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- PWA Installation Script -->
+    <script>
+      // Service Worker Registration
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('✅ SW registered: ', registration);
+              
+              // Check for updates
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    // New content available, show update prompt
+                    showUpdatePrompt();
+                  }
+                });
+              });
+            })
+            .catch((registrationError) => {
+              console.log('❌ SW registration failed: ', registrationError);
             });
-        </script>
-    </body>
+        });
+      }
+      
+      // Install Prompt Handling
+      let deferredPrompt;
+      const installPrompt = document.getElementById('install-prompt');
+      const installAccept = document.getElementById('install-accept');
+      const installDismiss = document.getElementById('install-dismiss');
+      
+      window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('💡 Install prompt available');
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        // Show custom install prompt after 3 seconds
+        setTimeout(() => {
+          showInstallPrompt();
+        }, 3000);
+      });
+      
+      function showInstallPrompt() {
+        if (deferredPrompt && !localStorage.getItem('install-dismissed')) {
+          installPrompt.classList.add('show');
+        }
+      }
+      
+      installAccept.addEventListener('click', async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          console.log(`Install outcome: ${outcome}`);
+          
+          if (outcome === 'accepted') {
+            console.log('✅ App installed');
+          }
+          
+          deferredPrompt = null;
+          hideInstallPrompt();
+        }
+      });
+      
+      installDismiss.addEventListener('click', () => {
+        localStorage.setItem('install-dismissed', 'true');
+        hideInstallPrompt();
+      });
+      
+      function hideInstallPrompt() {
+        installPrompt.classList.remove('show');
+      }
+      
+      // Track installation
+      window.addEventListener('appinstalled', () => {
+        console.log('🎉 App installed successfully');
+        hideInstallPrompt();
+        
+        // Track analytics
+        if (window.gtag) {
+          gtag('event', 'app_install', {
+            method: 'pwa'
+          });
+        }
+      });
+      
+      // Update prompt for new versions
+      function showUpdatePrompt() {
+        if (confirm('A new version is available. Update now?')) {
+          window.location.reload();
+        }
+      }
+      
+      // Hide loading screen when React app loads
+      window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+          const loadingScreen = document.getElementById('loading-screen');
+          if (loadingScreen) {
+            loadingScreen.style.display = 'none';
+          }
+        }, 1000);
+      });
+      
+      // Offline/Online status handling
+      window.addEventListener('online', () => {
+        console.log('🌐 Back online');
+        document.body.classList.remove('offline');
+        
+        // Trigger background sync if available
+        if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+          navigator.serviceWorker.ready.then((registration) => {
+            registration.sync.register('punch-sync');
+            registration.sync.register('timeoff-sync');
+          });
+        }
+      });
+      
+      window.addEventListener('offline', () => {
+        console.log('📵 Gone offline');
+        document.body.classList.add('offline');
+      });
+      
+      // Performance monitoring
+      window.addEventListener('load', () => {
+        const perfData = performance.timing;
+        const loadTime = perfData.loadEventEnd - perfData.navigationStart;
+        console.log(`📈 Page load time: ${loadTime}ms`);
+      });
+    </script>
+  </body>
 </html>

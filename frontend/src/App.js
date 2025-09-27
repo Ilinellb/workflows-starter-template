@@ -789,8 +789,16 @@ const AddEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
 // Main App Content with Tabbed Interface
 const AppContent = () => {
   const { user, logout, loading } = React.useContext(AuthContext);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('timecard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Set default tab based on role
+  useEffect(() => {
+    if (user) {
+      const defaultTab = user.role === 'employee' ? 'timecard' : 'overview';
+      setActiveTab(defaultTab);
+    }
+  }, [user]);
 
   if (loading) {
     return (

@@ -147,8 +147,306 @@ const LoginPage = () => {
   );
 };
 
-// Employee Dashboard
-const EmployeeDashboard = () => {
+// Dashboard Tab - Shows overview/stats
+const DashboardTab = ({ user }) => {
+  if (user.role === 'employee') {
+    return <EmployeeDashboardContent />;
+  } else {
+    return <ManagerDashboardContent />;
+  }
+};
+
+// Employee Dashboard Content
+const EmployeeDashboardContent = () => {
+  const [timeStatus, setTimeStatus] = useState(null);
+  const [weeklyStats, setWeeklyStats] = useState(null);
+
+  useEffect(() => {
+    fetchTimeStatus();
+    fetchWeeklyStats();
+  }, []);
+
+  const fetchTimeStatus = async () => {
+    try {
+      const response = await axios.get(`${API}/time/status`);
+      setTimeStatus(response.data);
+    } catch (error) {
+      toast.error('Failed to fetch time status');
+    }
+  };
+
+  const fetchWeeklyStats = async () => {
+    try {
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 7);
+      
+      const response = await axios.get(`${API}/time/entries`, {
+        params: {
+          start_date: startDate.toISOString().split('T')[0],
+          end_date: endDate.toISOString().split('T')[0]
+        }
+      });
+      
+      const entries = response.data;
+      const totalHours = entries.reduce((sum, entry) => sum + (entry.total_hours || 0), 0);
+      const daysWorked = entries.filter(entry => entry.total_hours > 0).length;
+      
+      setWeeklyStats({ totalHours, daysWorked, entries: entries.length });
+    } catch (error) {
+      console.error('Failed to fetch weekly stats');
+    }
+  };
+
+  if (!timeStatus) {
+    return <div className="flex justify-center items-center h-64">Loading...</div>;
+  }
+
+  return (
+    <div className="space-y-6" data-testid="employee-dashboard-tab">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">My Dashboard</h2>
+        <Badge variant={timeStatus.status === 'working' ? 'default' : 'secondary'}>
+          {timeStatus.status === 'working' ? 'Currently Working' : 'Not Working'}
+        </Badge>
+      </div>
+
+      {/* Today's Status */}
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <div className={`w-3 h-3 rounded-full ${
+              timeStatus.status === 'working' ? 'bg-green-500' : 
+              timeStatus.status === 'complete' ? 'bg-blue-500' : 'bg-gray-400'
+            }`}></div>
+            Today's Status
+          </CardTitle>
+          <CardDescription>{timeStatus.message}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-gray-600">Punch In</p>
+              <p className="font-semibold" data-testid="dashboard-punch-in">
+                {timeStatus.punch_in_time ? new Date(timeStatus.punch_in_time).toLocaleTimeString() : 'Not punched in'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Total Hours</p>
+              <p className="font-semibold text-blue-600" data-testid="dashboard-total-hours">
+                {timeStatus.total_hours || 0}h
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Weekly Summary */}
+      {weeklyStats && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">This Week</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{weeklyStats.totalHours.toFixed(1)}h</div>
+              <p className="text-xs text-gray-600">Total Hours</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Days Worked</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{weeklyStats.daysWorked}</div>
+              <p className="text-xs text-gray-600">Out of 7 days</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Avg Hours/Day</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                {weeklyStats.daysWorked > 0 ? (weeklyStats.totalHours / weeklyStats.daysWorked).toFixed(1) : 0}h
+              </div>
+              <p className="text-xs text-gray-600">Daily Average</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Quick Actions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2">
+            <Button 
+              size="sm" 
+              onClick={() => window.location.hash = '#timetracking'}
+              className="flex-1"
+            >
+              ⏰ Time Tracking
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => window.location.hash = '#notifications'}
+              className="flex-1"
+            >
+              🔔 Notifications
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// Manager Dashboard Content
+const ManagerDashboardContent = () => {
+  const [stats, setStats] = useState(null);
+  const [recentActivity, setRecentActivity] = useState([]);
+
+  useEffect(() => {
+    fetchStats();
+    fetchRecentActivity();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      const [employeesRes, entriesRes] = await Promise.all([
+        axios.get(`${API}/users`),
+        axios.get(`${API}/time/entries`)
+      ]);
+
+      const employees = employeesRes.data.filter(u => u.role === 'employee');
+      const entries = entriesRes.data;
+      const today = new Date().toISOString().split('T')[0];
+      
+      const todayEntries = entries.filter(entry => entry.date === today);
+      const activeToday = todayEntries.filter(entry => entry.punch_in_time).length;
+      const completedToday = todayEntries.filter(entry => entry.status === 'complete').length;
+
+      setStats({
+        totalEmployees: employees.length,
+        activeToday,
+        completedToday,
+        totalEntries: entries.length
+      });
+    } catch (error) {
+      toast.error('Failed to fetch stats');
+    }
+  };
+
+  const fetchRecentActivity = async () => {
+    try {
+      const response = await axios.get(`${API}/time/entries`);
+      setRecentActivity(response.data.slice(0, 5));
+    } catch (error) {
+      console.error('Failed to fetch recent activity');
+    }
+  };
+
+  if (!stats) {
+    return <div className="flex justify-center items-center h-64">Loading...</div>;
+  }
+
+  return (
+    <div className="space-y-6" data-testid="manager-dashboard-tab">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Team Overview</h2>
+        <Badge variant="secondary">Manager</Badge>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold" data-testid="dashboard-total-employees">{stats.totalEmployees}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Active Today</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600" data-testid="dashboard-active-today">{stats.activeToday}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Completed Today</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600" data-testid="dashboard-completed-today">{stats.completedToday}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Entries</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-600">{stats.totalEntries}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Activity */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Recent Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {recentActivity.length > 0 ? (
+            <div className="space-y-2">
+              {recentActivity.map((entry, index) => (
+                <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                  <div>
+                    <p className="font-medium">{entry.employee_name}</p>
+                    <p className="text-sm text-gray-600">{entry.date}</p>
+                  </div>
+                  <Badge variant={entry.status === 'complete' ? 'default' : 'secondary'}>
+                    {entry.status}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-4">No recent activity</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Quick Actions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2">
+            <Button size="sm" className="flex-1">
+              👥 Team Management
+            </Button>
+            <Button variant="outline" size="sm" className="flex-1">
+              📈 Reports
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
   const [timeStatus, setTimeStatus] = useState(null);
   const [location, setLocation] = useState(null);
   const [loading, setLoading] = useState(false);

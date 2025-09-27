@@ -103,7 +103,8 @@ class Notification(BaseModel):
 
 # Utility Functions
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    # Simplified password verification using hashlib (demo only)
+    return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
 
 def get_password_hash(password):
     # Ensure password is not too long for bcrypt (max 72 bytes)

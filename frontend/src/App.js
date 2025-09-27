@@ -951,11 +951,12 @@ const AddEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
   );
 };
 
-// Main App Content with Tabbed Interface
+// Main App Content with Tabbed Interface and PWA
 const AppContent = () => {
   const { user, logout, loading } = React.useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('timecard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { isInstallable, isInstalled, handleInstall } = usePWAInstall();
 
   // Set default tab based on role
   useEffect(() => {
@@ -964,6 +965,14 @@ const AppContent = () => {
       setActiveTab(defaultTab);
     }
   }, [user]);
+
+  // Hide loading screen when app loads
+  useEffect(() => {
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen) {
+      loadingScreen.style.display = 'none';
+    }
+  }, []);
 
   if (loading) {
     return (

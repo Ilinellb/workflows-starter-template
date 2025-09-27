@@ -536,21 +536,8 @@ async def check_missed_punches():
     # This will be implemented as a separate scheduled job later
     pass
 
-# Run missed punch checker every 30 minutes
-def run_scheduler():
-    while True:
-        try:
-            # Check every 30 minutes
-            time_module.sleep(1800)  # 30 minutes
-            # Run the async function (simplified for demo)
-            # In production, you'd want to use proper async scheduling
-        except Exception as e:
-            logging.error(f"Scheduler error: {str(e)}")
-
-# Start background scheduler
-def start_background_tasks():
-    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
-    scheduler_thread.start()
+# Simplified scheduler (removed to fix startup issues)
+# Background tasks will be implemented separately
 
 # Include router
 app.include_router(api_router)

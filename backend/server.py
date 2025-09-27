@@ -107,10 +107,8 @@ def verify_password(plain_password, hashed_password):
     return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
 
 def get_password_hash(password):
-    # Ensure password is not too long for bcrypt (max 72 bytes)
-    if len(password.encode('utf-8')) > 72:
-        password = password[:72]
-    return pwd_context.hash(password)
+    # Simplified password hashing using hashlib (demo only - not secure for production)
+    return hashlib.sha256(password.encode()).hexdigest()
 
 def create_access_token(data: dict):
     to_encode = data.copy()

@@ -242,17 +242,39 @@ const LoginPage = () => {
 
 // ============ EMPLOYEE SUCCESS FOCUSED TAB COMPONENTS ============
 
-// Time Card Tab - Primary employee interface
+// Time Card Tab - Primary employee interface with offline support
 const TimeCardTab = () => {
   const [timeStatus, setTimeStatus] = useState(null);
   const [location, setLocation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [recentEntries, setRecentEntries] = useState([]);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
     fetchTimeStatus();
     fetchRecentEntries();
     getCurrentLocation();
+
+    // Listen for online/offline status
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast.success('🌐 Back online! Syncing data...');
+      fetchTimeStatus();
+      fetchRecentEntries();
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast.warning('📵 You\'re offline. Actions will sync when reconnected.');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   const getCurrentLocation = () => {
@@ -277,7 +299,15 @@ const TimeCardTab = () => {
       const response = await axios.get(`${API}/time/status`);
       setTimeStatus(response.data);
     } catch (error) {
-      toast.error('Failed to fetch time status');
+      if (!isOnline) {
+        // Try to get cached status from localStorage
+        const cachedStatus = localStorage.getItem('timeStatus');
+        if (cachedStatus) {
+          setTimeStatus(JSON.parse(cachedStatus));
+        }
+      } else {
+        toast.error('Failed to fetch time status');
+      }
     }
   };
 
@@ -295,8 +325,17 @@ const TimeCardTab = () => {
       });
       
       setRecentEntries(response.data.slice(0, 5));
+      // Cache entries for offline use
+      localStorage.setItem('recentEntries', JSON.stringify(response.data.slice(0, 5)));
     } catch (error) {
-      console.error('Failed to fetch recent entries');
+      if (!isOnline) {
+        const cachedEntries = localStorage.getItem('recentEntries');
+        if (cachedEntries) {
+          setRecentEntries(JSON.parse(cachedEntries));
+        }
+      } else {
+        console.error('Failed to fetch recent entries');
+      }
     }
   };
 
@@ -308,6 +347,44 @@ const TimeCardTab = () => {
     }
 
     setLoading(true);
+
+    // Optimistic update for offline
+    if (!isOnline) {
+      // Store offline punch for later sync
+      const offlinePunch = {
+        id: Date.now(),
+        action,
+        location,
+        timestamp: new Date().toISOString(),
+        synced: false
+      };
+
+      const offlinePunches = JSON.parse(localStorage.getItem('offlinePunches') || '[]');
+      offlinePunches.push(offlinePunch);
+      localStorage.setItem('offlinePunches', JSON.stringify(offlinePunches));
+
+      // Update UI optimistically
+      const newStatus = { ...timeStatus };
+      if (action === 'punch_in') {
+        newStatus.punch_in_time = new Date().toISOString();
+        newStatus.status = 'working';
+        newStatus.can_punch_in = false;
+        newStatus.can_punch_out = true;
+        newStatus.message = 'Currently working (offline)';
+      } else {
+        newStatus.punch_out_time = new Date().toISOString();
+        newStatus.status = 'complete';
+        newStatus.can_punch_out = false;
+        newStatus.message = 'Day complete (offline)';
+      }
+
+      setTimeStatus(newStatus);
+      localStorage.setItem('timeStatus', JSON.stringify(newStatus));
+      toast.success(`${action.replace('_', ' ')} recorded offline! Will sync when online.`);
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await axios.post(`${API}/time/punch`, {
         action,
@@ -316,6 +393,9 @@ const TimeCardTab = () => {
       toast.success(response.data.message);
       fetchTimeStatus();
       fetchRecentEntries();
+
+      // Clear any cached offline status since we got fresh data
+      localStorage.removeItem('timeStatus');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Punch failed');
     } finally {
@@ -324,19 +404,36 @@ const TimeCardTab = () => {
   };
 
   if (!timeStatus) {
-    return <div className="flex justify-center items-center h-64">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+          <p className="text-gray-600">Loading time card...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6" data-testid="timecard-tab">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">My Time Card</h2>
-        <Badge 
-          variant={timeStatus.status === 'working' ? 'default' : 'secondary'}
-          className={timeStatus.status === 'working' ? 'bg-green-500' : ''}
-        >
-          {timeStatus.status === 'working' ? '🟢 Currently Working' : '🔴 Not Working'}
-        </Badge>
+        <div className="flex items-center gap-2">
+          {/* Online/Offline Indicator */}
+          <Badge 
+            variant={isOnline ? 'default' : 'secondary'}
+            className={`${isOnline ? 'bg-green-500' : 'bg-gray-500'} text-white`}
+          >
+            {isOnline ? '🌐 Online' : '📵 Offline'}
+          </Badge>
+          
+          <Badge 
+            variant={timeStatus.status === 'working' ? 'default' : 'secondary'}
+            className={timeStatus.status === 'working' ? 'bg-green-500' : ''}
+          >
+            {timeStatus.status === 'working' ? '🟢 Currently Working' : '🔴 Not Working'}
+          </Badge>
+        </div>
       </div>
 
       {/* Current Status Card */}
@@ -389,6 +486,14 @@ const TimeCardTab = () => {
               {loading ? 'Processing...' : '🕐 Punch Out'}
             </Button>
           </div>
+
+          {!isOnline && (
+            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-700 font-medium">
+                ⚠️ You're working offline. Time entries will sync automatically when reconnected.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

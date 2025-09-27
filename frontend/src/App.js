@@ -811,22 +811,52 @@ const AppContent = () => {
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'dashboard':
-        return <DashboardTab user={user} />;
-      case 'timetracking':
-        return <TimeTrackingTab />;
-      case 'team':
-        return <TeamManagementTab />;
+      // Employee Tabs
+      case 'timecard':
+        return <TimeCardTab />;
+      case 'timeoff':
+        return <TimeOffRequestsTab />;
+      case 'schedule':
+        return <MyScheduleTab />;
       case 'reports':
-        return <ReportsTab />;
-      case 'notifications':
-        return <NotificationsTab />;
+        return user.role === 'employee' ? <MyReportsTab /> : <TeamReportsTab />;
+      case 'benefits':
+        return <BenefitsTab />;
+      case 'performance':
+        return <PerformanceTab />;
+      case 'training':
+        return <TrainingTab />;
+      case 'communication':
+        return <CommunicationTab />;
+      
+      // Manager Tabs  
+      case 'overview':
+        return <TeamOverviewTab />;
+      case 'timecards':
+        return <TeamTimeCardsTab />;
+      case 'timeoff-approvals':
+        return <TimeOffApprovalsTab />;
+      case 'scheduling':
+        return <TeamSchedulingTab />;
+      case 'team-reports':
+        return <TeamReportsTab />;
+      case 'employee-mgmt':
+        return <EmployeeManagementTab />;
+      case 'performance-mgmt':
+        return <PerformanceManagementTab />;
+      
+      // Admin Tabs
       case 'admin':
-        return <AdminTab />;
+        return <SystemAdminTab />;
+      case 'analytics':
+        return <AnalyticsTab />;
+      
+      // Common Tabs
       case 'profile':
         return <ProfileTab user={user} />;
+      
       default:
-        return <DashboardTab user={user} />;
+        return user.role === 'employee' ? <TimeCardTab /> : <TeamOverviewTab />;
     }
   };
 

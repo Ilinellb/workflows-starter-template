@@ -1085,6 +1085,26 @@ const AppContent = () => {
             </div>
             
             <div className="flex items-center space-x-4">
+              {/* PWA Install Button */}
+              {isInstallable && !isInstalled && (
+                <Button 
+                  onClick={handleInstall} 
+                  size="sm" 
+                  variant="outline"
+                  className="hidden sm:flex items-center gap-2"
+                  data-testid="install-app-button"
+                >
+                  📱 Install App
+                </Button>
+              )}
+              
+              {/* App Status Indicator */}
+              {isInstalled && (
+                <Badge variant="secondary" className="hidden sm:flex items-center gap-1">
+                  ✅ Installed
+                </Badge>
+              )}
+              
               <div className="text-sm text-gray-700" data-testid="user-info">
                 <span className="font-medium">{user.name}</span>
                 <Badge variant="secondary" className="ml-2">

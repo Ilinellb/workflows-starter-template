@@ -19,6 +19,59 @@ import { Label } from './components/ui/label';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// PWA Install Hook
+const usePWAInstall = () => {
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    // Check if app is already installed
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+      setIsInstalled(true);
+    }
+
+    // Listen for install prompt
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+      setIsInstallable(true);
+    };
+
+    // Listen for app installed
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setIsInstallable(false);
+      setInstallPrompt(null);
+      toast.success('🎉 Time Tracker Pro installed successfully!');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+
+    const result = await installPrompt.prompt();
+    console.log('Install result:', result.outcome);
+    
+    setInstallPrompt(null);
+    setIsInstallable(false);
+  };
+
+  return {
+    isInstallable,
+    isInstalled,
+    handleInstall
+  };
+};
+
 // Auth Context
 const AuthContext = React.createContext();
 

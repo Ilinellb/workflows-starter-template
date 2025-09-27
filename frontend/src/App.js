@@ -79,33 +79,43 @@ const AuthProvider = ({ children }) => {
   );
 };
 
-// Tab Configuration
+// Tab Configuration - Employee Success Focused
 const getTabsForRole = (role) => {
-  const baseTabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: '📊' }
-  ];
-
   if (role === 'employee') {
     return [
-      ...baseTabs,
-      { id: 'timetracking', label: 'Time Tracking', icon: '⏰' },
-      { id: 'notifications', label: 'Notifications', icon: '🔔' },
-      { id: 'profile', label: 'Profile', icon: '👤' }
+      { id: 'timecard', label: 'Time Card', icon: '🕒', category: 'time' },
+      { id: 'timeoff', label: 'Time Off Requests', icon: '🏖️', category: 'time' },
+      { id: 'schedule', label: 'My Schedule', icon: '📅', category: 'planning' },
+      { id: 'reports', label: 'Reports', icon: '📊', category: 'reports' },
+      { id: 'benefits', label: 'Benefits', icon: '🏥', category: 'personal' },
+      { id: 'performance', label: 'Performance', icon: '🎯', category: 'growth' },
+      { id: 'training', label: 'Training', icon: '📚', category: 'growth' },
+      { id: 'communication', label: 'Messages', icon: '💬', category: 'communication' },
+      { id: 'profile', label: 'Profile', icon: '👤', category: 'personal' }
     ];
   }
 
   if (role === 'manager' || role === 'super_admin') {
     return [
-      ...baseTabs,
-      { id: 'team', label: 'Team Management', icon: '👥' },
-      { id: 'reports', label: 'Reports', icon: '📈' },
-      { id: 'notifications', label: 'Notifications', icon: '🔔' },
-      ...(role === 'super_admin' ? [{ id: 'admin', label: 'Admin', icon: '⚙️' }] : []),
-      { id: 'profile', label: 'Profile', icon: '👤' }
+      { id: 'overview', label: 'Team Overview', icon: '📈', category: 'management' },
+      { id: 'timecards', label: 'Team Time Cards', icon: '🕒', category: 'time' },
+      { id: 'timeoff-approvals', label: 'Time Off Approvals', icon: '✅', category: 'approvals' },
+      { id: 'scheduling', label: 'Scheduling', icon: '📅', category: 'planning' },
+      { id: 'team-reports', label: 'Team Reports', icon: '📊', category: 'reports' },
+      { id: 'employee-mgmt', label: 'Employee Management', icon: '👥', category: 'management' },
+      { id: 'performance-mgmt', label: 'Performance Reviews', icon: '🎯', category: 'reviews' },
+      { id: 'communication', label: 'Team Messages', icon: '💬', category: 'communication' },
+      ...(role === 'super_admin' ? [
+        { id: 'admin', label: 'System Admin', icon: '⚙️', category: 'admin' },
+        { id: 'analytics', label: 'Analytics', icon: '📈', category: 'admin' }
+      ] : []),
+      { id: 'profile', label: 'Profile', icon: '👤', category: 'personal' }
     ];
   }
 
-  return baseTabs;
+  return [
+    { id: 'timecard', label: 'Time Card', icon: '🕒', category: 'time' }
+  ];
 };
 
 // Login Component

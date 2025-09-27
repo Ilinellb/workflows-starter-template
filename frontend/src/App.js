@@ -644,6 +644,35 @@ const AddEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
   );
 };
 
+// Tab Configuration
+const getTabsForRole = (role) => {
+  const baseTabs = [
+    { id: 'dashboard', label: 'Dashboard', icon: '📊' }
+  ];
+
+  if (role === 'employee') {
+    return [
+      ...baseTabs,
+      { id: 'timetracking', label: 'Time Tracking', icon: '⏰' },
+      { id: 'notifications', label: 'Notifications', icon: '🔔' },
+      { id: 'profile', label: 'Profile', icon: '👤' }
+    ];
+  }
+
+  if (role === 'manager' || role === 'super_admin') {
+    return [
+      ...baseTabs,
+      { id: 'team', label: 'Team Management', icon: '👥' },
+      { id: 'reports', label: 'Reports', icon: '📈' },
+      { id: 'notifications', label: 'Notifications', icon: '🔔' },
+      ...(role === 'super_admin' ? [{ id: 'admin', label: 'Admin', icon: '⚙️' }] : []),
+      { id: 'profile', label: 'Profile', icon: '👤' }
+    ];
+  }
+
+  return baseTabs;
+};
+
 // Main App
 const App = () => {
   return (

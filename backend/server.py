@@ -10,6 +10,7 @@ from jose import JWTError, jwt
 import os
 import uuid
 import logging
+import hashlib
 from pathlib import Path
 from dotenv import load_dotenv
 from openpyxl import Workbook

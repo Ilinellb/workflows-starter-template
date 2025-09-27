@@ -187,21 +187,37 @@ const LoginPage = () => {
   );
 };
 
-// Dashboard Tab Components
-const DashboardTab = ({ user }) => {
-  if (user.role === 'employee') {
-    return <EmployeeDashboardContent />;
-  } else {
-    return <ManagerDashboardContent />;
-  }
-};
+// ============ EMPLOYEE SUCCESS FOCUSED TAB COMPONENTS ============
 
-const EmployeeDashboardContent = () => {
+// Time Card Tab - Primary employee interface
+const TimeCardTab = () => {
   const [timeStatus, setTimeStatus] = useState(null);
+  const [location, setLocation] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [recentEntries, setRecentEntries] = useState([]);
 
   useEffect(() => {
     fetchTimeStatus();
+    fetchRecentEntries();
+    getCurrentLocation();
   }, []);
+
+  const getCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.error('Location error:', error);
+          toast.error('Please enable location access for geofencing');
+        }
+      );
+    }
+  };
 
   const fetchTimeStatus = async () => {
     try {
@@ -212,52 +228,303 @@ const EmployeeDashboardContent = () => {
     }
   };
 
+  const fetchRecentEntries = async () => {
+    try {
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 7);
+      
+      const response = await axios.get(`${API}/time/entries`, {
+        params: {
+          start_date: startDate.toISOString().split('T')[0],
+          end_date: endDate.toISOString().split('T')[0]
+        }
+      });
+      
+      setRecentEntries(response.data.slice(0, 5));
+    } catch (error) {
+      console.error('Failed to fetch recent entries');
+    }
+  };
+
+  const handlePunch = async (action) => {
+    if (!location) {
+      toast.error('Location required for punch in/out');
+      getCurrentLocation();
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await axios.post(`${API}/time/punch`, {
+        action,
+        location
+      });
+      toast.success(response.data.message);
+      fetchTimeStatus();
+      fetchRecentEntries();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Punch failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!timeStatus) {
     return <div className="flex justify-center items-center h-64">Loading...</div>;
   }
 
   return (
-    <div className="space-y-6" data-testid="employee-dashboard-tab">
+    <div className="space-y-6" data-testid="timecard-tab">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">My Dashboard</h2>
-        <Badge variant={timeStatus.status === 'working' ? 'default' : 'secondary'}>
-          {timeStatus.status === 'working' ? 'Currently Working' : 'Not Working'}
+        <h2 className="text-2xl font-bold">My Time Card</h2>
+        <Badge 
+          variant={timeStatus.status === 'working' ? 'default' : 'secondary'}
+          className={timeStatus.status === 'working' ? 'bg-green-500' : ''}
+        >
+          {timeStatus.status === 'working' ? '🟢 Currently Working' : '🔴 Not Working'}
         </Badge>
       </div>
 
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50">
+      {/* Current Status Card */}
+      <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-2">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <div className={`w-3 h-3 rounded-full ${
-              timeStatus.status === 'working' ? 'bg-green-500' : 
-              timeStatus.status === 'complete' ? 'bg-blue-500' : 'bg-gray-400'
-            }`}></div>
-            Today's Status
+            <span className="text-2xl">⏰</span>
+            Today's Time Card
           </CardTitle>
-          <CardDescription>{timeStatus.message}</CardDescription>
+          <CardDescription className="text-lg">{timeStatus.message}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-600">Punch In</p>
-              <p className="font-semibold" data-testid="dashboard-punch-in">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+              <p className="text-sm text-gray-600 font-medium">Punch In Time</p>
+              <p className="text-xl font-bold text-green-600" data-testid="punch-in-time">
                 {timeStatus.punch_in_time ? new Date(timeStatus.punch_in_time).toLocaleTimeString() : 'Not punched in'}
               </p>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Total Hours</p>
-              <p className="font-semibold text-blue-600" data-testid="dashboard-total-hours">
+            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+              <p className="text-sm text-gray-600 font-medium">Punch Out Time</p>
+              <p className="text-xl font-bold text-blue-600" data-testid="punch-out-time">
+                {timeStatus.punch_out_time ? new Date(timeStatus.punch_out_time).toLocaleTimeString() : 'Working...'}
+              </p>
+            </div>
+            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+              <p className="text-sm text-gray-600 font-medium">Hours Today</p>
+              <p className="text-2xl font-bold text-purple-600" data-testid="total-hours">
                 {timeStatus.total_hours || 0}h
               </p>
             </div>
           </div>
+
+          <div className="flex gap-4">
+            <Button
+              onClick={() => handlePunch('punch_in')}
+              disabled={loading || !timeStatus.can_punch_in}
+              className="flex-1 h-14 text-lg"
+              data-testid="punch-in-button"
+            >
+              {loading ? 'Processing...' : '🕐 Punch In'}
+            </Button>
+            <Button
+              onClick={() => handlePunch('punch_out')}
+              disabled={loading || !timeStatus.can_punch_out}
+              variant="outline"
+              className="flex-1 h-14 text-lg border-2"
+              data-testid="punch-out-button"
+            >
+              {loading ? 'Processing...' : '🕐 Punch Out'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Location & Recent Entries */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Location Status */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">📍 Location Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {location ? (
+              <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="font-medium text-green-700">Location Enabled - Ready for geofencing</span>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg border border-red-200">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <span className="font-medium text-red-700">Location required for punch in/out</span>
+                </div>
+                <Button size="sm" onClick={getCurrentLocation} className="w-full">
+                  📍 Enable Location Access
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Recent Time Entries */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">📅 Recent Time Entries</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {recentEntries.length > 0 ? (
+              <div className="space-y-2">
+                {recentEntries.map((entry, index) => (
+                  <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded border">
+                    <div>
+                      <p className="font-medium text-sm">{entry.date}</p>
+                      <p className="text-xs text-gray-600">
+                        {entry.punch_in_time && new Date(entry.punch_in_time).toLocaleTimeString()} - 
+                        {entry.punch_out_time ? new Date(entry.punch_out_time).toLocaleTimeString() : ' Working'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <Badge variant={entry.status === 'complete' ? 'default' : 'secondary'} className="text-xs">
+                        {entry.total_hours ? `${entry.total_hours}h` : entry.status}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-4">No recent entries</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+// Time Off Requests Tab
+const TimeOffRequestsTab = () => {
+  const [requests, setRequests] = useState([]);
+  const [showRequestForm, setShowRequestForm] = useState(false);
+
+  return (
+    <div className="space-y-6" data-testid="timeoff-tab">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">🏖️ Time Off Requests</h2>
+        <Button onClick={() => setShowRequestForm(true)}>
+          ➕ New Request
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>My Time Off Balance</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <p className="text-2xl font-bold text-blue-600">15</p>
+              <p className="text-sm text-gray-600">Vacation Days</p>
+            </div>
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <p className="text-2xl font-bold text-green-600">8</p>
+              <p className="text-sm text-gray-600">Sick Days</p>
+            </div>
+            <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <p className="text-2xl font-bold text-purple-600">3</p>
+              <p className="text-sm text-gray-600">Personal Days</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Requests</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-gray-500 text-center py-8">No time off requests yet. Create your first request above!</p>
         </CardContent>
       </Card>
     </div>
   );
 };
 
-const ManagerDashboardContent = () => {
+// My Schedule Tab
+const MyScheduleTab = () => (
+  <div className="space-y-6" data-testid="schedule-tab">
+    <h2 className="text-2xl font-bold">📅 My Schedule</h2>
+    <Card>
+      <CardContent className="p-6">
+        <p className="text-gray-600 text-center">Schedule management coming soon...</p>
+      </CardContent>
+    </Card>
+  </div>
+);
+
+// My Reports Tab  
+const MyReportsTab = () => (
+  <div className="space-y-6" data-testid="my-reports-tab">
+    <h2 className="text-2xl font-bold">📊 My Reports</h2>
+    <Card>
+      <CardContent className="p-6">
+        <p className="text-gray-600 text-center">Personal reports and timesheets coming soon...</p>
+      </CardContent>
+    </Card>
+  </div>
+);
+
+// Benefits Tab
+const BenefitsTab = () => (
+  <div className="space-y-6" data-testid="benefits-tab">
+    <h2 className="text-2xl font-bold">🏥 Benefits</h2>
+    <Card>
+      <CardContent className="p-6">
+        <p className="text-gray-600 text-center">Benefits information coming soon...</p>
+      </CardContent>
+    </Card>
+  </div>
+);
+
+// Performance Tab
+const PerformanceTab = () => (
+  <div className="space-y-6" data-testid="performance-tab">
+    <h2 className="text-2xl font-bold">🎯 Performance</h2>
+    <Card>
+      <CardContent className="p-6">
+        <p className="text-gray-600 text-center">Performance tracking coming soon...</p>
+      </CardContent>
+    </Card>
+  </div>
+);
+
+// Training Tab
+const TrainingTab = () => (
+  <div className="space-y-6" data-testid="training-tab">
+    <h2 className="text-2xl font-bold">📚 Training</h2>
+    <Card>
+      <CardContent className="p-6">
+        <p className="text-gray-600 text-center">Training modules coming soon...</p>
+      </CardContent>
+    </Card>
+  </div>
+);
+
+// Communication Tab
+const CommunicationTab = () => (
+  <div className="space-y-6" data-testid="communication-tab">
+    <h2 className="text-2xl font-bold">💬 Messages</h2>
+    <Card>
+      <CardContent className="p-6">
+        <p className="text-gray-600 text-center">Team communication coming soon...</p>
+      </CardContent>
+    </Card>
+  </div>
+);
+
+// ============ MANAGER TAB COMPONENTS ============
+
+// Team Overview Tab
+const TeamOverviewTab = () => {
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
@@ -295,11 +562,8 @@ const ManagerDashboardContent = () => {
   }
 
   return (
-    <div className="space-y-6" data-testid="manager-dashboard-tab">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Team Overview</h2>
-        <Badge variant="secondary">Manager</Badge>
-      </div>
+    <div className="space-y-6" data-testid="team-overview-tab">
+      <h2 className="text-2xl font-bold">📈 Team Overview</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -307,7 +571,7 @@ const ManagerDashboardContent = () => {
             <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" data-testid="dashboard-total-employees">{stats.totalEmployees}</div>
+            <div className="text-2xl font-bold">{stats.totalEmployees}</div>
           </CardContent>
         </Card>
         
@@ -316,7 +580,7 @@ const ManagerDashboardContent = () => {
             <CardTitle className="text-sm font-medium">Active Today</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600" data-testid="dashboard-active-today">{stats.activeToday}</div>
+            <div className="text-2xl font-bold text-green-600">{stats.activeToday}</div>
           </CardContent>
         </Card>
 
@@ -325,7 +589,7 @@ const ManagerDashboardContent = () => {
             <CardTitle className="text-sm font-medium">Completed Today</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600" data-testid="dashboard-completed-today">{stats.completedToday}</div>
+            <div className="text-2xl font-bold text-blue-600">{stats.completedToday}</div>
           </CardContent>
         </Card>
 
@@ -342,152 +606,8 @@ const ManagerDashboardContent = () => {
   );
 };
 
-// Time Tracking Tab
-const TimeTrackingTab = () => {
-  const [timeStatus, setTimeStatus] = useState(null);
-  const [location, setLocation] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    fetchTimeStatus();
-    getCurrentLocation();
-  }, []);
-
-  const getCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        },
-        (error) => {
-          console.error('Location error:', error);
-          toast.error('Please enable location access for geofencing');
-        }
-      );
-    }
-  };
-
-  const fetchTimeStatus = async () => {
-    try {
-      const response = await axios.get(`${API}/time/status`);
-      setTimeStatus(response.data);
-    } catch (error) {
-      toast.error('Failed to fetch time status');
-    }
-  };
-
-  const handlePunch = async (action) => {
-    if (!location) {
-      toast.error('Location required for punch in/out');
-      getCurrentLocation();
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await axios.post(`${API}/time/punch`, {
-        action,
-        location
-      });
-      toast.success(response.data.message);
-      fetchTimeStatus();
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Punch failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!timeStatus) {
-    return <div className="flex justify-center items-center h-64">Loading...</div>;
-  }
-
-  return (
-    <div className="space-y-6" data-testid="timetracking-tab">
-      <h2 className="text-2xl font-bold">Time Tracking</h2>
-
-      <Card className="bg-gradient-to-r from-green-50 to-blue-50">
-        <CardHeader>
-          <CardTitle>Punch In/Out</CardTitle>
-          <CardDescription>{timeStatus.message}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <p className="text-sm text-gray-600">Punch In Time</p>
-              <p className="font-semibold" data-testid="punch-in-time">
-                {timeStatus.punch_in_time ? new Date(timeStatus.punch_in_time).toLocaleTimeString() : 'Not punched in'}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Punch Out Time</p>
-              <p className="font-semibold" data-testid="punch-out-time">
-                {timeStatus.punch_out_time ? new Date(timeStatus.punch_out_time).toLocaleTimeString() : 'Not punched out'}
-              </p>
-            </div>
-          </div>
-          
-          {timeStatus.total_hours && (
-            <div className="mb-4">
-              <p className="text-sm text-gray-600">Total Hours Today</p>
-              <p className="text-2xl font-bold text-blue-600" data-testid="total-hours">
-                {timeStatus.total_hours}h
-              </p>
-            </div>
-          )}
-
-          <div className="flex gap-2">
-            <Button
-              onClick={() => handlePunch('punch_in')}
-              disabled={loading || !timeStatus.can_punch_in}
-              className="flex-1"
-              data-testid="punch-in-button"
-            >
-              {loading ? 'Processing...' : 'Punch In'}
-            </Button>
-            <Button
-              onClick={() => handlePunch('punch_out')}
-              disabled={loading || !timeStatus.can_punch_out}
-              variant="outline"
-              className="flex-1"
-              data-testid="punch-out-button"
-            >
-              {loading ? 'Processing...' : 'Punch Out'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Location Status</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {location ? (
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-sm">Location enabled for geofencing</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-              <span className="text-sm">Location required for geofencing</span>
-              <Button size="sm" onClick={getCurrentLocation}>
-                Enable Location
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-// Team Management Tab
-const TeamManagementTab = () => {
+// Team Time Cards Tab
+const TeamTimeCardsTab = () => {
   const [employees, setEmployees] = useState([]);
   const [timeEntries, setTimeEntries] = useState([]);
   const [showAddEmployee, setShowAddEmployee] = useState(false);
@@ -515,42 +635,18 @@ const TeamManagementTab = () => {
     }
   };
 
-  const exportTimesheet = async () => {
-    try {
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - 14);
-      const endDate = new Date();
-      
-      const response = await axios.get(`${API}/export/timesheet`, {
-        params: {
-          start_date: startDate.toISOString().split('T')[0],
-          end_date: endDate.toISOString().split('T')[0]
-        }
-      });
-      
-      toast.success('Timesheet exported successfully!');
-    } catch (error) {
-      toast.error('Failed to export timesheet');
-    }
-  };
-
   return (
-    <div className="space-y-6" data-testid="team-tab">
+    <div className="space-y-6" data-testid="team-timecards-tab">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Team Management</h2>
-        <div className="flex gap-2">
-          <Button onClick={() => setShowAddEmployee(true)} data-testid="add-employee-button">
-            Add Employee
-          </Button>
-          <Button variant="outline" onClick={exportTimesheet} data-testid="export-button">
-            Export Timesheet
-          </Button>
-        </div>
+        <h2 className="text-2xl font-bold">🕒 Team Time Cards</h2>
+        <Button onClick={() => setShowAddEmployee(true)} data-testid="add-employee-button">
+          ➕ Add Employee
+        </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Employees ({employees.length})</CardTitle>
+          <CardTitle>Active Employees ({employees.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
@@ -581,37 +677,53 @@ const TeamManagementTab = () => {
   );
 };
 
-// Other Tab Components (Placeholder)
-const ReportsTab = () => (
-  <div data-testid="reports-tab">
-    <h2 className="text-2xl font-bold mb-4">Reports & Analytics</h2>
-    <Card>
-      <CardContent className="p-6">
-        <p className="text-gray-600">Reports dashboard coming soon...</p>
-      </CardContent>
-    </Card>
+// Other Manager Tab Placeholders
+const TimeOffApprovalsTab = () => (
+  <div className="space-y-6" data-testid="timeoff-approvals-tab">
+    <h2 className="text-2xl font-bold">✅ Time Off Approvals</h2>
+    <Card><CardContent className="p-6"><p className="text-gray-600 text-center">Time off approval system coming soon...</p></CardContent></Card>
   </div>
 );
 
-const NotificationsTab = () => (
-  <div data-testid="notifications-tab">
-    <h2 className="text-2xl font-bold mb-4">Notifications</h2>
-    <Card>
-      <CardContent className="p-6">
-        <p className="text-gray-600">Notification center coming soon...</p>
-      </CardContent>
-    </Card>
+const TeamSchedulingTab = () => (
+  <div className="space-y-6" data-testid="team-scheduling-tab">
+    <h2 className="text-2xl font-bold">📅 Team Scheduling</h2>
+    <Card><CardContent className="p-6"><p className="text-gray-600 text-center">Team scheduling coming soon...</p></CardContent></Card>
   </div>
 );
 
-const AdminTab = () => (
-  <div data-testid="admin-tab">
-    <h2 className="text-2xl font-bold mb-4">Admin Settings</h2>
-    <Card>
-      <CardContent className="p-6">
-        <p className="text-gray-600">Admin panel coming soon...</p>
-      </CardContent>
-    </Card>
+const TeamReportsTab = () => (
+  <div className="space-y-6" data-testid="team-reports-tab">
+    <h2 className="text-2xl font-bold">📊 Team Reports</h2>
+    <Card><CardContent className="p-6"><p className="text-gray-600 text-center">Team reports coming soon...</p></CardContent></Card>
+  </div>
+);
+
+const EmployeeManagementTab = () => (
+  <div className="space-y-6" data-testid="employee-management-tab">
+    <h2 className="text-2xl font-bold">👥 Employee Management</h2>
+    <Card><CardContent className="p-6"><p className="text-gray-600 text-center">Employee management coming soon...</p></CardContent></Card>
+  </div>
+);
+
+const PerformanceManagementTab = () => (
+  <div className="space-y-6" data-testid="performance-management-tab">
+    <h2 className="text-2xl font-bold">🎯 Performance Management</h2>
+    <Card><CardContent className="p-6"><p className="text-gray-600 text-center">Performance management coming soon...</p></CardContent></Card>
+  </div>
+);
+
+const SystemAdminTab = () => (
+  <div className="space-y-6" data-testid="system-admin-tab">
+    <h2 className="text-2xl font-bold">⚙️ System Administration</h2>
+    <Card><CardContent className="p-6"><p className="text-gray-600 text-center">System admin panel coming soon...</p></CardContent></Card>
+  </div>
+);
+
+const AnalyticsTab = () => (
+  <div className="space-y-6" data-testid="analytics-tab">
+    <h2 className="text-2xl font-bold">📈 Analytics</h2>
+    <Card><CardContent className="p-6"><p className="text-gray-600 text-center">Advanced analytics coming soon...</p></CardContent></Card>
   </div>
 );
 

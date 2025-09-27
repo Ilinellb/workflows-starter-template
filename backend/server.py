@@ -663,8 +663,7 @@ async def startup_event():
         await db.users.insert_one(prepare_for_mongo(admin_dict))
         logger.info("Super admin created: admin@company.com / admin123")
     
-    # Start background tasks
-    start_background_tasks()
+    logger.info("Application started successfully")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

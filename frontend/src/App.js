@@ -241,43 +241,6 @@ const EmployeeDashboardContent = () => {
         </CardContent>
       </Card>
 
-      {/* Weekly Summary */}
-      {weeklyStats && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">This Week</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{weeklyStats.totalHours.toFixed(1)}h</div>
-              <p className="text-xs text-gray-600">Total Hours</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Days Worked</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{weeklyStats.daysWorked}</div>
-              <p className="text-xs text-gray-600">Out of 7 days</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Avg Hours/Day</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {weeklyStats.daysWorked > 0 ? (weeklyStats.totalHours / weeklyStats.daysWorked).toFixed(1) : 0}h
-              </div>
-              <p className="text-xs text-gray-600">Daily Average</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
       {/* Quick Actions */}
       <Card>
         <CardHeader>
@@ -285,20 +248,11 @@ const EmployeeDashboardContent = () => {
         </CardHeader>
         <CardContent>
           <div className="flex gap-2">
-            <Button 
-              size="sm" 
-              onClick={() => window.location.hash = '#timetracking'}
-              className="flex-1"
-            >
-              ⏰ Time Tracking
+            <Button size="sm" className="flex-1">
+              ⏰ Go to Time Tracking
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => window.location.hash = '#notifications'}
-              className="flex-1"
-            >
-              🔔 Notifications
+            <Button variant="outline" size="sm" className="flex-1">
+              🔔 View Notifications
             </Button>
           </div>
         </CardContent>
@@ -425,23 +379,6 @@ const ManagerDashboardContent = () => {
           ) : (
             <p className="text-gray-500 text-center py-4">No recent activity</p>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Button size="sm" className="flex-1">
-              👥 Team Management
-            </Button>
-            <Button variant="outline" size="sm" className="flex-1">
-              📈 Reports
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>

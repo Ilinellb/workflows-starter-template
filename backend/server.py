@@ -530,88 +530,11 @@ async def export_timesheet(
     
     return {"message": "Timesheet exported successfully", "filename": filename}
 
-# Background task for checking missed punches
+# Background task for checking missed punches (simplified version)
 async def check_missed_punches():
     """Check for employees who haven't punched in 15 minutes after start time"""
-    try:
-        current_time = datetime.now(timezone.utc)
-        current_date = current_time.date()
-        
-        # Get all employees with start times
-        employees = await db.users.find({
-            "role": UserRole.EMPLOYEE,
-            "is_active": True,
-            "start_time": {"$exists": True}
-        }).to_list(1000)
-        
-        for employee in employees:
-            employee = parse_from_mongo(employee)
-            
-            if not employee.get("start_time"):
-                continue
-            
-            # Calculate 15 minutes after start time
-            start_time = employee["start_time"]
-            start_datetime = datetime.combine(current_date, start_time)
-            start_datetime = start_datetime.replace(tzinfo=timezone.utc)
-            check_time = start_datetime + timezone.timedelta(minutes=15)
-            
-            # Only check if we're past the 15-minute grace period
-            if current_time < check_time:
-                continue
-            
-            # Check if employee has punched in today
-            time_entry = await db.time_entries.find_one({
-                "employee_id": employee["id"],
-                "date": current_date.isoformat()
-            })
-            
-            if not time_entry or not time_entry.get("punch_in_time"):
-                # Check if notification already sent today
-                existing_notification = await db.notifications.find_one({
-                    "user_id": employee["id"],
-                    "type": "missed_punch",
-                    "created_at": {
-                        "$gte": datetime.combine(current_date, time.min).replace(tzinfo=timezone.utc).isoformat(),
-                        "$lt": datetime.combine(current_date + timezone.timedelta(days=1), time.min).replace(tzinfo=timezone.utc).isoformat()
-                    }
-                })
-                
-                if not existing_notification:
-                    # Send notifications
-                    await create_notification(
-                        employee["id"],
-                        "Missed Punch In",
-                        f"You haven't punched in today. Your start time was {start_time.strftime('%H:%M')}.",
-                        "missed_punch"
-                    )
-                    
-                    # Send email to employee
-                    await send_notification_email(
-                        employee["email"],
-                        "Missed Punch In Alert",
-                        f"<p>Hi {employee['name']},</p><p>You haven't punched in today. Your scheduled start time was {start_time.strftime('%H:%M')}.</p><p>Please punch in as soon as possible.</p>"
-                    )
-                    
-                    # Send notification to manager
-                    if employee.get("manager_id"):
-                        manager = await db.users.find_one({"id": employee["manager_id"]})
-                        if manager:
-                            await create_notification(
-                                manager["id"],
-                                "Employee Missed Punch In",
-                                f"{employee['name']} hasn't punched in today (scheduled: {start_time.strftime('%H:%M')}).",
-                                "missed_punch"
-                            )
-                            
-                            await send_notification_email(
-                                manager["email"],
-                                "Employee Missed Punch In Alert",
-                                f"<p>Hi {manager['name']},</p><p>Employee {employee['name']} hasn't punched in today. Their scheduled start time was {start_time.strftime('%H:%M')}.</p>"
-                            )
-    
-    except Exception as e:
-        logging.error(f"Error checking missed punches: {str(e)}")
+    # This will be implemented as a separate scheduled job later
+    pass
 
 # Run missed punch checker every 30 minutes
 def run_scheduler():

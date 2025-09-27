@@ -79,6 +79,35 @@ const AuthProvider = ({ children }) => {
   );
 };
 
+// Tab Configuration
+const getTabsForRole = (role) => {
+  const baseTabs = [
+    { id: 'dashboard', label: 'Dashboard', icon: '📊' }
+  ];
+
+  if (role === 'employee') {
+    return [
+      ...baseTabs,
+      { id: 'timetracking', label: 'Time Tracking', icon: '⏰' },
+      { id: 'notifications', label: 'Notifications', icon: '🔔' },
+      { id: 'profile', label: 'Profile', icon: '👤' }
+    ];
+  }
+
+  if (role === 'manager' || role === 'super_admin') {
+    return [
+      ...baseTabs,
+      { id: 'team', label: 'Team Management', icon: '👥' },
+      { id: 'reports', label: 'Reports', icon: '📈' },
+      { id: 'notifications', label: 'Notifications', icon: '🔔' },
+      ...(role === 'super_admin' ? [{ id: 'admin', label: 'Admin', icon: '⚙️' }] : []),
+      { id: 'profile', label: 'Profile', icon: '👤' }
+    ];
+  }
+
+  return baseTabs;
+};
+
 // Login Component
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -97,7 +126,7 @@ const LoginPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md" data-testid="login-card">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Employee Time Tracker</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Employee Time Tracker Pro</CardTitle>
           <CardDescription className="text-center">
             Sign in to track your work hours
           </CardDescription>
@@ -140,6 +169,7 @@ const LoginPage = () => {
           <div className="mt-4 p-3 bg-gray-50 rounded-lg">
             <p className="text-sm text-gray-600 mb-2">Demo Accounts:</p>
             <p className="text-xs text-gray-500">Admin: admin@company.com / admin123</p>
+            <p className="text-xs text-gray-500">Employee: john@company.com / password123</p>
           </div>
         </CardContent>
       </Card>
@@ -147,7 +177,7 @@ const LoginPage = () => {
   );
 };
 
-// Dashboard Tab - Shows overview/stats
+// Dashboard Tab Components
 const DashboardTab = ({ user }) => {
   if (user.role === 'employee') {
     return <EmployeeDashboardContent />;
@@ -156,14 +186,11 @@ const DashboardTab = ({ user }) => {
   }
 };
 
-// Employee Dashboard Content
 const EmployeeDashboardContent = () => {
   const [timeStatus, setTimeStatus] = useState(null);
-  const [weeklyStats, setWeeklyStats] = useState(null);
 
   useEffect(() => {
     fetchTimeStatus();
-    fetchWeeklyStats();
   }, []);
 
   const fetchTimeStatus = async () => {
@@ -172,29 +199,6 @@ const EmployeeDashboardContent = () => {
       setTimeStatus(response.data);
     } catch (error) {
       toast.error('Failed to fetch time status');
-    }
-  };
-
-  const fetchWeeklyStats = async () => {
-    try {
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - 7);
-      
-      const response = await axios.get(`${API}/time/entries`, {
-        params: {
-          start_date: startDate.toISOString().split('T')[0],
-          end_date: endDate.toISOString().split('T')[0]
-        }
-      });
-      
-      const entries = response.data;
-      const totalHours = entries.reduce((sum, entry) => sum + (entry.total_hours || 0), 0);
-      const daysWorked = entries.filter(entry => entry.total_hours > 0).length;
-      
-      setWeeklyStats({ totalHours, daysWorked, entries: entries.length });
-    } catch (error) {
-      console.error('Failed to fetch weekly stats');
     }
   };
 
@@ -211,7 +215,6 @@ const EmployeeDashboardContent = () => {
         </Badge>
       </div>
 
-      {/* Today's Status */}
       <Card className="bg-gradient-to-r from-blue-50 to-indigo-50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -240,35 +243,15 @@ const EmployeeDashboardContent = () => {
           </div>
         </CardContent>
       </Card>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Button size="sm" className="flex-1">
-              ⏰ Go to Time Tracking
-            </Button>
-            <Button variant="outline" size="sm" className="flex-1">
-              🔔 View Notifications
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
 
-// Manager Dashboard Content
 const ManagerDashboardContent = () => {
   const [stats, setStats] = useState(null);
-  const [recentActivity, setRecentActivity] = useState([]);
 
   useEffect(() => {
     fetchStats();
-    fetchRecentActivity();
   }, []);
 
   const fetchStats = async () => {
@@ -297,15 +280,6 @@ const ManagerDashboardContent = () => {
     }
   };
 
-  const fetchRecentActivity = async () => {
-    try {
-      const response = await axios.get(`${API}/time/entries`);
-      setRecentActivity(response.data.slice(0, 5));
-    } catch (error) {
-      console.error('Failed to fetch recent activity');
-    }
-  };
-
   if (!stats) {
     return <div className="flex justify-center items-center h-64">Loading...</div>;
   }
@@ -317,7 +291,6 @@ const ManagerDashboardContent = () => {
         <Badge variant="secondary">Manager</Badge>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
@@ -355,43 +328,18 @@ const ManagerDashboardContent = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {recentActivity.length > 0 ? (
-            <div className="space-y-2">
-              {recentActivity.map((entry, index) => (
-                <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                  <div>
-                    <p className="font-medium">{entry.employee_name}</p>
-                    <p className="text-sm text-gray-600">{entry.date}</p>
-                  </div>
-                  <Badge variant={entry.status === 'complete' ? 'default' : 'secondary'}>
-                    {entry.status}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 text-center py-4">No recent activity</p>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 };
+
+// Time Tracking Tab
+const TimeTrackingTab = () => {
   const [timeStatus, setTimeStatus] = useState(null);
   const [location, setLocation] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     fetchTimeStatus();
-    fetchNotifications();
     getCurrentLocation();
   }, []);
 
@@ -421,15 +369,6 @@ const ManagerDashboardContent = () => {
     }
   };
 
-  const fetchNotifications = async () => {
-    try {
-      const response = await axios.get(`${API}/notifications`);
-      setNotifications(response.data.filter(n => !n.is_read).slice(0, 5));
-    } catch (error) {
-      console.error('Failed to fetch notifications');
-    }
-  };
-
   const handlePunch = async (action) => {
     if (!location) {
       toast.error('Location required for punch in/out');
@@ -452,41 +391,31 @@ const ManagerDashboardContent = () => {
     }
   };
 
-  const formatTime = (timeStr) => {
-    if (!timeStr) return 'Not set';
-    return new Date(timeStr).toLocaleTimeString();
-  };
-
   if (!timeStatus) {
     return <div className="flex justify-center items-center h-64">Loading...</div>;
   }
 
   return (
-    <div className="space-y-6" data-testid="employee-dashboard">
-      {/* Status Card */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50">
+    <div className="space-y-6" data-testid="timetracking-tab">
+      <h2 className="text-2xl font-bold">Time Tracking</h2>
+
+      <Card className="bg-gradient-to-r from-green-50 to-blue-50">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <div className={`w-3 h-3 rounded-full ${
-              timeStatus.status === 'working' ? 'bg-green-500' : 
-              timeStatus.status === 'complete' ? 'bg-blue-500' : 'bg-gray-400'
-            }`}></div>
-            Current Status
-          </CardTitle>
+          <CardTitle>Punch In/Out</CardTitle>
           <CardDescription>{timeStatus.message}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <p className="text-sm text-gray-600">Punch In</p>
+              <p className="text-sm text-gray-600">Punch In Time</p>
               <p className="font-semibold" data-testid="punch-in-time">
-                {formatTime(timeStatus.punch_in_time)}
+                {timeStatus.punch_in_time ? new Date(timeStatus.punch_in_time).toLocaleTimeString() : 'Not punched in'}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Punch Out</p>
+              <p className="text-sm text-gray-600">Punch Out Time</p>
               <p className="font-semibold" data-testid="punch-out-time">
-                {formatTime(timeStatus.punch_out_time)}
+                {timeStatus.punch_out_time ? new Date(timeStatus.punch_out_time).toLocaleTimeString() : 'Not punched out'}
               </p>
             </div>
           </div>
@@ -522,7 +451,6 @@ const ManagerDashboardContent = () => {
         </CardContent>
       </Card>
 
-      {/* Location Status */}
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Location Status</CardTitle>
@@ -531,50 +459,33 @@ const ManagerDashboardContent = () => {
           {location ? (
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-sm">Location enabled</span>
+              <span className="text-sm">Location enabled for geofencing</span>
             </div>
           ) : (
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-red-500 rounded-full"></div>
               <span className="text-sm">Location required for geofencing</span>
+              <Button size="sm" onClick={getCurrentLocation}>
+                Enable Location
+              </Button>
             </div>
           )}
         </CardContent>
       </Card>
-
-      {/* Notifications */}
-      {notifications.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Recent Notifications</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {notifications.map((notif) => (
-                <div key={notif.id} className="p-2 bg-yellow-50 rounded border-l-4 border-yellow-400">
-                  <p className="font-medium text-sm">{notif.title}</p>
-                  <p className="text-xs text-gray-600">{notif.message}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };
 
-// Manager Dashboard
-const ManagerDashboard = () => {
+// Team Management Tab
+const TeamManagementTab = () => {
   const [employees, setEmployees] = useState([]);
   const [timeEntries, setTimeEntries] = useState([]);
   const [showAddEmployee, setShowAddEmployee] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState('all');
 
   useEffect(() => {
     fetchEmployees();
     fetchTimeEntries();
-  }, [selectedEmployee]);
+  }, []);
 
   const fetchEmployees = async () => {
     try {
@@ -587,9 +498,8 @@ const ManagerDashboard = () => {
 
   const fetchTimeEntries = async () => {
     try {
-      const params = selectedEmployee !== 'all' ? `?employee_id=${selectedEmployee}` : '';
-      const response = await axios.get(`${API}/time/entries${params}`);
-      setTimeEntries(response.data.slice(0, 20)); // Show last 20 entries
+      const response = await axios.get(`${API}/time/entries`);
+      setTimeEntries(response.data.slice(0, 20));
     } catch (error) {
       toast.error('Failed to fetch time entries');
     }
@@ -598,7 +508,7 @@ const ManagerDashboard = () => {
   const exportTimesheet = async () => {
     try {
       const startDate = new Date();
-      startDate.setDate(startDate.getDate() - 14); // Last 2 weeks
+      startDate.setDate(startDate.getDate() - 14);
       const endDate = new Date();
       
       const response = await axios.get(`${API}/export/timesheet`, {
@@ -615,8 +525,7 @@ const ManagerDashboard = () => {
   };
 
   return (
-    <div className="space-y-6" data-testid="manager-dashboard">
-      {/* Header */}
+    <div className="space-y-6" data-testid="team-tab">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Team Management</h2>
         <div className="flex gap-2">
@@ -629,97 +538,27 @@ const ManagerDashboard = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="total-employees">{employees.length}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Active Today</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600" data-testid="active-employees">
-              {timeEntries.filter(entry => 
-                entry.date === new Date().toISOString().split('T')[0] && entry.punch_in_time
-              ).length}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Completed Today</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600" data-testid="completed-employees">
-              {timeEntries.filter(entry => 
-                entry.date === new Date().toISOString().split('T')[0] && entry.status === 'complete'
-              ).length}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Time Entries</CardTitle>
+          <CardTitle>Employees ({employees.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 mb-4">
-            <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
-              <SelectTrigger className="w-64">
-                <SelectValue placeholder="Select employee" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Employees</SelectItem>
-                {employees.map((emp) => (
-                  <SelectItem key={emp.id} value={emp.id}>
-                    {emp.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Time Entries Table */}
           <div className="space-y-2">
-            {timeEntries.length > 0 ? (
-              timeEntries.map((entry) => (
-                <div key={entry.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="font-medium">{entry.employee_name}</p>
-                    <p className="text-sm text-gray-600">{entry.date}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm">
-                      {entry.punch_in_time ? new Date(entry.punch_in_time).toLocaleTimeString() : 'Not punched in'} - {' '}
-                      {entry.punch_out_time ? new Date(entry.punch_out_time).toLocaleTimeString() : 'Working'}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={entry.status === 'complete' ? 'default' : 'secondary'}>
-                        {entry.status}
-                      </Badge>
-                      {entry.total_hours && <span className="text-sm font-medium">{entry.total_hours}h</span>}
-                    </div>
-                  </div>
+            {employees.map((employee) => (
+              <div key={employee.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="font-medium">{employee.name}</p>
+                  <p className="text-sm text-gray-600">{employee.email}</p>
                 </div>
-              ))
-            ) : (
-              <p className="text-center text-gray-500 py-8">No time entries found</p>
-            )}
+                <Badge variant={employee.is_active ? 'default' : 'secondary'}>
+                  {employee.is_active ? 'Active' : 'Inactive'}
+                </Badge>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Add Employee Modal */}
       <AddEmployeeModal 
         isOpen={showAddEmployee} 
         onClose={() => setShowAddEmployee(false)}
@@ -732,7 +571,65 @@ const ManagerDashboard = () => {
   );
 };
 
-// Add Employee Modal
+// Other Tab Components (Placeholder)
+const ReportsTab = () => (
+  <div data-testid="reports-tab">
+    <h2 className="text-2xl font-bold mb-4">Reports & Analytics</h2>
+    <Card>
+      <CardContent className="p-6">
+        <p className="text-gray-600">Reports dashboard coming soon...</p>
+      </CardContent>
+    </Card>
+  </div>
+);
+
+const NotificationsTab = () => (
+  <div data-testid="notifications-tab">
+    <h2 className="text-2xl font-bold mb-4">Notifications</h2>
+    <Card>
+      <CardContent className="p-6">
+        <p className="text-gray-600">Notification center coming soon...</p>
+      </CardContent>
+    </Card>
+  </div>
+);
+
+const AdminTab = () => (
+  <div data-testid="admin-tab">
+    <h2 className="text-2xl font-bold mb-4">Admin Settings</h2>
+    <Card>
+      <CardContent className="p-6">
+        <p className="text-gray-600">Admin panel coming soon...</p>
+      </CardContent>
+    </Card>
+  </div>
+);
+
+const ProfileTab = ({ user }) => (
+  <div data-testid="profile-tab">
+    <h2 className="text-2xl font-bold mb-4">Profile Settings</h2>
+    <Card>
+      <CardContent className="p-6">
+        <div className="space-y-4">
+          <div>
+            <Label>Name</Label>
+            <p className="font-medium">{user.name}</p>
+          </div>
+          <div>
+            <Label>Email</Label>
+            <p className="font-medium">{user.email}</p>
+          </div>
+          <div>
+            <Label>Role</Label>
+            <Badge>{user.role.replace('_', ' ')}</Badge>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+);
+
+// Add Employee Modal (keeping existing component)
 const AddEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -879,59 +776,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
   );
 };
 
-// Tab Configuration
-const getTabsForRole = (role) => {
-  const baseTabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: '📊' }
-  ];
-
-  if (role === 'employee') {
-    return [
-      ...baseTabs,
-      { id: 'timetracking', label: 'Time Tracking', icon: '⏰' },
-      { id: 'notifications', label: 'Notifications', icon: '🔔' },
-      { id: 'profile', label: 'Profile', icon: '👤' }
-    ];
-  }
-
-  if (role === 'manager' || role === 'super_admin') {
-    return [
-      ...baseTabs,
-      { id: 'team', label: 'Team Management', icon: '👥' },
-      { id: 'reports', label: 'Reports', icon: '📈' },
-      { id: 'notifications', label: 'Notifications', icon: '🔔' },
-      ...(role === 'super_admin' ? [{ id: 'admin', label: 'Admin', icon: '⚙️' }] : []),
-      { id: 'profile', label: 'Profile', icon: '👤' }
-    ];
-  }
-
-  return baseTabs;
-};
-
-// Main App
-const App = () => {
-  return (
-    <AuthProvider>
-      <BrowserRouter>
-        <div className="min-h-screen bg-gray-50">
-          <AppContent />
-          <ToastContainer 
-            position="top-right"
-            autoClose={3000}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-          />
-        </div>
-      </BrowserRouter>
-    </AuthProvider>
-  );
-};
-
+// Main App Content with Tabbed Interface
 const AppContent = () => {
   const { user, logout, loading } = React.useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -977,7 +822,7 @@ const AppContent = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Header with Navigation */}
+      {/* Header with Navigation Tabs */}
       <nav className="bg-white shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
@@ -992,9 +837,9 @@ const AppContent = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                       activeTab === tab.id
-                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                        ? 'bg-blue-100 text-blue-700 border border-blue-200 shadow-sm'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                     }`}
                     data-testid={`tab-${tab.id}`}
@@ -1060,11 +905,35 @@ const AppContent = () => {
 
       {/* Tab Content */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
-        <div className="animate-fade-in">
+        <div className="fade-in">
           {renderTabContent()}
         </div>
       </main>
     </div>
+  );
+};
+
+// Main App
+const App = () => {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <div className="min-h-screen bg-gray-50">
+          <AppContent />
+          <ToastContainer 
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+          />
+        </div>
+      </BrowserRouter>
+    </AuthProvider>
   );
 };
 

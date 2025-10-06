@@ -1103,6 +1103,8 @@ const AppContent = () => {
       // Employee Tabs
       case 'timecard':
         return <TimeCardTab />;
+      case 'rooms':
+        return <RoomManagementTab />;
       case 'timeoff':
         return <TimeOffRequestsTab />;
       case 'schedule':
@@ -1123,6 +1125,8 @@ const AppContent = () => {
         return <TeamOverviewTab />;
       case 'timecards':
         return <TeamTimeCardsTab />;
+      case 'room-mgmt':
+        return <RoomReportsTab />;
       case 'timeoff-approvals':
         return <TimeOffApprovalsTab />;
       case 'scheduling':

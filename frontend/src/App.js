@@ -1159,7 +1159,224 @@ const TeamTimeCardsTab = () => {
   );
 };
 
-// Other Manager Tab Placeholders
+// Room Reports Tab - Manager oversight of room operations
+const RoomReportsTab = () => {
+  const [roomData, setRoomData] = useState([]);
+  const [employeeLaundryStats, setEmployeeLaundryStats] = useState([]);
+  const [shiftReports, setShiftReports] = useState([]);
+
+  useEffect(() => {
+    fetchRoomReports();
+    fetchLaundryStats();
+    fetchShiftReports();
+  }, []);
+
+  const fetchRoomReports = async () => {
+    // In real app, fetch from backend
+    // For demo, simulate data
+    const mockRoomData = [
+      { room: '1', status: 'open_clean', lastUpdated: '10:30 AM', employee: 'John Doe' },
+      { room: '2', status: 'occupied', lastUpdated: '9:15 AM', employee: 'Jane Smith' },
+      { room: '3', status: 'needs_cleaning', lastUpdated: '11:45 AM', employee: 'John Doe' },
+      { room: 'A', status: 'occupied_out', lastUpdated: '10:00 AM', employee: 'Jane Smith' }
+    ];
+    setRoomData(mockRoomData);
+  };
+
+  const fetchLaundryStats = async () => {
+    const mockLaundryStats = [
+      { employee: 'John Doe', laundryCount: 3, lastLaundry: '2:30 PM' },
+      { employee: 'Jane Smith', laundryCount: 2, lastLaundry: '1:15 PM' }
+    ];
+    setEmployeeLaundryStats(mockLaundryStats);
+  };
+
+  const fetchShiftReports = async () => {
+    const mockShiftReports = [
+      { 
+        employee: 'John Doe', 
+        shift: '6 AM - 2 PM', 
+        roomsCompleted: 12, 
+        roomsPending: 3, 
+        laundryCount: 3,
+        efficiency: 85 
+      },
+      { 
+        employee: 'Jane Smith', 
+        shift: '2 PM - 10 PM', 
+        roomsCompleted: 8, 
+        roomsPending: 2, 
+        laundryCount: 2,
+        efficiency: 90 
+      }
+    ];
+    setShiftReports(mockShiftReports);
+  };
+
+  const roomStatusColors = {
+    'open_clean': 'bg-green-500',
+    'occupied': 'bg-yellow-500',
+    'occupied_out': 'bg-orange-500',
+    'needs_cleaning': 'bg-red-500'
+  };
+
+  return (
+    <div className="space-y-6" data-testid="room-reports-tab">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">🏨 Room Management Reports</h2>
+        <Button variant="outline">
+          📊 Export Report
+        </Button>
+      </div>
+
+      {/* Real-time Room Status Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Clean & Ready</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">23</div>
+            <div className="flex items-center gap-1 mt-1">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-xs text-gray-600">Available now</span>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Occupied</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">8</div>
+            <div className="flex items-center gap-1 mt-1">
+              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+              <span className="text-xs text-gray-600">Guests in room</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Guest Out</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">4</div>
+            <div className="flex items-center gap-1 mt-1">
+              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+              <span className="text-xs text-gray-600">Ready for cleaning</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Needs Cleaning</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">3</div>
+            <div className="flex items-center gap-1 mt-1">
+              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+              <span className="text-xs text-gray-600">Requires attention</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Employee Performance Today */}
+      <Card>
+        <CardHeader>
+          <CardTitle>👥 Employee Performance - Current Shift</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {shiftReports.map((report, index) => (
+              <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h3 className="font-semibold">{report.employee}</h3>
+                    <p className="text-sm text-gray-600">{report.shift}</p>
+                  </div>
+                  <Badge variant={report.efficiency >= 85 ? 'default' : 'secondary'}>
+                    {report.efficiency}% efficiency
+                  </Badge>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Rooms Completed:</span>
+                    <span className="font-semibold text-green-600 ml-2">{report.roomsCompleted}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Rooms Pending:</span>
+                    <span className="font-semibold text-orange-600 ml-2">{report.roomsPending}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Laundry Runs:</span>
+                    <span className="font-semibold text-blue-600 ml-2">{report.laundryCount}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Laundry Tracking */}
+      <Card>
+        <CardHeader>
+          <CardTitle>🧺 Laundry Statistics</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {employeeLaundryStats.map((stat, index) => (
+              <div key={index} className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                <div>
+                  <p className="font-medium">{stat.employee}</p>
+                  <p className="text-sm text-gray-600">Last: {stat.lastLaundry}</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-blue-600">{stat.laundryCount}</div>
+                  <div className="text-xs text-gray-600">loads today</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Room Status Details */}
+      <Card>
+        <CardHeader>
+          <CardTitle>🏠 Individual Room Status</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {roomData.map((room, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-white rounded border">
+                <div className="flex items-center gap-3">
+                  <div className="font-bold text-lg min-w-[2rem] text-center">
+                    {room.room}
+                  </div>
+                  <div className={`w-3 h-3 rounded-full ${roomStatusColors[room.status]}`}></div>
+                  <div>
+                    <p className="font-medium capitalize">{room.status.replace('_', ' ')}</p>
+                    <p className="text-sm text-gray-600">Updated: {room.lastUpdated}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-medium">{room.employee}</p>
+                  <p className="text-xs text-gray-500">Assigned staff</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 const TimeOffApprovalsTab = () => (
   <div className="space-y-6" data-testid="timeoff-approvals-tab">
     <h2 className="text-2xl font-bold">✅ Time Off Approvals</h2>

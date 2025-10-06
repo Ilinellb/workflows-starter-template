@@ -492,6 +492,202 @@ async def mark_notification_read(notification_id: str, current_user: User = Depe
     )
     return {"message": "Notification marked as read"}
 
+# Room Management Routes
+@api_router.post("/rooms/update-status")
+async def update_room_status(
+    room_data: RoomUpdateRequest, 
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.EMPLOYEE:
+        raise HTTPException(status_code=403, detail="Only employees can update room status")
+    
+    today = date.today()
+    
+    # Create or update room status
+    room_status = RoomStatus(
+        room_number=room_data.room_id.replace('room-', ''),
+        status=room_data.status,
+        employee_id=current_user.id,
+        shift_date=today,
+        last_updated=datetime.fromisoformat(room_data.timestamp.replace('Z', '+00:00'))
+    )
+    
+    room_dict = prepare_for_mongo(room_status.dict())
+    
+    # Update existing or insert new
+    await db.room_statuses.update_one(
+        {
+            "room_number": room_status.room_number,
+            "shift_date": today.isoformat(),
+            "employee_id": current_user.id
+        },
+        {"$set": room_dict},
+        upsert=True
+    )
+    
+    return {"message": f"Room {room_status.room_number} status updated to {room_data.status}"}
+
+@api_router.get("/rooms/status")
+async def get_room_statuses(current_user: User = Depends(get_current_user)):
+    today = date.today()
+    
+    if current_user.role == UserRole.EMPLOYEE:
+        # Employee sees their own room statuses
+        query = {
+            "employee_id": current_user.id,
+            "shift_date": today.isoformat()
+        }
+    else:
+        # Managers see all room statuses
+        query = {
+            "shift_date": today.isoformat()
+        }
+    
+    room_statuses = await db.room_statuses.find(query).to_list(100)
+    
+    result = []
+    for room_status in room_statuses:
+        room_status = parse_from_mongo(room_status)
+        
+        # Get employee name for manager view
+        if current_user.role != UserRole.EMPLOYEE:
+            employee = await db.users.find_one({"id": room_status["employee_id"]})
+            room_status["employee_name"] = employee.get("name", "Unknown") if employee else "Unknown"
+        
+        result.append(room_status)
+    
+    return result
+
+@api_router.post("/laundry/record")
+async def record_laundry(
+    laundry_data: LaundryUpdateRequest,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.EMPLOYEE:
+        raise HTTPException(status_code=403, detail="Only employees can record laundry")
+    
+    today = date.today()
+    
+    # Update laundry count for today
+    laundry_record = LaundryRecord(
+        employee_id=current_user.id,
+        count=laundry_data.count,
+        shift_date=today,
+        timestamp=datetime.fromisoformat(laundry_data.timestamp.replace('Z', '+00:00'))
+    )
+    
+    laundry_dict = prepare_for_mongo(laundry_record.dict())
+    
+    # Update existing record or create new
+    await db.laundry_records.update_one(
+        {
+            "employee_id": current_user.id,
+            "shift_date": today.isoformat()
+        },
+        {"$set": laundry_dict},
+        upsert=True
+    )
+    
+    return {"message": f"Laundry count updated to {laundry_data.count}"}
+
+@api_router.get("/laundry/stats")
+async def get_laundry_stats(
+    date_filter: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role == UserRole.EMPLOYEE:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    target_date = date.today()
+    if date_filter:
+        target_date = datetime.fromisoformat(date_filter).date()
+    
+    query = {"shift_date": target_date.isoformat()}
+    if current_user.role == UserRole.MANAGER:
+        # Get employees under this manager
+        employees = await db.users.find({"manager_id": current_user.id}).to_list(1000)
+        employee_ids = [emp["id"] for emp in employees]
+        query["employee_id"] = {"$in": employee_ids}
+    
+    laundry_records = await db.laundry_records.find(query).to_list(100)
+    
+    result = []
+    for record in laundry_records:
+        record = parse_from_mongo(record)
+        
+        # Get employee name
+        employee = await db.users.find_one({"id": record["employee_id"]})
+        record["employee_name"] = employee.get("name", "Unknown") if employee else "Unknown"
+        
+        result.append(record)
+    
+    return result
+
+@api_router.get("/rooms/report")
+async def get_room_report(
+    date_filter: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role == UserRole.EMPLOYEE:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    target_date = date.today()
+    if date_filter:
+        target_date = datetime.fromisoformat(date_filter).date()
+    
+    # Get room statuses for the date
+    query = {"shift_date": target_date.isoformat()}
+    if current_user.role == UserRole.MANAGER:
+        # Manager sees only their team's work
+        employees = await db.users.find({"manager_id": current_user.id}).to_list(1000)
+        employee_ids = [emp["id"] for emp in employees]
+        query["employee_id"] = {"$in": employee_ids}
+    
+    room_statuses = await db.room_statuses.find(query).to_list(1000)
+    
+    # Get laundry stats
+    laundry_stats = await db.laundry_records.find(query).to_list(100)
+    
+    # Prepare report data
+    employee_performance = {}
+    
+    # Process room data
+    for room_status in room_statuses:
+        room_status = parse_from_mongo(room_status)
+        emp_id = room_status["employee_id"]
+        
+        if emp_id not in employee_performance:
+            employee = await db.users.find_one({"id": emp_id})
+            employee_performance[emp_id] = {
+                "employee_name": employee.get("name", "Unknown") if employee else "Unknown",
+                "rooms_completed": 0,
+                "rooms_pending": 0,
+                "laundry_count": 0,
+                "last_activity": room_status["last_updated"]
+            }
+        
+        if room_status["status"] in ["open_clean"]:
+            employee_performance[emp_id]["rooms_completed"] += 1
+        elif room_status["status"] in ["needs_cleaning", "occupied_out"]:
+            employee_performance[emp_id]["rooms_pending"] += 1
+    
+    # Process laundry data
+    for laundry_record in laundry_stats:
+        laundry_record = parse_from_mongo(laundry_record)
+        emp_id = laundry_record["employee_id"]
+        
+        if emp_id in employee_performance:
+            employee_performance[emp_id]["laundry_count"] = laundry_record["count"]
+    
+    return {
+        "date": target_date.isoformat(),
+        "employee_performance": list(employee_performance.values()),
+        "room_summary": {
+            "total_rooms": len(room_statuses),
+            "status_breakdown": {}
+        }
+    }
+
 # Excel Export Route
 @api_router.get("/export/timesheet")
 async def export_timesheet(

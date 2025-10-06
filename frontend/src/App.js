@@ -153,6 +153,7 @@ const getTabsForRole = (role) => {
     return [
       { id: 'overview', label: 'Team Overview', icon: '📈', category: 'management' },
       { id: 'timecards', label: 'Team Time Cards', icon: '🕒', category: 'time' },
+      { id: 'room-mgmt', label: 'Room Reports', icon: '🏨', category: 'operations' },
       { id: 'timeoff-approvals', label: 'Time Off Approvals', icon: '✅', category: 'approvals' },
       { id: 'scheduling', label: 'Scheduling', icon: '📅', category: 'planning' },
       { id: 'team-reports', label: 'Team Reports', icon: '📊', category: 'reports' },

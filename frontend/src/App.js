@@ -561,7 +561,329 @@ const TimeCardTab = () => {
   );
 };
 
-// Time Off Requests Tab
+// ============ ROOM MANAGEMENT SYSTEM ============
+
+// Room Management Tab - Employee workload management
+const RoomManagementTab = () => {
+  const [rooms, setRooms] = useState([]);
+  const [laundryCount, setLaundryCount] = useState(0);
+  const [showLaundryReminder, setShowLaundryReminder] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Room statuses with colors
+  const roomStatuses = {
+    'open_clean': { label: 'Open and Clean', color: 'bg-green-500', textColor: 'text-green-700', bgColor: 'bg-green-50' },
+    'occupied': { label: 'Occupied', color: 'bg-yellow-500', textColor: 'text-yellow-700', bgColor: 'bg-yellow-50' },
+    'occupied_out': { label: 'Occupied but Out', color: 'bg-orange-500', textColor: 'text-orange-700', bgColor: 'bg-orange-50' },
+    'needs_cleaning': { label: 'Needs to be Cleaned', color: 'bg-red-500', textColor: 'text-red-700', bgColor: 'bg-red-50' }
+  };
+
+  // Generate room list (1-41 excluding 8,9,13,16,25,26 plus A,B,C)
+  const generateRooms = () => {
+    const numberedRooms = [];
+    const excludedRooms = [8, 9, 13, 16, 25, 26];
+    
+    for (let i = 1; i <= 41; i++) {
+      if (!excludedRooms.includes(i)) {
+        numberedRooms.push({
+          id: `room-${i}`,
+          number: i.toString(),
+          status: 'open_clean',
+          lastUpdated: new Date().toISOString()
+        });
+      }
+    }
+    
+    const letterRooms = ['A', 'B', 'C'].map(letter => ({
+      id: `room-${letter}`,
+      number: letter,
+      status: 'open_clean',
+      lastUpdated: new Date().toISOString()
+    }));
+    
+    return [...numberedRooms, ...letterRooms].sort((a, b) => {
+      if (a.number.match(/^\d+$/) && b.number.match(/^\d+$/)) {
+        return parseInt(a.number) - parseInt(b.number);
+      }
+      if (a.number.match(/^\d+$/)) return -1;
+      if (b.number.match(/^\d+$/)) return 1;
+      return a.number.localeCompare(b.number);
+    });
+  };
+
+  useEffect(() => {
+    // Initialize rooms or fetch from backend
+    const savedRooms = localStorage.getItem('roomStatuses');
+    if (savedRooms) {
+      setRooms(JSON.parse(savedRooms));
+    } else {
+      const initialRooms = generateRooms();
+      setRooms(initialRooms);
+      localStorage.setItem('roomStatuses', JSON.stringify(initialRooms));
+    }
+
+    const savedLaundryCount = localStorage.getItem('laundryCount');
+    if (savedLaundryCount) {
+      setLaundryCount(parseInt(savedLaundryCount));
+    }
+
+    // Check for laundry reminders
+    checkLaundryReminder();
+  }, []);
+
+  const checkLaundryReminder = () => {
+    const needsCleaningCount = rooms.filter(room => room.status === 'needs_cleaning').length;
+    if (needsCleaningCount >= 5) {
+      setShowLaundryReminder(true);
+    }
+  };
+
+  const updateRoomStatus = async (roomId, newStatus) => {
+    setLoading(true);
+    
+    const updatedRooms = rooms.map(room => 
+      room.id === roomId 
+        ? { ...room, status: newStatus, lastUpdated: new Date().toISOString() }
+        : room
+    );
+    
+    setRooms(updatedRooms);
+    localStorage.setItem('roomStatuses', JSON.stringify(updatedRooms));
+    
+    // Show laundry reminder if many rooms need cleaning
+    const needsCleaningCount = updatedRooms.filter(room => room.status === 'needs_cleaning').length;
+    if (needsCleaningCount >= 5 && newStatus === 'needs_cleaning') {
+      setShowLaundryReminder(true);
+    }
+    
+    // In a real app, this would sync to backend
+    try {
+      await axios.post(`${API}/rooms/update-status`, {
+        roomId,
+        status: newStatus,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.log('Room status will sync when online');
+    }
+    
+    setLoading(false);
+    toast.success(`Room ${rooms.find(r => r.id === roomId)?.number} updated to ${roomStatuses[newStatus].label}`);
+  };
+
+  const handleLaundryDone = () => {
+    const newCount = laundryCount + 1;
+    setLaundryCount(newCount);
+    localStorage.setItem('laundryCount', newCount.toString());
+    setShowLaundryReminder(false);
+    
+    // Report to manager
+    toast.success(`Laundry completed! Count: ${newCount}`);
+    
+    // In real app, sync to backend
+    try {
+      axios.post(`${API}/laundry/record`, {
+        count: newCount,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.log('Laundry record will sync when online');
+    }
+  };
+
+  // Calculate progress
+  const totalRooms = rooms.length;
+  const roomsNeedingCleaning = rooms.filter(room => room.status === 'needs_cleaning').length;
+  const progress = totalRooms > 0 ? ((totalRooms - roomsNeedingCleaning) / totalRooms) * 100 : 100;
+
+  const getStatusStats = () => {
+    const stats = {};
+    Object.keys(roomStatuses).forEach(status => {
+      stats[status] = rooms.filter(room => room.status === status).length;
+    });
+    return stats;
+  };
+
+  const stats = getStatusStats();
+
+  return (
+    <div className="space-y-6" data-testid="rooms-tab">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">🏠 Room Management</h2>
+        <div className="flex items-center gap-4">
+          {/* Progress Indicator */}
+          <div className="text-right">
+            <div className="text-sm text-gray-600">Workload Progress</div>
+            <div className="text-lg font-bold text-blue-600">{Math.round(progress)}% Complete</div>
+          </div>
+          
+          {/* Laundry Button */}
+          <Button 
+            onClick={handleLaundryDone}
+            className="bg-blue-500 hover:bg-blue-600"
+            data-testid="laundry-button"
+          >
+            🧺 Laundry Done ({laundryCount})
+          </Button>
+        </div>
+      </div>
+
+      {/* Laundry Reminder Modal */}
+      {showLaundryReminder && (
+        <Card className="border-2 border-orange-300 bg-orange-50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🧺</span>
+                <div>
+                  <p className="font-bold text-orange-700">Laundry Reminder!</p>
+                  <p className="text-sm text-orange-600">Multiple rooms need cleaning. Consider doing laundry now.</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleLaundryDone} className="bg-orange-500">
+                  Mark Laundry Done
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setShowLaundryReminder(false)}>
+                  Later
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Progress Bar */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            📊 Workload Progress
+            <Badge variant={progress === 100 ? 'default' : 'secondary'}>
+              {roomsNeedingCleaning} rooms need cleaning
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
+            <div 
+              className={`h-4 rounded-full transition-all duration-500 ${
+                progress === 100 ? 'bg-green-500' : 
+                progress >= 75 ? 'bg-blue-500' : 
+                progress >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+              }`}
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+          
+          {/* Status Summary */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {Object.entries(roomStatuses).map(([status, config]) => (
+              <div key={status} className={`p-3 rounded-lg ${config.bgColor}`}>
+                <div className={`w-3 h-3 rounded-full ${config.color} mb-1`}></div>
+                <div className="font-bold text-lg">{stats[status] || 0}</div>
+                <div className={`text-xs ${config.textColor}`}>{config.label}</div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Room Grid */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Room Status Management ({totalRooms} rooms)</CardTitle>
+          <CardDescription>
+            Update room statuses as you complete your work. Green = Ready, Yellow = Occupied, Orange = Guest Out, Red = Needs Cleaning
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+            {rooms.map((room) => {
+              const statusConfig = roomStatuses[room.status];
+              return (
+                <div key={room.id} className="relative">
+                  <div className={`p-3 rounded-lg border-2 ${statusConfig.bgColor} hover:shadow-md transition-shadow`}>
+                    {/* Room Number */}
+                    <div className="text-center mb-2">
+                      <div className="text-lg font-bold">{room.number}</div>
+                      <div className={`w-full h-2 rounded ${statusConfig.color}`}></div>
+                    </div>
+                    
+                    {/* Status Dropdown */}
+                    <Select
+                      value={room.status}
+                      onValueChange={(value) => updateRoomStatus(room.id, value)}
+                      disabled={loading}
+                    >
+                      <SelectTrigger className="w-full h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(roomStatuses).map(([status, config]) => (
+                          <SelectItem key={status} value={status}>
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded ${config.color}`}></div>
+                              <span className="text-xs">{config.label}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
+                    {/* Last Updated */}
+                    <div className="text-xs text-gray-500 mt-1 text-center">
+                      {new Date(room.lastUpdated).toLocaleTimeString()}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">🚀 Quick Actions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => {
+                const needsCleaning = rooms.filter(r => r.status === 'needs_cleaning');
+                toast.info(`${needsCleaning.length} rooms need cleaning: ${needsCleaning.map(r => r.number).join(', ')}`);
+              }}
+            >
+              📋 Show Rooms Needing Cleaning
+            </Button>
+            
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => {
+                const available = rooms.filter(r => r.status === 'open_clean');
+                toast.info(`${available.length} rooms are ready: ${available.map(r => r.number).join(', ')}`);
+              }}
+            >
+              ✅ Show Available Rooms
+            </Button>
+            
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => handleLaundryDone()}
+            >
+              🧺 Mark Laundry Complete
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 const TimeOffRequestsTab = () => {
   const [requests, setRequests] = useState([]);
   const [showRequestForm, setShowRequestForm] = useState(false);

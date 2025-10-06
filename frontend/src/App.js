@@ -137,6 +137,7 @@ const getTabsForRole = (role) => {
   if (role === 'employee') {
     return [
       { id: 'timecard', label: 'Time Card', icon: '🕒', category: 'time' },
+      { id: 'rooms', label: 'Room Management', icon: '🏠', category: 'operations' },
       { id: 'timeoff', label: 'Time Off Requests', icon: '🏖️', category: 'time' },
       { id: 'schedule', label: 'My Schedule', icon: '📅', category: 'planning' },
       { id: 'reports', label: 'Reports', icon: '📊', category: 'reports' },

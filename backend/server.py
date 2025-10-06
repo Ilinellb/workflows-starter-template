@@ -86,6 +86,32 @@ class TimeEntry(BaseModel):
     status: str = "incomplete"  # complete, incomplete, missed_punch_in, missed_punch_out
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class RoomStatus(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    room_number: str
+    status: str  # 'open_clean', 'occupied', 'occupied_out', 'needs_cleaning'
+    employee_id: str
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    shift_date: date
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class LaundryRecord(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    employee_id: str
+    count: int
+    shift_date: date
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class RoomUpdateRequest(BaseModel):
+    room_id: str
+    status: str
+    timestamp: str
+
+class LaundryUpdateRequest(BaseModel):
+    count: int
+    timestamp: str
+
 class PunchRequest(BaseModel):
     action: str  # "punch_in" or "punch_out"
     location: Dict[str, float]  # {"lat": x, "lng": y}

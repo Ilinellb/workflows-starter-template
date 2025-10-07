@@ -659,20 +659,28 @@ const RoomManagementTab = () => {
     const timer = setInterval(() => {
       setRooms(prevRooms => {
         const updatedRooms = prevRooms.map(room => {
-          // Timer only runs for occupied and occupied_out rooms - stops only when needs_cleaning
+          let updatedRoom = { ...room };
+          
+          // Main timer for occupied and occupied_out rooms
           if ((room.status === 'occupied' || room.status === 'occupied_out') && 
               room.checkInTime && room.duration) {
             const checkIn = new Date(room.checkInTime);
-            const totalDuration = (room.duration + room.extendedHours) * 60 * 60 * 1000; // Convert to milliseconds
+            const totalDuration = (room.duration + room.extendedHours) * 60 * 60 * 1000;
             const elapsed = Date.now() - checkIn.getTime();
             const remaining = Math.max(0, totalDuration - elapsed);
-            
-            return {
-              ...room,
-              timeRemaining: remaining
-            };
+            updatedRoom.timeRemaining = remaining;
           }
-          return room;
+          
+          // Guest out timer (3 hours)
+          if (room.status === 'occupied_out' && room.guestOutStartTime) {
+            const guestOutStart = new Date(room.guestOutStartTime);
+            const guestOutDuration = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+            const elapsed = Date.now() - guestOutStart.getTime();
+            const remaining = Math.max(0, guestOutDuration - elapsed);
+            updatedRoom.guestOutTimeRemaining = remaining;
+          }
+          
+          return updatedRoom;
         });
         
         localStorage.setItem('roomStatuses', JSON.stringify(updatedRooms));

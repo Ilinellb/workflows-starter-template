@@ -261,7 +261,7 @@ self.addEventListener('push', (event) => {
     };
     
     event.waitUntil(
-      self.registration.showNotification(data.title || 'Time Tracker Pro', options)
+      self.registration.showNotification(data.title || 'RSBC Workflow Pro', options)
     );
   }
 });

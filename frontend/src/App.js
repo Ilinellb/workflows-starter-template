@@ -1174,17 +1174,297 @@ const TimeOffRequestsTab = () => {
   );
 };
 
-// My Schedule Tab
-const MyScheduleTab = () => (
-  <div className="space-y-6" data-testid="schedule-tab">
-    <h2 className="text-2xl font-bold">📅 My Schedule</h2>
-    <Card>
-      <CardContent className="p-6">
-        <p className="text-gray-600 text-center">Schedule management coming soon...</p>
-      </CardContent>
-    </Card>
-  </div>
-);
+// My Schedule Tab - Employee Calendar and Shift Management
+const MyScheduleTab = () => {
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [schedules, setSchedules] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showAddShiftModal, setShowAddShiftModal] = useState(false);
+  const [selectedShift, setSelectedShift] = useState(null);
+
+  // Sample shift data - in real app this would come from backend
+  useEffect(() => {
+    const sampleSchedules = [
+      {
+        id: 'shift-1',
+        date: new Date().toISOString().split('T')[0],
+        startTime: '09:00',
+        endTime: '17:00',
+        type: 'Regular',
+        status: 'Scheduled',
+        location: 'Main Office',
+        notes: 'Regular day shift'
+      },
+      {
+        id: 'shift-2',
+        date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        startTime: '14:00',
+        endTime: '22:00',
+        type: 'Evening',
+        status: 'Scheduled',
+        location: 'Main Office',
+        notes: 'Evening shift'
+      },
+      {
+        id: 'shift-3',
+        date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        startTime: '10:00',
+        endTime: '18:00',
+        type: 'Regular',
+        status: 'Pending',
+        location: 'Remote',
+        notes: 'Work from home day'
+      }
+    ];
+    setSchedules(sampleSchedules);
+  }, []);
+
+  const getSchedulesForDate = (date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return schedules.filter(schedule => schedule.date === dateStr);
+  };
+
+  const getSchedulesForWeek = () => {
+    const startOfWeek = new Date(selectedDate);
+    startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay());
+    
+    const weekSchedules = [];
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(startOfWeek);
+      day.setDate(startOfWeek.getDate() + i);
+      const daySchedules = getSchedulesForDate(day);
+      weekSchedules.push({
+        date: day,
+        schedules: daySchedules
+      });
+    }
+    return weekSchedules;
+  };
+
+  const formatTime = (timeStr) => {
+    return new Date(`2000-01-01T${timeStr}:00`).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getShiftTypeColor = (type) => {
+    switch (type) {
+      case 'Regular': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'Evening': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'Night': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'Overtime': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Scheduled': return 'bg-green-500';
+      case 'Pending': return 'bg-yellow-500';
+      case 'Cancelled': return 'bg-red-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  return (
+    <div className="space-y-6" data-testid="schedule-tab">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">📅 My Schedule</h2>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => setShowAddShiftModal(true)}
+            className="bg-blue-500 hover:bg-blue-600"
+          >
+            📝 Request Shift Change
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Calendar View */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              📅 Calendar View
+              <Badge variant="outline">{schedules.length} shifts this month</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={setSelectedDate}
+              className="rounded-md border w-full"
+              modifiers={{
+                hasSchedule: schedules.map(s => new Date(s.date))
+              }}
+              modifiersStyles={{
+                hasSchedule: {
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  fontWeight: 'bold'
+                }
+              }}
+            />
+            <div className="mt-4 text-xs text-gray-600">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                <span>Days with scheduled shifts</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Daily Schedule Details */}
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              📋 Schedule for {selectedDate.toLocaleDateString()}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {getSchedulesForDate(selectedDate).length > 0 ? (
+                getSchedulesForDate(selectedDate).map((schedule) => (
+                  <div key={schedule.id} className="p-3 border rounded-lg">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full ${getStatusColor(schedule.status)}`}></div>
+                        <span className="font-medium">{formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}</span>
+                      </div>
+                      <Badge variant="outline" className={getShiftTypeColor(schedule.type)}>
+                        {schedule.type}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-1">📍 {schedule.location}</p>
+                    <p className="text-sm text-gray-500">💬 {schedule.notes}</p>
+                    <p className="text-xs mt-2">Status: <span className="capitalize font-medium">{schedule.status}</span></p>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-6 text-gray-500">
+                  <div className="text-2xl mb-2">📭</div>
+                  <p>No shifts scheduled for this date</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Weekly Overview */}
+      <Card>
+        <CardHeader>
+          <CardTitle>📊 Weekly Overview</CardTitle>
+          <CardDescription>
+            Your schedule for the week of {new Date(selectedDate.getTime() - selectedDate.getDay() * 24 * 60 * 60 * 1000).toLocaleDateString()}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-7 gap-2 mb-4">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              <div key={day} className="text-center text-sm font-medium text-gray-600 py-2">
+                {day}
+              </div>
+            ))}
+            {getSchedulesForWeek().map(({ date, schedules: daySchedules }, index) => (
+              <div key={index} className="border rounded-lg p-2 min-h-[100px]">
+                <div className="text-xs text-gray-600 mb-1">{date.getDate()}</div>
+                {daySchedules.map((schedule, idx) => (
+                  <div key={idx} className={`text-xs p-1 rounded mb-1 ${getShiftTypeColor(schedule.type)}`}>
+                    <div className="font-medium">{formatTime(schedule.startTime)}</div>
+                    <div className="truncate">{schedule.type}</div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+
+          {/* Week Summary */}
+          <div className="grid grid-cols-3 gap-4 pt-4 border-t">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">
+                {getSchedulesForWeek().reduce((sum, day) => sum + day.schedules.length, 0)}
+              </div>
+              <div className="text-sm text-gray-600">Total Shifts</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">
+                {getSchedulesForWeek().reduce((sum, day) => {
+                  return sum + day.schedules.reduce((daySum, schedule) => {
+                    const start = new Date(`2000-01-01T${schedule.startTime}:00`);
+                    const end = new Date(`2000-01-01T${schedule.endTime}:00`);
+                    return daySum + (end - start) / (1000 * 60 * 60);
+                  }, 0);
+                }, 0)}
+              </div>
+              <div className="text-sm text-gray-600">Total Hours</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-600">
+                {getSchedulesForWeek().filter(day => 
+                  day.schedules.some(s => s.status === 'Pending')
+                ).length}
+              </div>
+              <div className="text-sm text-gray-600">Pending Changes</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Shift Change Request Modal */}
+      <Dialog open={showAddShiftModal} onOpenChange={setShowAddShiftModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>📝 Request Shift Change</DialogTitle>
+            <DialogDescription>
+              Submit a request to modify your schedule
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm font-medium">Request Type</label>
+              <select className="w-full mt-1 p-2 border rounded">
+                <option>Shift Swap</option>
+                <option>Time Off Request</option>
+                <option>Schedule Change</option>
+                <option>Overtime Request</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Date</label>
+              <input type="date" className="w-full mt-1 p-2 border rounded" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Reason</label>
+              <textarea 
+                className="w-full mt-1 p-2 border rounded h-20" 
+                placeholder="Explain your request..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowAddShiftModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                toast.success('Shift change request submitted!');
+                setShowAddShiftModal(false);
+              }}
+            >
+              Submit Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
 
 // My Reports Tab  
 const MyReportsTab = () => (

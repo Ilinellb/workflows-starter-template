@@ -341,20 +341,7 @@ async def punch_time(punch_data: PunchRequest, current_user: User = Depends(get_
         time_entry = prepare_for_mongo(time_entry)
         await db.time_entries.insert_one(time_entry)
     
-    # Validate geofencing if configured
-    if (current_user.workplace_lat and current_user.workplace_lng and 
-        current_user.geofence_radius):
-        
-        distance = calculate_distance(
-            current_user.workplace_lat, current_user.workplace_lng,
-            punch_data.location["lat"], punch_data.location["lng"]
-        )
-        
-        if distance > current_user.geofence_radius:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"You are {int(distance)}m away from workplace. Must be within {current_user.geofence_radius}m"
-            )
+    # Geofencing disabled - simple punch in/out without location validation
     
     now = datetime.now(timezone.utc)
     update_data = {}

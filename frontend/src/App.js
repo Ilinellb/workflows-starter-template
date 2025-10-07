@@ -971,14 +971,22 @@ const RoomManagementTab = () => {
                       <div className={`w-full h-2 rounded ${statusConfig.color}`}></div>
                     </div>
                     
-                    {/* Countdown Timer for Occupied Rooms */}
-                    {room.status === 'occupied' && room.timeRemaining !== null && (
+                    {/* Countdown Timer for Occupied and Occupied Out Rooms */}
+                    {(room.status === 'occupied' || room.status === 'occupied_out') && 
+                     room.timeRemaining !== null && (
                       <div className="text-center mb-3">
-                        <div className="text-lg font-bold text-yellow-700">
+                        <div className={`text-lg font-bold ${
+                          room.timeRemaining < 60 * 60 * 1000 ? 'text-red-600' : // Less than 1 hour - red
+                          room.timeRemaining < 2 * 60 * 60 * 1000 ? 'text-orange-600' : // Less than 2 hours - orange
+                          'text-yellow-700' // More than 2 hours - yellow
+                        }`}>
                           ⏰ {formatTimeRemaining(room.timeRemaining)}
                         </div>
                         <div className="text-xs text-gray-600">
                           {room.duration + room.extendedHours}h total
+                          {room.status === 'occupied_out' && (
+                            <span className="block text-orange-600 font-medium">Guest Out - Timer Running</span>
+                          )}
                         </div>
                       </div>
                     )}

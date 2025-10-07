@@ -517,6 +517,12 @@ async def update_room_status(
         last_updated=datetime.fromisoformat(room_data.timestamp.replace('Z', '+00:00'))
     )
     
+    # Add timing data for occupied rooms
+    if room_data.status == 'occupied' and room_data.duration:
+        room_status.check_in_time = datetime.fromisoformat(room_data.timestamp.replace('Z', '+00:00'))
+        room_status.duration_hours = room_data.duration
+        room_status.extended_hours = 0
+    
     room_dict = prepare_for_mongo(room_status.dict())
     
     # Update existing or insert new
@@ -530,7 +536,39 @@ async def update_room_status(
         upsert=True
     )
     
-    return {"message": f"Room {room_status.room_number} status updated to {room_data.status}"}
+    duration_msg = f" for {room_data.duration} hours" if room_data.duration else ""
+    return {"message": f"Room {room_status.room_number} status updated to {room_data.status}{duration_msg}"}
+
+@api_router.post("/rooms/extend")
+async def extend_room_time(
+    room_id: str,
+    extend_hours: int = 1,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.EMPLOYEE:
+        raise HTTPException(status_code=403, detail="Only employees can extend room time")
+    
+    today = date.today()
+    room_number = room_id.replace('room-', '')
+    
+    # Find and update the room
+    result = await db.room_statuses.update_one(
+        {
+            "room_number": room_number,
+            "shift_date": today.isoformat(),
+            "employee_id": current_user.id,
+            "status": "occupied"
+        },
+        {
+            "$inc": {"extended_hours": extend_hours},
+            "$set": {"last_updated": datetime.now(timezone.utc).isoformat()}
+        }
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Room not found or not occupied")
+    
+    return {"message": f"Room {room_number} extended by {extend_hours} hour(s)"}
 
 @api_router.get("/rooms/status")
 async def get_room_statuses(current_user: User = Depends(get_current_user)):

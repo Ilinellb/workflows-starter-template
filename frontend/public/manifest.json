@@ -1,6 +1,6 @@
 {
   "name": "RSBC Workflow Pro - Employee Success Platform",
-  "short_name": "TimeTracker",
+  "short_name": "RSBC Workflow",
   "description": "Complete employee time tracking and success platform with geofencing, time off management, and performance tracking",
   "start_url": "/",
   "display": "standalone",

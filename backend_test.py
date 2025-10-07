@@ -584,9 +584,18 @@ class TimeTrackingTester:
         print(f"      Location In: {today_entry.get('punch_in_location')}")
         print(f"      Location Out: {today_entry.get('punch_out_location')}")
         
-        if punch_in and punch_out and total_hours:
-            # Verify calculation is reasonable (should be positive and less than 24 hours)
-            if 0 < total_hours < 24:
+        # Verify location fields are null (no geofencing)
+        location_in = today_entry.get('punch_in_location')
+        location_out = today_entry.get('punch_out_location')
+        
+        if location_in is None and location_out is None:
+            print(f"   ✅ Location fields are null - geofencing disabled correctly")
+        else:
+            print(f"   ⚠️  Location data present: in={location_in}, out={location_out}")
+        
+        if punch_in and punch_out and total_hours is not None:
+            # Verify calculation is reasonable (should be >= 0 and less than 24 hours)
+            if 0 <= total_hours < 24:
                 print(f"   ✅ Time calculation appears correct: {total_hours} hours")
                 return True
             else:

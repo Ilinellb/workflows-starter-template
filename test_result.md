@@ -120,6 +120,18 @@
         - agent: "testing"
         - comment: "Comprehensive backend testing completed successfully. All room management endpoints working: POST /api/rooms/update-status (room status updates), POST /api/rooms/extend (room time extension), GET /api/rooms/status (room status retrieval), GET /api/rooms/report (room reports). Fixed ObjectId serialization issue in room status endpoint. All test scenarios passed: room status transitions (open_clean→occupied→occupied_out→occupied→needs_cleaning), room timing data handling, data persistence verification, proper permission controls for reports. Authentication working with employee (john@company.com) and manager (admin@company.com) accounts."
 
+  - task: "Time Tracking System Without Geofencing"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+        - agent: "testing"
+        - comment: "Time tracking system without geofencing tested comprehensively and working perfectly. All 7 test categories passed: Authentication (employee john@company.com), Punch In Without Location (POST /api/time/punch with action=punch_in, no location data), Punch Out Without Location (POST /api/time/punch with action=punch_out, no location data), Time Status API (GET /api/time/status showing correct working/complete states), Backward Compatibility (location field optional in PunchRequest model), Time Entries Retrieval (GET /api/time/entries working correctly), Time Calculations (total hours calculated correctly without location data). Fixed ObjectId serialization issue in time entries endpoint. Key verification: Location fields are null in database entries confirming geofencing is disabled. Fresh punch cycle test with new user confirmed complete workflow: not_started → punch_in → working → punch_out → complete. All time tracking functionality operational without geofencing validation."
+
 ## frontend:
   - task: "Room Management System"
     implemented: true

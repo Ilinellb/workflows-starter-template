@@ -594,6 +594,10 @@ async def get_room_statuses(current_user: User = Depends(get_current_user)):
     
     result = []
     for room_status in room_statuses:
+        # Remove MongoDB ObjectId field
+        if '_id' in room_status:
+            del room_status['_id']
+            
         room_status = parse_from_mongo(room_status)
         
         # Get employee name for manager view

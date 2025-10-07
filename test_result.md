@@ -133,29 +133,29 @@
         - agent: "main"
         - comment: "Room Management implemented with 38 rooms, status management, main timers. Need to verify guest out timer display and implement scheduling system"
   
-  - task: "Employee Scheduling Tab"
-    implemented: false
-    working: "NA"
+  - task: "Employee My Schedule Tab"
+    implemented: true
+    working: true
     file: "frontend/src/App.js"
     stuck_count: 0
     priority: "high" 
-    needs_retesting: false
+    needs_retesting: true
     status_history:
-        - working: "NA"
+        - working: true
         - agent: "main"
-        - comment: "My Schedule tab needs calendar view and shift scheduling implementation"
+        - comment: "My Schedule tab implemented with calendar view, weekly overview, shift details, and shift change request modal. Calendar shows scheduled shifts, displays shift types/times/locations."
 
   - task: "Manager Team Scheduling Tab"
-    implemented: false
-    working: "NA"
+    implemented: true
+    working: true
     file: "frontend/src/App.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
-        - working: "NA"
+        - working: true
         - agent: "main" 
-        - comment: "Team Scheduling tab needs team calendar and shift assignment functionality"
+        - comment: "Team Scheduling tab implemented with week/month views, team statistics, weekly schedule grid, assign shift modal, and calendar integration. Shows all employees with shift assignments."
 
 ## metadata:
   created_by: "main_agent"

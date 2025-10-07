@@ -93,6 +93,10 @@ class RoomStatus(BaseModel):
     employee_id: str
     last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     shift_date: date
+    # Timing fields for occupied rooms
+    check_in_time: Optional[datetime] = None
+    duration_hours: Optional[int] = None  # Original duration in hours
+    extended_hours: Optional[int] = 0  # Additional extended hours
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class LaundryRecord(BaseModel):

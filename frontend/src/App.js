@@ -699,10 +699,18 @@ const RoomManagementTab = () => {
   };
 
   const handleStatusChange = (roomId, newStatus) => {
+    const room = rooms.find(r => r.id === roomId);
+    
     if (newStatus === 'occupied') {
-      // Show duration selection modal
-      setSelectedRoom(roomId);
-      setShowDurationModal(true);
+      // Only show duration popup if coming from 'open_clean' (first time occupied)
+      // If coming from 'occupied_out' (guest returning), just update status
+      if (room.status === 'open_clean' && !room.hasBeenOccupied) {
+        setSelectedRoom(roomId);
+        setShowDurationModal(true);
+      } else {
+        // Guest returning from occupied_out - direct status update
+        updateRoomStatus(roomId, newStatus);
+      }
     } else {
       // Direct status update for non-occupied statuses
       updateRoomStatus(roomId, newStatus);

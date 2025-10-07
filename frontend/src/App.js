@@ -1012,8 +1012,8 @@ const RoomManagementTab = () => {
                       </SelectContent>
                     </Select>
                     
-                    {/* Extend Button for Occupied Rooms */}
-                    {room.status === 'occupied' && (
+                    {/* Extend Button for Occupied and Occupied Out Rooms */}
+                    {(room.status === 'occupied' || room.status === 'occupied_out') && (
                       <Button
                         size="sm"
                         variant="outline"

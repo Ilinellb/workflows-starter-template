@@ -461,6 +461,10 @@ async def get_time_entries(
     # Parse and enhance entries
     result = []
     for entry in entries:
+        # Remove MongoDB ObjectId field
+        if '_id' in entry:
+            del entry['_id']
+            
         entry = parse_from_mongo(entry)
         
         # Get employee name

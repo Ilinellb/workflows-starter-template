@@ -119,7 +119,7 @@ class LaundryUpdateRequest(BaseModel):
 
 class PunchRequest(BaseModel):
     action: str  # "punch_in" or "punch_out"
-    location: Dict[str, float]  # {"lat": x, "lng": y}
+    location: Optional[Dict[str, float]] = None  # {"lat": x, "lng": y} - optional for backward compatibility
 
 class Notification(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))

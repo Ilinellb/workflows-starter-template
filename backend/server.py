@@ -106,6 +106,7 @@ class LaundryRecord(BaseModel):
 class RoomUpdateRequest(BaseModel):
     room_id: str
     status: str
+    duration: Optional[int] = None  # Duration in hours for occupied rooms
     timestamp: str
 
 class LaundryUpdateRequest(BaseModel):

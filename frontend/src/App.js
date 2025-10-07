@@ -653,7 +653,9 @@ const RoomManagementTab = () => {
     const timer = setInterval(() => {
       setRooms(prevRooms => {
         const updatedRooms = prevRooms.map(room => {
-          if (room.status === 'occupied' && room.checkInTime && room.duration) {
+          // Timer only runs for occupied and occupied_out rooms - stops only when needs_cleaning
+          if ((room.status === 'occupied' || room.status === 'occupied_out') && 
+              room.checkInTime && room.duration) {
             const checkIn = new Date(room.checkInTime);
             const totalDuration = (room.duration + room.extendedHours) * 60 * 60 * 1000; // Convert to milliseconds
             const elapsed = Date.now() - checkIn.getTime();

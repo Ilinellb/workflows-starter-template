@@ -200,10 +200,14 @@ def parse_from_mongo(item):
         item['start_time'] = datetime.strptime(item['start_time'], '%H:%M:%S').time()
     
     # Handle datetime fields
-    datetime_fields = ['created_at', 'punch_in_time', 'punch_out_time']
+    datetime_fields = ['created_at', 'punch_in_time', 'punch_out_time', 'last_updated', 'check_in_time', 'timestamp']
     for field in datetime_fields:
         if field in item and isinstance(item[field], str):
             item[field] = datetime.fromisoformat(item[field])
+    
+    # Handle date fields specifically for room status
+    if 'shift_date' in item and isinstance(item['shift_date'], str):
+        item['shift_date'] = datetime.fromisoformat(item['shift_date']).date()
     
     return item
 

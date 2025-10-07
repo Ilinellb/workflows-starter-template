@@ -1908,12 +1908,416 @@ const TimeOffApprovalsTab = () => (
   </div>
 );
 
-const TeamSchedulingTab = () => (
-  <div className="space-y-6" data-testid="team-scheduling-tab">
-    <h2 className="text-2xl font-bold">📅 Team Scheduling</h2>
-    <Card><CardContent className="p-6"><p className="text-gray-600 text-center">Team scheduling coming soon...</p></CardContent></Card>
-  </div>
-);
+// Team Scheduling Tab - Manager Team Calendar and Shift Management
+const TeamSchedulingTab = () => {
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [teamSchedules, setTeamSchedules] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState('');
+  const [viewMode, setViewMode] = useState('week'); // 'week' or 'month'
+
+  // Sample team data - in real app this would come from backend
+  useEffect(() => {
+    const sampleEmployees = [
+      { id: 'emp-1', name: 'John Employee', email: 'john@company.com', department: 'Operations' },
+      { id: 'emp-2', name: 'Jane Smith', email: 'jane@company.com', department: 'Operations' },
+      { id: 'emp-3', name: 'Mike Johnson', email: 'mike@company.com', department: 'Maintenance' }
+    ];
+    setEmployees(sampleEmployees);
+
+    const sampleTeamSchedules = [
+      {
+        id: 'team-shift-1',
+        employeeId: 'emp-1',
+        employeeName: 'John Employee',
+        date: new Date().toISOString().split('T')[0],
+        startTime: '09:00',
+        endTime: '17:00',
+        type: 'Regular',
+        status: 'Confirmed',
+        location: 'Main Office'
+      },
+      {
+        id: 'team-shift-2',
+        employeeId: 'emp-2',
+        employeeName: 'Jane Smith',
+        date: new Date().toISOString().split('T')[0],
+        startTime: '14:00',
+        endTime: '22:00',
+        type: 'Evening',
+        status: 'Confirmed',
+        location: 'Main Office'
+      },
+      {
+        id: 'team-shift-3',
+        employeeId: 'emp-3',
+        employeeName: 'Mike Johnson',
+        date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        startTime: '06:00',
+        endTime: '14:00',
+        type: 'Early',
+        status: 'Pending',
+        location: 'Facility'
+      }
+    ];
+    setTeamSchedules(sampleTeamSchedules);
+  }, []);
+
+  const getSchedulesForDate = (date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return teamSchedules.filter(schedule => schedule.date === dateStr);
+  };
+
+  const getWeeklySchedules = () => {
+    const startOfWeek = new Date(selectedDate);
+    startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay());
+    
+    const weekSchedules = [];
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(startOfWeek);
+      day.setDate(startOfWeek.getDate() + i);
+      const daySchedules = getSchedulesForDate(day);
+      weekSchedules.push({
+        date: day,
+        schedules: daySchedules
+      });
+    }
+    return weekSchedules;
+  };
+
+  const formatTime = (timeStr) => {
+    return new Date(`2000-01-01T${timeStr}:00`).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getShiftTypeColor = (type) => {
+    switch (type) {
+      case 'Regular': return 'bg-blue-100 text-blue-800';
+      case 'Evening': return 'bg-orange-100 text-orange-800';
+      case 'Night': return 'bg-purple-100 text-purple-800';
+      case 'Early': return 'bg-green-100 text-green-800';
+      case 'Overtime': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Confirmed': return 'bg-green-500';
+      case 'Pending': return 'bg-yellow-500';
+      case 'Cancelled': return 'bg-red-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const handleAssignShift = () => {
+    if (!selectedEmployee) {
+      toast.error('Please select an employee');
+      return;
+    }
+    
+    // In real app, this would call the backend API
+    toast.success('Shift assigned successfully!');
+    setShowAssignModal(false);
+    setSelectedEmployee('');
+  };
+
+  const getTeamStats = () => {
+    const totalShifts = teamSchedules.length;
+    const confirmedShifts = teamSchedules.filter(s => s.status === 'Confirmed').length;
+    const pendingShifts = teamSchedules.filter(s => s.status === 'Pending').length;
+    const totalHours = teamSchedules.reduce((sum, schedule) => {
+      const start = new Date(`2000-01-01T${schedule.startTime}:00`);
+      const end = new Date(`2000-01-01T${schedule.endTime}:00`);
+      return sum + (end - start) / (1000 * 60 * 60);
+    }, 0);
+
+    return { totalShifts, confirmedShifts, pendingShifts, totalHours };
+  };
+
+  const stats = getTeamStats();
+
+  return (
+    <div className="space-y-6" data-testid="team-scheduling-tab">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">📅 Team Scheduling</h2>
+        <div className="flex gap-2">
+          <Button 
+            variant={viewMode === 'week' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('week')}
+          >
+            📅 Week View
+          </Button>
+          <Button 
+            variant={viewMode === 'month' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('month')}
+          >
+            📊 Month View
+          </Button>
+          <Button 
+            onClick={() => setShowAssignModal(true)}
+            className="bg-blue-500 hover:bg-blue-600"
+          >
+            ➕ Assign Shift
+          </Button>
+        </div>
+      </div>
+
+      {/* Team Statistics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{stats.totalShifts}</div>
+              <div className="text-sm text-gray-600">Total Shifts</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{stats.confirmedShifts}</div>
+              <div className="text-sm text-gray-600">Confirmed</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-yellow-600">{stats.pendingShifts}</div>
+              <div className="text-sm text-gray-600">Pending</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">{Math.round(stats.totalHours)}</div>
+              <div className="text-sm text-gray-600">Total Hours</div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {viewMode === 'week' ? (
+        /* Weekly Team Schedule View */
+        <Card>
+          <CardHeader>
+            <CardTitle>🗓️ Weekly Team Schedule</CardTitle>
+            <CardDescription>
+              Week of {new Date(selectedDate.getTime() - selectedDate.getDay() * 24 * 60 * 60 * 1000).toLocaleDateString()}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Week Navigation */}
+            <div className="flex justify-between items-center mb-4">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  const newDate = new Date(selectedDate);
+                  newDate.setDate(selectedDate.getDate() - 7);
+                  setSelectedDate(newDate);
+                }}
+              >
+                ← Previous Week
+              </Button>
+              <span className="font-medium">
+                {new Date(selectedDate.getTime() - selectedDate.getDay() * 24 * 60 * 60 * 1000).toLocaleDateString()} - 
+                {new Date(selectedDate.getTime() + (6 - selectedDate.getDay()) * 24 * 60 * 60 * 1000).toLocaleDateString()}
+              </span>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  const newDate = new Date(selectedDate);
+                  newDate.setDate(selectedDate.getDate() + 7);
+                  setSelectedDate(newDate);
+                }}
+              >
+                Next Week →
+              </Button>
+            </div>
+
+            {/* Weekly Grid */}
+            <div className="grid grid-cols-8 gap-2">
+              {/* Header */}
+              <div className="font-medium text-center py-2">Employee</div>
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="font-medium text-center py-2">{day}</div>
+              ))}
+
+              {/* Employee Rows */}
+              {employees.map(employee => (
+                <React.Fragment key={employee.id}>
+                  <div className="p-2 text-sm font-medium border-r">
+                    <div className="truncate">{employee.name}</div>
+                    <div className="text-xs text-gray-500">{employee.department}</div>
+                  </div>
+                  {getWeeklySchedules().map(({ date, schedules }, dayIndex) => {
+                    const employeeSchedules = schedules.filter(s => s.employeeId === employee.id);
+                    return (
+                      <div key={dayIndex} className="border rounded p-1 min-h-[80px] bg-gray-50">
+                        {employeeSchedules.map((schedule, idx) => (
+                          <div key={idx} className={`text-xs p-1 rounded mb-1 ${getShiftTypeColor(schedule.type)}`}>
+                            <div className="flex items-center gap-1">
+                              <div className={`w-2 h-2 rounded-full ${getStatusColor(schedule.status)}`}></div>
+                              <span className="font-medium">{formatTime(schedule.startTime)}</span>
+                            </div>
+                            <div className="truncate">{schedule.type}</div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        /* Monthly Calendar View */
+        <div className="grid md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>📅 Team Calendar</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                className="rounded-md border w-full"
+                modifiers={{
+                  hasSchedule: teamSchedules.map(s => new Date(s.date))
+                }}
+                modifiersStyles={{
+                  hasSchedule: {
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    fontWeight: 'bold'
+                  }
+                }}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>📋 Daily Team Schedule - {selectedDate.toLocaleDateString()}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {getSchedulesForDate(selectedDate).length > 0 ? (
+                  getSchedulesForDate(selectedDate).map((schedule) => (
+                    <div key={schedule.id} className="p-3 border rounded-lg">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <div className="font-medium">{schedule.employeeName}</div>
+                          <div className="text-sm text-gray-600">
+                            {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3 h-3 rounded-full ${getStatusColor(schedule.status)}`}></div>
+                          <Badge variant="outline" className={getShiftTypeColor(schedule.type)}>
+                            {schedule.type}
+                          </Badge>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600">📍 {schedule.location}</p>
+                      <p className="text-xs mt-2">Status: <span className="capitalize font-medium">{schedule.status}</span></p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-6 text-gray-500">
+                    <div className="text-2xl mb-2">📭</div>
+                    <p>No team shifts scheduled for this date</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Shift Assignment Modal */}
+      <Dialog open={showAssignModal} onOpenChange={setShowAssignModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>➕ Assign New Shift</DialogTitle>
+            <DialogDescription>
+              Create a new shift assignment for team members
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm font-medium">Employee</label>
+              <select 
+                className="w-full mt-1 p-2 border rounded"
+                value={selectedEmployee}
+                onChange={(e) => setSelectedEmployee(e.target.value)}
+              >
+                <option value="">Select Employee...</option>
+                {employees.map(emp => (
+                  <option key={emp.id} value={emp.id}>{emp.name} - {emp.department}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Date</label>
+              <input type="date" className="w-full mt-1 p-2 border rounded" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-sm font-medium">Start Time</label>
+                <input type="time" className="w-full mt-1 p-2 border rounded" />
+              </div>
+              <div>
+                <label className="text-sm font-medium">End Time</label>
+                <input type="time" className="w-full mt-1 p-2 border rounded" />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Shift Type</label>
+              <select className="w-full mt-1 p-2 border rounded">
+                <option>Regular</option>
+                <option>Evening</option>
+                <option>Night</option>
+                <option>Early</option>
+                <option>Overtime</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Location</label>
+              <input type="text" placeholder="Main Office, Remote, etc." className="w-full mt-1 p-2 border rounded" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowAssignModal(false);
+                setSelectedEmployee('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleAssignShift}>
+              Assign Shift
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
 
 const TeamReportsTab = () => (
   <div className="space-y-6" data-testid="team-reports-tab">

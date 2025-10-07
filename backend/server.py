@@ -352,7 +352,7 @@ async def punch_time(punch_data: PunchRequest, current_user: User = Depends(get_
         
         update_data = {
             "punch_in_time": now.isoformat(),
-            "punch_in_location": punch_data.location,
+            "punch_in_location": punch_data.location if punch_data.location else None,
             "status": "incomplete"
         }
     

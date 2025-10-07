@@ -989,6 +989,7 @@ const RoomManagementTab = () => {
                     {(room.status === 'occupied' || room.status === 'occupied_out') && 
                      room.timeRemaining !== null && (
                       <div className="text-center mb-3">
+                        {/* Main Room Timer */}
                         <div className={`text-lg font-bold ${
                           room.timeRemaining < 60 * 60 * 1000 ? 'text-red-600' : // Less than 1 hour - red
                           room.timeRemaining < 2 * 60 * 60 * 1000 ? 'text-orange-600' : // Less than 2 hours - orange
@@ -998,10 +999,20 @@ const RoomManagementTab = () => {
                         </div>
                         <div className="text-xs text-gray-600">
                           {room.duration + room.extendedHours}h total
-                          {room.status === 'occupied_out' && (
-                            <span className="block text-orange-600 font-medium">Guest Out - Timer Running</span>
-                          )}
                         </div>
+                        
+                        {/* Separate Guest Out Timer - Only show when guest is out */}
+                        {room.status === 'occupied_out' && room.guestOutTimeRemaining !== null && (
+                          <div className="mt-2 p-2 bg-orange-100 rounded border border-orange-300">
+                            <div className="text-sm font-medium text-orange-700">🚶‍♂️ Guest Out Timer</div>
+                            <div className={`text-md font-bold ${
+                              room.guestOutTimeRemaining < 30 * 60 * 1000 ? 'text-red-600' : 'text-orange-600'
+                            }`}>
+                              {formatTimeRemaining(room.guestOutTimeRemaining)}
+                            </div>
+                            <div className="text-xs text-orange-600">3h guest out limit</div>
+                          </div>
+                        )}
                       </div>
                     )}
                     

@@ -1,4 +1,4 @@
-// Service Worker for Time Tracker Pro PWA
+// Service Worker for RSBC Workflow Pro PWA
 const CACHE_NAME = 'time-tracker-pro-v1.0.0';
 const API_CACHE = 'time-tracker-api-v1.0.0';
 

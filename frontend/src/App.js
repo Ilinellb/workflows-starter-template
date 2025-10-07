@@ -2573,7 +2573,7 @@ const AppContent = () => {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <h1 className="text-xl font-semibold text-gray-900 mr-8" data-testid="app-title">
-                Time Tracker Pro
+                RSBC Workflow Pro
               </h1>
               
               {/* Desktop Tabs */}

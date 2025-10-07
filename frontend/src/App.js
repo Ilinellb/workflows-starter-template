@@ -324,12 +324,6 @@ const TimeCardTab = () => {
   };
 
   const handlePunch = async (action) => {
-    if (!location) {
-      toast.error('Location required for punch in/out');
-      getCurrentLocation();
-      return;
-    }
-
     setLoading(true);
 
     // Optimistic update for offline
@@ -338,7 +332,6 @@ const TimeCardTab = () => {
       const offlinePunch = {
         id: Date.now(),
         action,
-        location,
         timestamp: new Date().toISOString(),
         synced: false
       };
@@ -371,8 +364,7 @@ const TimeCardTab = () => {
 
     try {
       const response = await axios.post(`${API}/time/punch`, {
-        action,
-        location
+        action
       });
       toast.success(response.data.message);
       fetchTimeStatus();

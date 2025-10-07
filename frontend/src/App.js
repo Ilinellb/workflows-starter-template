@@ -725,14 +725,24 @@ const RoomManagementTab = () => {
           updatedRoom.duration = duration;
           updatedRoom.timeRemaining = duration * 60 * 60 * 1000; // Convert to milliseconds
           updatedRoom.extendedHours = 0;
+          updatedRoom.hasBeenOccupied = true;
+        } else if (newStatus === 'occupied_out') {
+          // Start guest out timer (3 hours) - keep main timer running
+          updatedRoom.guestOutStartTime = new Date().toISOString();
+          updatedRoom.guestOutTimeRemaining = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+        } else if (newStatus === 'occupied' && room.status === 'occupied_out') {
+          // Guest returned - clear guest out timer but keep main timer
+          updatedRoom.guestOutStartTime = null;
+          updatedRoom.guestOutTimeRemaining = null;
         } else if (newStatus === 'needs_cleaning') {
-          // Clear timing data only when room needs cleaning (checkout complete)
+          // Clear all timing data when room needs cleaning (checkout complete)
           updatedRoom.checkInTime = null;
           updatedRoom.duration = null;
           updatedRoom.timeRemaining = null;
           updatedRoom.extendedHours = 0;
+          updatedRoom.guestOutStartTime = null;
+          updatedRoom.guestOutTimeRemaining = null;
         }
-        // Keep timing data for occupied_out status - timer continues running
         
         return updatedRoom;
       }

@@ -285,4 +285,4 @@ self.addEventListener('notificationclose', (event) => {
   // Track notification dismissal analytics if needed
 });
 
-console.log('🚀 Time Tracker Pro Service Worker loaded');
+console.log('🚀 RSBC Workflow Pro Service Worker loaded');

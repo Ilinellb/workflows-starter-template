@@ -711,13 +711,14 @@ const RoomManagementTab = () => {
           updatedRoom.duration = duration;
           updatedRoom.timeRemaining = duration * 60 * 60 * 1000; // Convert to milliseconds
           updatedRoom.extendedHours = 0;
-        } else if (newStatus !== 'occupied') {
-          // Clear timing data for non-occupied rooms
+        } else if (newStatus === 'needs_cleaning') {
+          // Clear timing data only when room needs cleaning (checkout complete)
           updatedRoom.checkInTime = null;
           updatedRoom.duration = null;
           updatedRoom.timeRemaining = null;
           updatedRoom.extendedHours = 0;
         }
+        // Keep timing data for occupied_out status - timer continues running
         
         return updatedRoom;
       }

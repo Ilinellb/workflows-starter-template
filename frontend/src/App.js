@@ -561,22 +561,31 @@ const TimeCardTab = () => {
   );
 };
 
-// ============ ROOM MANAGEMENT SYSTEM ============
+// ============ ROOM MANAGEMENT SYSTEM WITH TIMING ============
 
-// Room Management Tab - Employee workload management
+// Room Management Tab - Employee workload management with customer timing
 const RoomManagementTab = () => {
   const [rooms, setRooms] = useState([]);
   const [laundryCount, setLaundryCount] = useState(0);
   const [showLaundryReminder, setShowLaundryReminder] = useState(false);
+  const [showDurationModal, setShowDurationModal] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState(null);
   const [loading, setLoading] = useState(false);
 
   // Room statuses with colors
   const roomStatuses = {
-    'open_clean': { label: 'Open and Clean', color: 'bg-green-500', textColor: 'text-green-700', bgColor: 'bg-green-50' },
+    'open_clean': { label: 'Open & Clean', color: 'bg-green-500', textColor: 'text-green-700', bgColor: 'bg-green-50' },
     'occupied': { label: 'Occupied', color: 'bg-yellow-500', textColor: 'text-yellow-700', bgColor: 'bg-yellow-50' },
-    'occupied_out': { label: 'Occupied but Out', color: 'bg-orange-500', textColor: 'text-orange-700', bgColor: 'bg-orange-50' },
-    'needs_cleaning': { label: 'Needs to be Cleaned', color: 'bg-red-500', textColor: 'text-red-700', bgColor: 'bg-red-50' }
+    'occupied_out': { label: 'Guest Out', color: 'bg-orange-500', textColor: 'text-orange-700', bgColor: 'bg-orange-50' },
+    'needs_cleaning': { label: 'Needs Cleaning', color: 'bg-red-500', textColor: 'text-red-700', bgColor: 'bg-red-50' }
   };
+
+  // Duration options for occupied rooms
+  const durationOptions = [
+    { value: 8, label: '8 Hours' },
+    { value: 12, label: '12 Hours' },
+    { value: 16, label: '16 Hours' }
+  ];
 
   // Generate room list (1-41 excluding 8,9,13,16,25,26 plus A,B,C)
   const generateRooms = () => {
@@ -589,7 +598,11 @@ const RoomManagementTab = () => {
           id: `room-${i}`,
           number: i.toString(),
           status: 'open_clean',
-          lastUpdated: new Date().toISOString()
+          lastUpdated: new Date().toISOString(),
+          checkInTime: null,
+          duration: null,
+          timeRemaining: null,
+          extendedHours: 0
         });
       }
     }
@@ -598,7 +611,11 @@ const RoomManagementTab = () => {
       id: `room-${letter}`,
       number: letter,
       status: 'open_clean',
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
+      checkInTime: null,
+      duration: null,
+      timeRemaining: null,
+      extendedHours: 0
     }));
     
     return [...numberedRooms, ...letterRooms].sort((a, b) => {
@@ -631,6 +648,33 @@ const RoomManagementTab = () => {
     checkLaundryReminder();
   }, []);
 
+  // Timer effect for countdown
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setRooms(prevRooms => {
+        const updatedRooms = prevRooms.map(room => {
+          if (room.status === 'occupied' && room.checkInTime && room.duration) {
+            const checkIn = new Date(room.checkInTime);
+            const totalDuration = (room.duration + room.extendedHours) * 60 * 60 * 1000; // Convert to milliseconds
+            const elapsed = Date.now() - checkIn.getTime();
+            const remaining = Math.max(0, totalDuration - elapsed);
+            
+            return {
+              ...room,
+              timeRemaining: remaining
+            };
+          }
+          return room;
+        });
+        
+        localStorage.setItem('roomStatuses', JSON.stringify(updatedRooms));
+        return updatedRooms;
+      });
+    }, 1000); // Update every second
+
+    return () => clearInterval(timer);
+  }, []);
+
   const checkLaundryReminder = () => {
     const needsCleaningCount = rooms.filter(room => room.status === 'needs_cleaning').length;
     if (needsCleaningCount >= 5) {
@@ -638,14 +682,45 @@ const RoomManagementTab = () => {
     }
   };
 
-  const updateRoomStatus = async (roomId, newStatus) => {
+  const handleStatusChange = (roomId, newStatus) => {
+    if (newStatus === 'occupied') {
+      // Show duration selection modal
+      setSelectedRoom(roomId);
+      setShowDurationModal(true);
+    } else {
+      // Direct status update for non-occupied statuses
+      updateRoomStatus(roomId, newStatus);
+    }
+  };
+
+  const updateRoomStatus = async (roomId, newStatus, duration = null) => {
     setLoading(true);
     
-    const updatedRooms = rooms.map(room => 
-      room.id === roomId 
-        ? { ...room, status: newStatus, lastUpdated: new Date().toISOString() }
-        : room
-    );
+    const updatedRooms = rooms.map(room => {
+      if (room.id === roomId) {
+        const updatedRoom = {
+          ...room,
+          status: newStatus,
+          lastUpdated: new Date().toISOString()
+        };
+        
+        if (newStatus === 'occupied' && duration) {
+          updatedRoom.checkInTime = new Date().toISOString();
+          updatedRoom.duration = duration;
+          updatedRoom.timeRemaining = duration * 60 * 60 * 1000; // Convert to milliseconds
+          updatedRoom.extendedHours = 0;
+        } else if (newStatus !== 'occupied') {
+          // Clear timing data for non-occupied rooms
+          updatedRoom.checkInTime = null;
+          updatedRoom.duration = null;
+          updatedRoom.timeRemaining = null;
+          updatedRoom.extendedHours = 0;
+        }
+        
+        return updatedRoom;
+      }
+      return room;
+    });
     
     setRooms(updatedRooms);
     localStorage.setItem('roomStatuses', JSON.stringify(updatedRooms));
@@ -661,6 +736,7 @@ const RoomManagementTab = () => {
       await axios.post(`${API}/rooms/update-status`, {
         roomId,
         status: newStatus,
+        duration: duration,
         timestamp: new Date().toISOString()
       });
     } catch (error) {
@@ -668,7 +744,35 @@ const RoomManagementTab = () => {
     }
     
     setLoading(false);
-    toast.success(`Room ${rooms.find(r => r.id === roomId)?.number} updated to ${roomStatuses[newStatus].label}`);
+    const room = rooms.find(r => r.id === roomId);
+    toast.success(`Room ${room?.number} updated to ${roomStatuses[newStatus].label}${duration ? ` for ${duration} hours` : ''}`);
+  };
+
+  const handleDurationSelect = (duration) => {
+    if (selectedRoom) {
+      updateRoomStatus(selectedRoom, 'occupied', duration);
+      setShowDurationModal(false);
+      setSelectedRoom(null);
+    }
+  };
+
+  const extendRoom = (roomId, hours = 1) => {
+    const updatedRooms = rooms.map(room => {
+      if (room.id === roomId && room.status === 'occupied') {
+        return {
+          ...room,
+          extendedHours: room.extendedHours + hours,
+          lastUpdated: new Date().toISOString()
+        };
+      }
+      return room;
+    });
+    
+    setRooms(updatedRooms);
+    localStorage.setItem('roomStatuses', JSON.stringify(updatedRooms));
+    
+    const room = rooms.find(r => r.id === roomId);
+    toast.success(`Room ${room?.number} extended by ${hours} hour(s)`);
   };
 
   const handleLaundryDone = () => {
@@ -677,10 +781,8 @@ const RoomManagementTab = () => {
     localStorage.setItem('laundryCount', newCount.toString());
     setShowLaundryReminder(false);
     
-    // Report to manager
     toast.success(`Laundry completed! Count: ${newCount}`);
     
-    // In real app, sync to backend
     try {
       axios.post(`${API}/laundry/record`, {
         count: newCount,
@@ -688,6 +790,23 @@ const RoomManagementTab = () => {
       });
     } catch (error) {
       console.log('Laundry record will sync when online');
+    }
+  };
+
+  const formatTimeRemaining = (milliseconds) => {
+    if (!milliseconds) return '';
+    
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${seconds}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    } else {
+      return `${seconds}s`;
     }
   };
 
@@ -727,6 +846,41 @@ const RoomManagementTab = () => {
           </Button>
         </div>
       </div>
+
+      {/* Duration Selection Modal */}
+      <Dialog open={showDurationModal} onOpenChange={setShowDurationModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>🕒 How long is the customer staying?</DialogTitle>
+            <DialogDescription>
+              Select the duration for Room {selectedRoom ? rooms.find(r => r.id === selectedRoom)?.number : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 gap-3 py-4">
+            {durationOptions.map((option) => (
+              <Button
+                key={option.value}
+                onClick={() => handleDurationSelect(option.value)}
+                className="h-12 text-lg"
+                data-testid={`duration-${option.value}`}
+              >
+                🕐 {option.label}
+              </Button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowDurationModal(false);
+                setSelectedRoom(null);
+              }}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Laundry Reminder Modal */}
       {showLaundryReminder && (
@@ -793,26 +947,43 @@ const RoomManagementTab = () => {
         <CardHeader>
           <CardTitle>Room Status Management ({totalRooms} rooms)</CardTitle>
           <CardDescription>
-            Update room statuses as you complete your work. Green = Ready, Yellow = Occupied, Orange = Guest Out, Red = Needs Cleaning
+            Update room statuses as you complete your work. Occupied rooms show countdown timers and can be extended.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {rooms.map((room) => {
               const statusConfig = roomStatuses[room.status];
               return (
                 <div key={room.id} className="relative">
-                  <div className={`p-3 rounded-lg border-2 ${statusConfig.bgColor} hover:shadow-md transition-shadow`}>
-                    {/* Room Number */}
-                    <div className="text-center mb-2">
-                      <div className="text-lg font-bold">{room.number}</div>
+                  <div className={`p-4 rounded-lg border-2 ${statusConfig.bgColor} hover:shadow-md transition-shadow`}>
+                    {/* Room Number and Status */}
+                    <div className="text-center mb-3">
+                      <div className="text-xl font-bold mb-1">
+                        Room {room.number}
+                      </div>
+                      <div className={`text-sm font-medium ${statusConfig.textColor} mb-2`}>
+                        {statusConfig.label}
+                      </div>
                       <div className={`w-full h-2 rounded ${statusConfig.color}`}></div>
                     </div>
+                    
+                    {/* Countdown Timer for Occupied Rooms */}
+                    {room.status === 'occupied' && room.timeRemaining !== null && (
+                      <div className="text-center mb-3">
+                        <div className="text-lg font-bold text-yellow-700">
+                          ⏰ {formatTimeRemaining(room.timeRemaining)}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          {room.duration + room.extendedHours}h total
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Status Dropdown */}
                     <Select
                       value={room.status}
-                      onValueChange={(value) => updateRoomStatus(room.id, value)}
+                      onValueChange={(value) => handleStatusChange(room.id, value)}
                       disabled={loading}
                     >
                       <SelectTrigger className="w-full h-8 text-xs">
@@ -830,8 +1001,21 @@ const RoomManagementTab = () => {
                       </SelectContent>
                     </Select>
                     
+                    {/* Extend Button for Occupied Rooms */}
+                    {room.status === 'occupied' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => extendRoom(room.id, 1)}
+                        className="w-full mt-2 text-xs"
+                        data-testid={`extend-${room.id}`}
+                      >
+                        ➕ Extend 1hr
+                      </Button>
+                    )}
+                    
                     {/* Last Updated */}
-                    <div className="text-xs text-gray-500 mt-1 text-center">
+                    <div className="text-xs text-gray-500 mt-2 text-center">
                       {new Date(room.lastUpdated).toLocaleTimeString()}
                     </div>
                   </div>
@@ -864,11 +1048,16 @@ const RoomManagementTab = () => {
               size="sm" 
               variant="outline"
               onClick={() => {
-                const available = rooms.filter(r => r.status === 'open_clean');
-                toast.info(`${available.length} rooms are ready: ${available.map(r => r.number).join(', ')}`);
+                const occupied = rooms.filter(r => r.status === 'occupied');
+                const expiringSoon = occupied.filter(r => r.timeRemaining && r.timeRemaining < 60 * 60 * 1000); // Less than 1 hour
+                if (expiringSoon.length > 0) {
+                  toast.warning(`${expiringSoon.length} rooms expiring soon: ${expiringSoon.map(r => r.number).join(', ')}`);
+                } else {
+                  toast.info(`${occupied.length} rooms currently occupied`);
+                }
               }}
             >
-              ✅ Show Available Rooms
+              ⏰ Check Expiring Rooms
             </Button>
             
             <Button 

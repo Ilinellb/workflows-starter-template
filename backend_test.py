@@ -804,6 +804,74 @@ class TimeTrackingTester:
             print("\n⚠️  SOME CORE FUNCTIONALITY ISSUES FOUND")
             return False
 
+def test_fresh_punch_cycle():
+    """Test a fresh punch in/out cycle with a new test user"""
+    print("=" * 60)
+    print("🆕 FRESH PUNCH CYCLE TEST")
+    print("=" * 60)
+    
+    tester = TimeTrackingTester()
+    
+    # Try to create a test user for today's fresh test
+    if not tester.authenticate("admin@company.com", "admin123"):
+        print("❌ Cannot authenticate as admin to create test user")
+        return False
+    
+    # Create a test user with today's date in email to avoid conflicts
+    today_str = date.today().strftime("%Y%m%d")
+    test_email = f"testuser{today_str}@company.com"
+    
+    employee_data = {
+        "email": test_email,
+        "name": f"Test User {today_str}",
+        "password": "testpass123",
+        "role": "employee",
+        "start_time": "09:00"
+    }
+    
+    try:
+        response = tester.session.post(f"{API_BASE}/users", json=employee_data)
+        if response.status_code == 200:
+            print(f"✅ Created fresh test user: {test_email}")
+        elif "already registered" in response.text:
+            print(f"ℹ️  Test user already exists: {test_email}")
+        else:
+            print(f"⚠️  Could not create test user: {response.text}")
+    except Exception as e:
+        print(f"⚠️  Error creating test user: {str(e)}")
+    
+    # Now test with the fresh user
+    if not tester.authenticate(test_email, "testpass123"):
+        print("❌ Cannot authenticate as test user")
+        return False
+    
+    print(f"\n🔄 Testing fresh punch cycle with {test_email}")
+    
+    # Test fresh punch in
+    print(f"\n⏰ Testing fresh punch in without location")
+    punch_in_success = tester.test_punch_in_without_location()
+    
+    if punch_in_success:
+        # Check status
+        status_success, status_data = tester.test_time_status()
+        if status_success and status_data.get('status') == 'working':
+            print(f"✅ Status correctly shows 'working' after punch in")
+            
+            # Test punch out
+            print(f"\n⏰ Testing punch out without location")
+            punch_out_success = tester.test_punch_out_without_location()
+            
+            if punch_out_success:
+                # Final status check
+                final_status_success, final_status = tester.test_time_status()
+                if final_status_success and final_status.get('status') == 'complete':
+                    print(f"✅ Status correctly shows 'complete' after punch out")
+                    print(f"✅ FRESH PUNCH CYCLE TEST: SUCCESS")
+                    return True
+    
+    print(f"❌ FRESH PUNCH CYCLE TEST: FAILED")
+    return False
+
 def main_time_tracking():
     """Main time tracking test execution"""
     tester = TimeTrackingTester()
@@ -811,11 +879,18 @@ def main_time_tracking():
     print(f"🌐 Backend URL: {API_BASE}")
     print(f"🕐 Test started at: {datetime.now()}")
     
+    # Run comprehensive tests
     success = tester.run_comprehensive_time_tracking_tests()
+    
+    # Also run fresh punch cycle test if possible
+    print(f"\n" + "=" * 60)
+    fresh_test_success = test_fresh_punch_cycle()
     
     print(f"\n🕐 Test completed at: {datetime.now()}")
     
-    if success:
+    overall_success = success and fresh_test_success
+    
+    if overall_success:
         print("✅ Time Tracking Backend Testing: SUCCESS")
         return True
     else:

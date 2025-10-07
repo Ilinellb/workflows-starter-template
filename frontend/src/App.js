@@ -44,7 +44,7 @@ const usePWAInstall = () => {
       setIsInstalled(true);
       setIsInstallable(false);
       setInstallPrompt(null);
-      toast.success('🎉 Time Tracker Pro installed successfully!');
+      toast.success('🎉 RSBC Workflow Pro installed successfully!');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);

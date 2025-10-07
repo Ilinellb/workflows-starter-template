@@ -761,7 +761,7 @@ const RoomManagementTab = () => {
 
   const extendRoom = (roomId, hours = 1) => {
     const updatedRooms = rooms.map(room => {
-      if (room.id === roomId && room.status === 'occupied') {
+      if (room.id === roomId && (room.status === 'occupied' || room.status === 'occupied_out')) {
         return {
           ...room,
           extendedHours: room.extendedHours + hours,

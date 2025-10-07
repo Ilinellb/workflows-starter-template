@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Backend Testing Suite for Room Management System
-Tests all room management endpoints and functionality
+Backend Testing Suite for Room Management and Time Tracking System
+Tests all room management and time tracking endpoints and functionality
 """
 
 import requests

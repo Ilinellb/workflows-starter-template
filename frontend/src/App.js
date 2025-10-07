@@ -248,7 +248,6 @@ const LoginPage = () => {
 // Time Card Tab - Primary employee interface with offline support
 const TimeCardTab = () => {
   const [timeStatus, setTimeStatus] = useState(null);
-  const [location, setLocation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [recentEntries, setRecentEntries] = useState([]);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -256,7 +255,6 @@ const TimeCardTab = () => {
   useEffect(() => {
     fetchTimeStatus();
     fetchRecentEntries();
-    getCurrentLocation();
 
     // Listen for online/offline status
     const handleOnline = () => {
@@ -279,23 +277,6 @@ const TimeCardTab = () => {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
-
-  const getCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        },
-        (error) => {
-          console.error('Location error:', error);
-          toast.error('Please enable location access for geofencing');
-        }
-      );
-    }
-  };
 
   const fetchTimeStatus = async () => {
     try {

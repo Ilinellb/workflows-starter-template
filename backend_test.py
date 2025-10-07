@@ -358,5 +358,371 @@ def main():
         print("❌ Room Management Backend Testing: FAILED")
         exit(1)
 
+class TimeTrackingTester:
+    def __init__(self):
+        self.session = requests.Session()
+        self.auth_token = None
+        self.user_data = None
+        
+    def authenticate(self, email="john@company.com", password="password123"):
+        """Authenticate user and get access token"""
+        print(f"\n🔐 Authenticating user: {email}")
+        
+        login_data = {
+            "email": email,
+            "password": password
+        }
+        
+        try:
+            response = self.session.post(f"{API_BASE}/auth/login", json=login_data)
+            print(f"Login response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.auth_token = data.get('access_token')
+                self.user_data = data.get('user')
+                
+                # Set authorization header for future requests
+                self.session.headers.update({
+                    'Authorization': f'Bearer {self.auth_token}',
+                    'Content-Type': 'application/json'
+                })
+                
+                print(f"✅ Authentication successful")
+                print(f"   User: {self.user_data.get('name')} ({self.user_data.get('role')})")
+                return True
+            else:
+                print(f"❌ Authentication failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Authentication error: {str(e)}")
+            return False
+    
+    def test_punch_in_without_location(self):
+        """Test punch in functionality without location data"""
+        print(f"\n⏰ Testing punch in without location")
+        
+        punch_data = {
+            "action": "punch_in"
+            # No location data provided
+        }
+        
+        try:
+            response = self.session.post(f"{API_BASE}/time/punch", json=punch_data)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"   ✅ Success: {result.get('message')}")
+                print(f"   Action: {result.get('action')}")
+                return True
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_punch_out_without_location(self):
+        """Test punch out functionality without location data"""
+        print(f"\n⏰ Testing punch out without location")
+        
+        punch_data = {
+            "action": "punch_out"
+            # No location data provided
+        }
+        
+        try:
+            response = self.session.post(f"{API_BASE}/time/punch", json=punch_data)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"   ✅ Success: {result.get('message')}")
+                print(f"   Action: {result.get('action')}")
+                return True
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_time_status(self):
+        """Test time status retrieval"""
+        print(f"\n📊 Testing time status retrieval")
+        
+        try:
+            response = self.session.get(f"{API_BASE}/time/status")
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                status = response.json()
+                print(f"   ✅ Success: Time status retrieved")
+                print(f"   📋 Status data:")
+                for key, value in status.items():
+                    print(f"      {key}: {value}")
+                return True, status
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False, {}
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False, {}
+    
+    def test_punch_with_location_backward_compatibility(self):
+        """Test that API still works with location data (backward compatibility)"""
+        print(f"\n🔄 Testing backward compatibility with location data")
+        
+        # First punch out if currently punched in
+        status_success, status_data = self.test_time_status()
+        if status_success and status_data.get('can_punch_out'):
+            self.test_punch_out_without_location()
+        
+        punch_data = {
+            "action": "punch_in",
+            "location": {
+                "lat": 40.7128,
+                "lng": -74.0060
+            }
+        }
+        
+        try:
+            response = self.session.post(f"{API_BASE}/time/punch", json=punch_data)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"   ✅ Success: {result.get('message')}")
+                print(f"   Action: {result.get('action')}")
+                return True
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_time_entries_retrieval(self):
+        """Test time entries retrieval"""
+        print(f"\n📋 Testing time entries retrieval")
+        
+        try:
+            response = self.session.get(f"{API_BASE}/time/entries")
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                entries = response.json()
+                print(f"   ✅ Success: Retrieved {len(entries)} time entries")
+                
+                # Display sample entry structure if available
+                if entries:
+                    print("   📋 Sample time entry structure:")
+                    sample_entry = entries[0]
+                    for key, value in sample_entry.items():
+                        print(f"      {key}: {value}")
+                
+                return True, entries
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False, []
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False, []
+    
+    def verify_time_calculations(self, entries):
+        """Verify that time calculations are working correctly"""
+        print(f"\n🧮 Verifying time calculations")
+        
+        if not entries:
+            print("   ⚠️  No entries to verify")
+            return False
+        
+        # Find today's entry
+        today_str = date.today().isoformat()
+        today_entry = None
+        
+        for entry in entries:
+            if entry.get('date') == today_str:
+                today_entry = entry
+                break
+        
+        if not today_entry:
+            print("   ⚠️  No entry found for today")
+            return False
+        
+        punch_in = today_entry.get('punch_in_time')
+        punch_out = today_entry.get('punch_out_time')
+        total_hours = today_entry.get('total_hours')
+        
+        print(f"   📊 Entry details:")
+        print(f"      Punch In: {punch_in}")
+        print(f"      Punch Out: {punch_out}")
+        print(f"      Total Hours: {total_hours}")
+        print(f"      Location In: {today_entry.get('punch_in_location')}")
+        print(f"      Location Out: {today_entry.get('punch_out_location')}")
+        
+        if punch_in and punch_out and total_hours:
+            # Verify calculation is reasonable (should be positive and less than 24 hours)
+            if 0 < total_hours < 24:
+                print(f"   ✅ Time calculation appears correct: {total_hours} hours")
+                return True
+            else:
+                print(f"   ❌ Time calculation seems incorrect: {total_hours} hours")
+                return False
+        elif punch_in and not punch_out:
+            print(f"   ✅ Partial entry (punch in only) - calculation pending")
+            return True
+        else:
+            print(f"   ❌ Missing punch data")
+            return False
+    
+    def run_comprehensive_time_tracking_tests(self):
+        """Run all time tracking tests in sequence"""
+        print("=" * 60)
+        print("⏰ TIME TRACKING SYSTEM - BACKEND TESTING")
+        print("=" * 60)
+        
+        # Test authentication
+        if not self.authenticate():
+            print("❌ Cannot proceed without authentication")
+            return False
+        
+        test_results = {
+            "authentication": True,
+            "punch_in_no_location": False,
+            "punch_out_no_location": False,
+            "time_status": False,
+            "backward_compatibility": False,
+            "time_entries": False,
+            "time_calculations": False
+        }
+        
+        # Get initial status
+        print("\n" + "=" * 40)
+        print("📊 INITIAL TIME STATUS CHECK")
+        print("=" * 40)
+        
+        initial_status_success, initial_status = self.test_time_status()
+        test_results["time_status"] = initial_status_success
+        
+        # If already punched in, punch out first to start fresh
+        if initial_status_success and initial_status.get('can_punch_out'):
+            print("\n🔄 Already punched in, punching out first for clean test...")
+            self.test_punch_out_without_location()
+        
+        # Test 1: Fresh punch in without location
+        print("\n" + "=" * 40)
+        print("⏰ TESTING PUNCH IN WITHOUT LOCATION")
+        print("=" * 40)
+        
+        test_results["punch_in_no_location"] = self.test_punch_in_without_location()
+        
+        # Test 2: Check status after punch in
+        print("\n" + "=" * 40)
+        print("📊 CHECKING STATUS AFTER PUNCH IN")
+        print("=" * 40)
+        
+        status_success, status_data = self.test_time_status()
+        if status_success:
+            expected_status = status_data.get('status') == 'working'
+            can_punch_out = status_data.get('can_punch_out', False)
+            print(f"   Working status: {'✅' if expected_status else '❌'} {status_data.get('status')}")
+            print(f"   Can punch out: {'✅' if can_punch_out else '❌'} {can_punch_out}")
+        
+        # Test 3: Punch out without location
+        print("\n" + "=" * 40)
+        print("⏰ TESTING PUNCH OUT WITHOUT LOCATION")
+        print("=" * 40)
+        
+        test_results["punch_out_no_location"] = self.test_punch_out_without_location()
+        
+        # Test 4: Check final status
+        print("\n" + "=" * 40)
+        print("📊 CHECKING FINAL STATUS AFTER PUNCH OUT")
+        print("=" * 40)
+        
+        final_status_success, final_status = self.test_time_status()
+        if final_status_success:
+            expected_status = final_status.get('status') == 'complete'
+            total_hours = final_status.get('total_hours')
+            print(f"   Final status: {'✅' if expected_status else '❌'} {final_status.get('status')}")
+            print(f"   Total hours: {total_hours}")
+        
+        # Test 5: Verify time entries and calculations
+        print("\n" + "=" * 40)
+        print("📋 TESTING TIME ENTRIES RETRIEVAL")
+        print("=" * 40)
+        
+        entries_success, entries = self.test_time_entries_retrieval()
+        test_results["time_entries"] = entries_success
+        
+        if entries_success:
+            test_results["time_calculations"] = self.verify_time_calculations(entries)
+        
+        # Test 6: Backward compatibility with location data
+        print("\n" + "=" * 40)
+        print("🔄 TESTING BACKWARD COMPATIBILITY")
+        print("=" * 40)
+        
+        test_results["backward_compatibility"] = self.test_punch_with_location_backward_compatibility()
+        
+        # Summary
+        print("\n" + "=" * 60)
+        print("📋 TIME TRACKING TEST RESULTS SUMMARY")
+        print("=" * 60)
+        
+        total_tests = 0
+        passed_tests = 0
+        
+        for test_name, result in test_results.items():
+            status = 'PASS' if result else 'FAIL'
+            display_name = test_name.replace('_', ' ').title()
+            print(f"{'✅' if result else '❌'} {display_name}: {status}")
+            total_tests += 1
+            if result:
+                passed_tests += 1
+        
+        print(f"\n🎯 OVERALL RESULT: {passed_tests}/{total_tests} tests passed")
+        
+        if passed_tests == total_tests:
+            print("🎉 ALL TESTS PASSED - Time Tracking System is working correctly!")
+            return True
+        else:
+            print("⚠️  SOME TESTS FAILED - Issues found in Time Tracking System")
+            return False
+
+def main_time_tracking():
+    """Main time tracking test execution"""
+    tester = TimeTrackingTester()
+    
+    print(f"🌐 Backend URL: {API_BASE}")
+    print(f"🕐 Test started at: {datetime.now()}")
+    
+    success = tester.run_comprehensive_time_tracking_tests()
+    
+    print(f"\n🕐 Test completed at: {datetime.now()}")
+    
+    if success:
+        print("✅ Time Tracking Backend Testing: SUCCESS")
+        return True
+    else:
+        print("❌ Time Tracking Backend Testing: FAILED")
+        return False
+
 if __name__ == "__main__":
-    main()
+    import sys
+    
+    if len(sys.argv) > 1 and sys.argv[1] == "time":
+        # Run time tracking tests
+        success = main_time_tracking()
+        exit(0 if success else 1)
+    else:
+        # Run room management tests (default)
+        main()

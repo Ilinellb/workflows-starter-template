@@ -602,7 +602,10 @@ const RoomManagementTab = () => {
           checkInTime: null,
           duration: null,
           timeRemaining: null,
-          extendedHours: 0
+          extendedHours: 0,
+          hasBeenOccupied: false, // Track if room has been occupied before
+          guestOutStartTime: null, // When guest went out
+          guestOutTimeRemaining: null // 3-hour countdown for guest out
         });
       }
     }
@@ -615,7 +618,10 @@ const RoomManagementTab = () => {
       checkInTime: null,
       duration: null,
       timeRemaining: null,
-      extendedHours: 0
+      extendedHours: 0,
+      hasBeenOccupied: false,
+      guestOutStartTime: null,
+      guestOutTimeRemaining: null
     }));
     
     return [...numberedRooms, ...letterRooms].sort((a, b) => {

@@ -473,64 +473,36 @@ const TimeCardTab = () => {
         </CardContent>
       </Card>
 
-      {/* Location & Recent Entries */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Location Status */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">📍 Location Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {location ? (
-              <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="font-medium text-green-700">Location Enabled - Ready for geofencing</span>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg border border-red-200">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span className="font-medium text-red-700">Location required for punch in/out</span>
-                </div>
-                <Button size="sm" onClick={getCurrentLocation} className="w-full">
-                  📍 Enable Location Access
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Recent Time Entries */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">📅 Recent Time Entries</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {recentEntries.length > 0 ? (
-              <div className="space-y-2">
-                {recentEntries.map((entry, index) => (
-                  <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded border">
-                    <div>
-                      <p className="font-medium text-sm">{entry.date}</p>
-                      <p className="text-xs text-gray-600">
-                        {entry.punch_in_time && new Date(entry.punch_in_time).toLocaleTimeString()} - 
-                        {entry.punch_out_time ? new Date(entry.punch_out_time).toLocaleTimeString() : ' Working'}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <Badge variant={entry.status === 'complete' ? 'default' : 'secondary'} className="text-xs">
-                        {entry.total_hours ? `${entry.total_hours}h` : entry.status}
-                      </Badge>
-                    </div>
+      {/* Recent Time Entries */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">📅 Recent Time Entries</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {recentEntries.length > 0 ? (
+            <div className="space-y-2">
+              {recentEntries.map((entry, index) => (
+                <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded border">
+                  <div>
+                    <p className="font-medium text-sm">{entry.date}</p>
+                    <p className="text-xs text-gray-600">
+                      {entry.punch_in_time && new Date(entry.punch_in_time).toLocaleTimeString()} - 
+                      {entry.punch_out_time ? new Date(entry.punch_out_time).toLocaleTimeString() : ' Working'}
+                    </p>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-4">No recent entries</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                  <div className="text-right">
+                    <Badge variant={entry.status === 'complete' ? 'default' : 'secondary'} className="text-xs">
+                      {entry.total_hours ? `${entry.total_hours}h` : entry.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-4">No recent entries</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

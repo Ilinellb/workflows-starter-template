@@ -855,29 +855,51 @@ const RoomManagementTab = () => {
       </Dialog>
 
       {/* Laundry Reminder Modal */}
-      {showLaundryReminder && (
-        <Card className="border-2 border-orange-300 bg-orange-50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
+      <Dialog open={showLaundryReminder} onOpenChange={setShowLaundryReminder}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-2xl">🧺</span>
+              Laundry Reminder
+            </DialogTitle>
+            <DialogDescription>
+              Don't forget to do your laundry! Multiple rooms need cleaning and fresh linens may be needed.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">🧺</span>
+                <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                  <span className="text-xl">🧺</span>
+                </div>
                 <div>
-                  <p className="font-bold text-orange-700">Laundry Reminder!</p>
-                  <p className="text-sm text-orange-600">Multiple rooms need cleaning. Consider doing laundry now.</p>
+                  <p className="font-medium text-orange-800">Time for laundry!</p>
+                  <p className="text-sm text-orange-700 mt-1">
+                    Several rooms need cleaning. Consider checking your laundry schedule and preparing fresh linens.
+                  </p>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Button size="sm" onClick={handleLaundryDone} className="bg-orange-500">
-                  Mark Laundry Done
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setShowLaundryReminder(false)}>
-                  Later
-                </Button>
-              </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowLaundryReminder(false)}
+            >
+              I'll Remember
+            </Button>
+            <Button 
+              onClick={() => {
+                setShowLaundryReminder(false);
+                toast.success('Laundry reminder acknowledged!');
+              }}
+              className="bg-orange-500 hover:bg-orange-600"
+            >
+              Got It!
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Progress Bar */}
       <Card>

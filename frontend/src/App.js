@@ -633,8 +633,8 @@ const RoomManagementTab = () => {
 
   const checkLaundryReminder = () => {
     const needsCleaningCount = rooms.filter(room => room.status === 'needs_cleaning').length;
-    // Show reminder when 3 or more rooms need cleaning
-    if (needsCleaningCount >= 3) {
+    // Show reminder when 1 or more rooms need cleaning (for testing)
+    if (needsCleaningCount >= 1) {
       setShowLaundryReminder(true);
     }
   };

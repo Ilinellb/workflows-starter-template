@@ -816,15 +816,6 @@ const RoomManagementTab = () => {
             <div className="text-sm text-gray-600">Workload Progress</div>
             <div className="text-lg font-bold text-blue-600">{Math.round(progress)}% Complete</div>
           </div>
-          
-          {/* Laundry Button */}
-          <Button 
-            onClick={handleLaundryDone}
-            className="bg-blue-500 hover:bg-blue-600"
-            data-testid="laundry-button"
-          >
-            🧺 Laundry Done ({laundryCount})
-          </Button>
         </div>
       </div>
 

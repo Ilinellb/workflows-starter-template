@@ -512,7 +512,6 @@ const TimeCardTab = () => {
 // Room Management Tab - Employee workload management with customer timing
 const RoomManagementTab = () => {
   const [rooms, setRooms] = useState([]);
-  const [laundryCount, setLaundryCount] = useState(0);
   const [showLaundryReminder, setShowLaundryReminder] = useState(false);
   const [showDurationModal, setShowDurationModal] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);

@@ -701,9 +701,9 @@ const RoomManagementTab = () => {
     setRooms(updatedRooms);
     localStorage.setItem('roomStatuses', JSON.stringify(updatedRooms));
     
-    // Show laundry reminder if rooms need cleaning
+    // Show laundry reminder if several rooms need cleaning
     const needsCleaningCount = updatedRooms.filter(room => room.status === 'needs_cleaning').length;
-    if (needsCleaningCount >= 1 && newStatus === 'needs_cleaning') {
+    if (needsCleaningCount >= 3 && newStatus === 'needs_cleaning') {
       // Add a small delay to show reminder after status update
       setTimeout(() => {
         setShowLaundryReminder(true);

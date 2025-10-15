@@ -756,24 +756,6 @@ const RoomManagementTab = () => {
     toast.success(`Room ${room?.number} extended by ${hours} hour(s)`);
   };
 
-  const handleLaundryDone = () => {
-    const newCount = laundryCount + 1;
-    setLaundryCount(newCount);
-    localStorage.setItem('laundryCount', newCount.toString());
-    setShowLaundryReminder(false);
-    
-    toast.success(`Laundry completed! Count: ${newCount}`);
-    
-    try {
-      axios.post(`${API}/laundry/record`, {
-        count: newCount,
-        timestamp: new Date().toISOString()
-      });
-    } catch (error) {
-      console.log('Laundry record will sync when online');
-    }
-  };
-
   const formatTimeRemaining = (milliseconds) => {
     if (!milliseconds) return '';
     

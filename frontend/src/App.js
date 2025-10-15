@@ -590,11 +590,6 @@ const RoomManagementTab = () => {
       localStorage.setItem('roomStatuses', JSON.stringify(initialRooms));
     }
 
-    const savedLaundryCount = localStorage.getItem('laundryCount');
-    if (savedLaundryCount) {
-      setLaundryCount(parseInt(savedLaundryCount));
-    }
-
     // Check for laundry reminders
     checkLaundryReminder();
   }, []);

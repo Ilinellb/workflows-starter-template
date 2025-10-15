@@ -1050,14 +1050,6 @@ const RoomManagementTab = () => {
             >
               ⏰ Check Expiring Rooms
             </Button>
-            
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={() => handleLaundryDone()}
-            >
-              🧺 Mark Laundry Complete
-            </Button>
           </div>
         </CardContent>
       </Card>

@@ -74,6 +74,12 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+class UserRegister(BaseModel):
+    email: EmailStr
+    name: str
+    password: str
+    confirm_password: str
+
 class TimeEntry(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     employee_id: str

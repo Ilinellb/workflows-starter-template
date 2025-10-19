@@ -897,13 +897,446 @@ def main_time_tracking():
         print("❌ Time Tracking Backend Testing: FAILED")
         return False
 
+class UserRegistrationTester:
+    def __init__(self):
+        self.session = requests.Session()
+        self.session.headers.update({'Content-Type': 'application/json'})
+        
+    def test_valid_registration(self, email, name, password, confirm_password):
+        """Test user registration with valid data"""
+        print(f"\n✅ Testing valid registration: {email}")
+        
+        registration_data = {
+            "email": email,
+            "name": name,
+            "password": password,
+            "confirm_password": confirm_password
+        }
+        
+        try:
+            response = self.session.post(f"{API_BASE}/auth/register", json=registration_data)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"   ✅ Success: {result.get('message')}")
+                print(f"   📋 Registration details:")
+                print(f"      Access Token: {'Present' if result.get('access_token') else 'Missing'}")
+                print(f"      Token Type: {result.get('token_type')}")
+                print(f"      User Role: {result.get('user', {}).get('role')}")
+                print(f"      User ID: {result.get('user', {}).get('id')}")
+                return True, result
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False, {}
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False, {}
+    
+    def test_invalid_registration(self, email, name, password, confirm_password, expected_error):
+        """Test user registration with invalid data"""
+        print(f"\n❌ Testing invalid registration: {expected_error}")
+        
+        registration_data = {
+            "email": email,
+            "name": name,
+            "password": password,
+            "confirm_password": confirm_password
+        }
+        
+        try:
+            response = self.session.post(f"{API_BASE}/auth/register", json=registration_data)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 400:
+                error_msg = response.text
+                print(f"   ✅ Expected error received: {error_msg}")
+                return True, error_msg
+            elif response.status_code == 200:
+                print(f"   ❌ Unexpected success - validation should have failed")
+                return False, "Validation failed to catch invalid data"
+            else:
+                print(f"   ❌ Unexpected response: {response.text}")
+                return False, response.text
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False, str(e)
+    
+    def test_duplicate_email_registration(self, email):
+        """Test registration with already existing email"""
+        print(f"\n🔄 Testing duplicate email registration: {email}")
+        
+        registration_data = {
+            "email": email,
+            "name": "Duplicate User",
+            "password": "password123",
+            "confirm_password": "password123"
+        }
+        
+        try:
+            response = self.session.post(f"{API_BASE}/auth/register", json=registration_data)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 400 and "already registered" in response.text:
+                print(f"   ✅ Duplicate email correctly rejected: {response.text}")
+                return True
+            elif response.status_code == 200:
+                print(f"   ❌ Duplicate email was allowed - should be rejected")
+                return False
+            else:
+                print(f"   ❌ Unexpected response: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_login_after_registration(self, email, password):
+        """Test that user can login after registration"""
+        print(f"\n🔐 Testing login after registration: {email}")
+        
+        login_data = {
+            "email": email,
+            "password": password
+        }
+        
+        try:
+            response = self.session.post(f"{API_BASE}/auth/login", json=login_data)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"   ✅ Login successful after registration")
+                print(f"   📋 Login details:")
+                print(f"      User: {result.get('user', {}).get('name')}")
+                print(f"      Role: {result.get('user', {}).get('role')}")
+                print(f"      Email: {result.get('user', {}).get('email')}")
+                return True, result
+            else:
+                print(f"   ❌ Login failed: {response.text}")
+                return False, {}
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False, {}
+    
+    def test_user_in_database(self, email):
+        """Test that registered user appears in user management system"""
+        print(f"\n👥 Testing user appears in user management: {email}")
+        
+        # First authenticate as admin to access user list
+        admin_login_data = {
+            "email": "admin@company.com",
+            "password": "admin123"
+        }
+        
+        try:
+            # Login as admin
+            admin_response = self.session.post(f"{API_BASE}/auth/login", json=admin_login_data)
+            if admin_response.status_code != 200:
+                print(f"   ❌ Cannot authenticate as admin: {admin_response.text}")
+                return False
+            
+            admin_data = admin_response.json()
+            admin_token = admin_data.get('access_token')
+            
+            # Set admin authorization
+            self.session.headers.update({
+                'Authorization': f'Bearer {admin_token}'
+            })
+            
+            # Get users list
+            users_response = self.session.get(f"{API_BASE}/users")
+            print(f"   Response status: {users_response.status_code}")
+            
+            if users_response.status_code == 200:
+                users = users_response.json()
+                print(f"   📊 Retrieved {len(users)} users from system")
+                
+                # Find the registered user
+                registered_user = next((user for user in users if user.get('email') == email), None)
+                
+                if registered_user:
+                    print(f"   ✅ User found in system:")
+                    print(f"      Name: {registered_user.get('name')}")
+                    print(f"      Email: {registered_user.get('email')}")
+                    print(f"      Role: {registered_user.get('role')}")
+                    print(f"      Active: {registered_user.get('is_active')}")
+                    return True, registered_user
+                else:
+                    print(f"   ❌ User not found in system")
+                    return False, {}
+            else:
+                print(f"   ❌ Failed to retrieve users: {users_response.text}")
+                return False, {}
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False, {}
+    
+    def run_comprehensive_registration_tests(self):
+        """Run all user registration tests in sequence"""
+        print("=" * 60)
+        print("👤 USER REGISTRATION SYSTEM - BACKEND TESTING")
+        print("=" * 60)
+        
+        test_results = {
+            "valid_registration": False,
+            "password_validation": False,
+            "password_confirmation": False,
+            "email_validation": False,
+            "duplicate_prevention": False,
+            "domain_restrictions": False,
+            "role_assignment": False,
+            "immediate_login": False,
+            "user_in_system": False,
+            "login_after_registration": False
+        }
+        
+        # Generate unique test email for this test run
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        test_email = f"testuser{timestamp}@company.com"
+        
+        # Test 1: Valid Registration
+        print("\n" + "=" * 40)
+        print("✅ TESTING VALID REGISTRATION")
+        print("=" * 40)
+        
+        success, registration_result = self.test_valid_registration(
+            email=test_email,
+            name="Test User Registration",
+            password="password123",
+            confirm_password="password123"
+        )
+        test_results["valid_registration"] = success
+        
+        # Check role assignment
+        if success:
+            user_role = registration_result.get('user', {}).get('role')
+            if user_role == 'employee':
+                print(f"   ✅ Role correctly assigned: {user_role}")
+                test_results["role_assignment"] = True
+            else:
+                print(f"   ❌ Incorrect role assigned: {user_role} (expected: employee)")
+        
+        # Check immediate access token
+        if success:
+            access_token = registration_result.get('access_token')
+            if access_token:
+                print(f"   ✅ Access token provided for immediate login")
+                test_results["immediate_login"] = True
+            else:
+                print(f"   ❌ No access token provided")
+        
+        # Test 2: Password Validation (minimum 6 characters)
+        print("\n" + "=" * 40)
+        print("🔒 TESTING PASSWORD VALIDATION")
+        print("=" * 40)
+        
+        weak_email = f"weakpass{timestamp}@company.com"
+        success, _ = self.test_invalid_registration(
+            email=weak_email,
+            name="Weak Password User",
+            password="123",  # Less than 6 characters
+            confirm_password="123",
+            expected_error="Password too short"
+        )
+        test_results["password_validation"] = success
+        
+        # Test 3: Password Confirmation Matching
+        print("\n" + "=" * 40)
+        print("🔄 TESTING PASSWORD CONFIRMATION")
+        print("=" * 40)
+        
+        mismatch_email = f"mismatch{timestamp}@company.com"
+        success, _ = self.test_invalid_registration(
+            email=mismatch_email,
+            name="Mismatch Password User",
+            password="password123",
+            confirm_password="different123",
+            expected_error="Passwords do not match"
+        )
+        test_results["password_confirmation"] = success
+        
+        # Test 4: Email Validation
+        print("\n" + "=" * 40)
+        print("📧 TESTING EMAIL VALIDATION")
+        print("=" * 40)
+        
+        success, _ = self.test_invalid_registration(
+            email="invalid-email-format",
+            name="Invalid Email User",
+            password="password123",
+            confirm_password="password123",
+            expected_error="Invalid email format"
+        )
+        test_results["email_validation"] = success
+        
+        # Test 5: Domain Restrictions
+        print("\n" + "=" * 40)
+        print("🌐 TESTING EMAIL DOMAIN RESTRICTIONS")
+        print("=" * 40)
+        
+        restricted_email = f"testuser{timestamp}@restricted.com"
+        success, _ = self.test_invalid_registration(
+            email=restricted_email,
+            name="Restricted Domain User",
+            password="password123",
+            confirm_password="password123",
+            expected_error="Email domain not allowed"
+        )
+        test_results["domain_restrictions"] = success
+        
+        # Test 6: Duplicate Email Prevention
+        print("\n" + "=" * 40)
+        print("🚫 TESTING DUPLICATE EMAIL PREVENTION")
+        print("=" * 40)
+        
+        if test_results["valid_registration"]:
+            success = self.test_duplicate_email_registration(test_email)
+            test_results["duplicate_prevention"] = success
+        else:
+            print("   ⚠️  Skipping duplicate test - valid registration failed")
+        
+        # Test 7: Login After Registration
+        print("\n" + "=" * 40)
+        print("🔐 TESTING LOGIN AFTER REGISTRATION")
+        print("=" * 40)
+        
+        if test_results["valid_registration"]:
+            success, _ = self.test_login_after_registration(test_email, "password123")
+            test_results["login_after_registration"] = success
+        else:
+            print("   ⚠️  Skipping login test - valid registration failed")
+        
+        # Test 8: User in Management System
+        print("\n" + "=" * 40)
+        print("👥 TESTING USER IN MANAGEMENT SYSTEM")
+        print("=" * 40)
+        
+        if test_results["valid_registration"]:
+            success, _ = self.test_user_in_database(test_email)
+            test_results["user_in_system"] = success
+        else:
+            print("   ⚠️  Skipping user system test - valid registration failed")
+        
+        # Summary
+        print("\n" + "=" * 60)
+        print("📋 REGISTRATION TEST RESULTS SUMMARY")
+        print("=" * 60)
+        
+        total_tests = 0
+        passed_tests = 0
+        
+        for test_name, result in test_results.items():
+            status = 'PASS' if result else 'FAIL'
+            display_name = test_name.replace('_', ' ').title()
+            print(f"{'✅' if result else '❌'} {display_name}: {status}")
+            total_tests += 1
+            if result:
+                passed_tests += 1
+        
+        print(f"\n🎯 OVERALL RESULT: {passed_tests}/{total_tests} tests passed")
+        
+        # Key requirements verification
+        print("\n" + "=" * 60)
+        print("🎯 KEY REQUIREMENTS VERIFICATION")
+        print("=" * 60)
+        
+        requirements_met = []
+        
+        # Core registration functionality
+        if test_results["valid_registration"]:
+            requirements_met.append("✅ User registration works with valid data")
+        else:
+            requirements_met.append("❌ User registration failed")
+        
+        # Security validations
+        if test_results["password_validation"] and test_results["password_confirmation"]:
+            requirements_met.append("✅ Password validation working correctly")
+        else:
+            requirements_met.append("❌ Password validation issues")
+        
+        # Email validations
+        if test_results["email_validation"] and test_results["duplicate_prevention"]:
+            requirements_met.append("✅ Email validation and uniqueness enforced")
+        else:
+            requirements_met.append("❌ Email validation issues")
+        
+        # Domain restrictions
+        if test_results["domain_restrictions"]:
+            requirements_met.append("✅ Email domain restrictions working")
+        else:
+            requirements_met.append("❌ Domain restrictions not working")
+        
+        # Role and access
+        if test_results["role_assignment"] and test_results["immediate_login"]:
+            requirements_met.append("✅ Role assignment and immediate access working")
+        else:
+            requirements_met.append("❌ Role assignment or access issues")
+        
+        # Integration
+        if test_results["login_after_registration"] and test_results["user_in_system"]:
+            requirements_met.append("✅ Integration with login and user management working")
+        else:
+            requirements_met.append("❌ Integration issues found")
+        
+        for req in requirements_met:
+            print(f"   {req}")
+        
+        # Success criteria: Core functionality working
+        core_tests_passed = (
+            test_results["valid_registration"] and
+            test_results["password_validation"] and
+            test_results["password_confirmation"] and
+            test_results["duplicate_prevention"] and
+            test_results["role_assignment"] and
+            test_results["immediate_login"]
+        )
+        
+        if core_tests_passed:
+            print("\n🎉 CORE REGISTRATION FUNCTIONALITY WORKING!")
+            print("   ✅ User registration system is operational")
+            return True
+        else:
+            print("\n⚠️  CORE REGISTRATION FUNCTIONALITY ISSUES FOUND")
+            return False
+
+def main_registration():
+    """Main registration test execution"""
+    tester = UserRegistrationTester()
+    
+    print(f"🌐 Backend URL: {API_BASE}")
+    print(f"🕐 Test started at: {datetime.now()}")
+    
+    success = tester.run_comprehensive_registration_tests()
+    
+    print(f"\n🕐 Test completed at: {datetime.now()}")
+    
+    if success:
+        print("✅ User Registration Backend Testing: SUCCESS")
+        return True
+    else:
+        print("❌ User Registration Backend Testing: FAILED")
+        return False
+
 if __name__ == "__main__":
     import sys
     
-    if len(sys.argv) > 1 and sys.argv[1] == "time":
-        # Run time tracking tests
-        success = main_time_tracking()
-        exit(0 if success else 1)
-    else:
-        # Run room management tests (default)
-        main()
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "time":
+            # Run time tracking tests
+            success = main_time_tracking()
+            exit(0 if success else 1)
+        elif sys.argv[1] == "registration":
+            # Run registration tests
+            success = main_registration()
+            exit(0 if success else 1)
+        else:
+            print("Usage: python backend_test.py [time|registration]")
+            print("Default: room management tests")
+    
+    # Run room management tests (default)
+    main()

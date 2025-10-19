@@ -245,11 +245,25 @@ const LoginPage = () => {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">RSBC Workflow Pro</CardTitle>
           <CardDescription className="text-center">
-            Sign in to track your work hours
+            {isLogin ? 'Sign in to track your work hours' : 'Create your account to get started'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="Enter your full name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  data-testid="name-input"
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -267,27 +281,55 @@ const LoginPage = () => {
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder={isLogin ? "Enter your password" : "Create a password (min 6 characters)"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 data-testid="password-input"
               />
             </div>
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="Confirm your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  data-testid="confirm-password-input"
+                />
+              </div>
+            )}
             <Button 
               type="submit" 
               className="w-full" 
               disabled={loading}
-              data-testid="login-button"
+              data-testid={isLogin ? "login-button" : "register-button"}
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? (isLogin ? 'Signing in...' : 'Creating Account...') : (isLogin ? 'Sign In' : 'Create Account')}
             </Button>
           </form>
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 mb-2">Demo Accounts:</p>
-            <p className="text-xs text-gray-500">Admin: admin@company.com / admin123</p>
-            <p className="text-xs text-gray-500">Employee: john@company.com / password123</p>
+
+          {/* Toggle between login and register */}
+          <div className="mt-4 text-center">
+            <Button
+              variant="link" 
+              onClick={toggleMode}
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
+              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+            </Button>
           </div>
+
+          {isLogin && (
+            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600 mb-2">Demo Accounts:</p>
+              <p className="text-xs text-gray-500">Admin: admin@company.com / admin123</p>
+              <p className="text-xs text-gray-500">Employee: john@company.com / password123</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

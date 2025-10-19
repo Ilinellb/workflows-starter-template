@@ -270,6 +270,50 @@ async def login(user_data: UserLogin):
         "user": user_obj.dict()
     }
 
+@api_router.post("/auth/register")
+async def register(user_data: UserRegister):
+    # Validate password match
+    if user_data.password != user_data.confirm_password:
+        raise HTTPException(status_code=400, detail="Passwords do not match")
+    
+    # Validate password strength
+    if len(user_data.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
+    
+    # Check if user already exists
+    existing_user = await db.users.find_one({"email": user_data.email})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Validate email domain (optional - you can remove this if not needed)
+    allowed_domains = ["company.com", "gmail.com", "outlook.com", "yahoo.com"]  # Add your allowed domains
+    email_domain = user_data.email.split('@')[1].lower()
+    if email_domain not in allowed_domains:
+        raise HTTPException(status_code=400, detail="Email domain not allowed for registration")
+    
+    # Create new user (default role: employee)
+    user = User(
+        email=user_data.email,
+        name=user_data.name,
+        role=UserRole.EMPLOYEE,  # New registrations default to employee
+        is_active=True  # Auto-approve for now, you can change this to False for admin approval
+    )
+    
+    user_dict = user.dict()
+    user_dict["password_hash"] = get_password_hash(user_data.password)
+    
+    await db.users.insert_one(prepare_for_mongo(user_dict))
+    
+    # Create access token for immediate login
+    access_token = create_access_token(data={"sub": user.id})
+    
+    return {
+        "message": "Registration successful",
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user.dict()
+    }
+
 @api_router.get("/auth/me")
 async def get_me(current_user: User = Depends(get_current_user)):
     return current_user

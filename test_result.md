@@ -198,6 +198,7 @@
 
 ## test_plan:
   current_focus:
+    - "User Registration System"
     - "Test Room Management guest out timer display functionality"
     - "Test Employee My Schedule tab comprehensive functionality"
     - "Test Manager Team Scheduling tab comprehensive functionality" 

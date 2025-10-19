@@ -285,11 +285,11 @@ async def register(user_data: UserRegister):
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
-    # Validate email domain (optional - you can remove this if not needed)
-    allowed_domains = ["company.com", "gmail.com", "outlook.com", "yahoo.com"]  # Add your allowed domains
+    # Validate email domain (add your organization's domains as needed)
+    allowed_domains = ["company.com", "gmail.com", "outlook.com", "yahoo.com", "hotmail.com", "icloud.com"]
     email_domain = user_data.email.split('@')[1].lower()
     if email_domain not in allowed_domains:
-        raise HTTPException(status_code=400, detail="Email domain not allowed for registration")
+        raise HTTPException(status_code=400, detail=f"Email domain '{email_domain}' not allowed for registration. Contact administrator for access.")
     
     # Create new user (default role: employee)
     user = User(

@@ -216,12 +216,16 @@ const LoginPage = () => {
         confirm_password: confirmPassword
       });
 
-      toast.success('Registration successful! Welcome to RSBC Workflow Pro!');
+      toast.success(`🎉 Welcome to RSBC Workflow Pro, ${response.data.user.name}! Your account has been created successfully.`);
       
       // Auto-login after successful registration
       localStorage.setItem('token', response.data.access_token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
-      window.location.reload();
+      
+      // Small delay to show success message before redirect
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Registration failed');
     }

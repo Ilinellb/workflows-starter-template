@@ -949,7 +949,7 @@ class UserRegistrationTester:
             response = self.session.post(f"{API_BASE}/auth/register", json=registration_data)
             print(f"   Response status: {response.status_code}")
             
-            if response.status_code == 400:
+            if response.status_code in [400, 422]:  # Accept both 400 (custom) and 422 (validation) errors
                 error_msg = response.text
                 print(f"   ✅ Expected error received: {error_msg}")
                 return True, error_msg

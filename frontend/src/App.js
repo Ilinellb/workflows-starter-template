@@ -176,16 +176,67 @@ const getTabsForRole = (role) => {
 
 // Login Component
 const LoginPage = () => {
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = React.useContext(AuthContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    await login(email, password);
+    
+    if (isLogin) {
+      await login(email, password);
+    } else {
+      await handleRegister();
+    }
+    
     setLoading(false);
+  };
+
+  const handleRegister = async () => {
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters long');
+      return;
+    }
+
+    try {
+      const response = await axios.post(`${API}/auth/register`, {
+        email,
+        name,
+        password,
+        confirm_password: confirmPassword
+      });
+
+      toast.success('Registration successful! Welcome to RSBC Workflow Pro!');
+      
+      // Auto-login after successful registration
+      localStorage.setItem('token', response.data.access_token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      window.location.reload();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Registration failed');
+    }
+  };
+
+  const resetForm = () => {
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setName('');
+  };
+
+  const toggleMode = () => {
+    setIsLogin(!isLogin);
+    resetForm();
   };
 
   return (

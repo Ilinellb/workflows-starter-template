@@ -2342,8 +2342,12 @@ if __name__ == "__main__":
             # Run employee management tests
             success = main_employee_management()
             exit(0 if success else 1)
+        elif sys.argv[1] == "superadmin":
+            # Run super admin user creation tests
+            success = main_super_admin()
+            exit(0 if success else 1)
         else:
-            print("Usage: python backend_test.py [time|registration|employee]")
+            print("Usage: python backend_test.py [time|registration|employee|superadmin]")
             print("Default: room management tests")
     
     # Run room management tests (default)

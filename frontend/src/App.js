@@ -2360,12 +2360,422 @@ const TeamReportsTab = () => (
   </div>
 );
 
-const EmployeeManagementTab = () => (
-  <div className="space-y-6" data-testid="employee-management-tab">
-    <h2 className="text-2xl font-bold">👥 Employee Management</h2>
-    <Card><CardContent className="p-6"><p className="text-gray-600 text-center">Employee management coming soon...</p></CardContent></Card>
-  </div>
-);
+const EmployeeManagementTab = () => {
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterRole, setFilterRole] = useState('all');
+
+  // Form states for add/edit employee
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'employee',
+    start_time: '09:00',
+    manager_id: ''
+  });
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  const fetchEmployees = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${API}/users`);
+      setEmployees(response.data);
+    } catch (error) {
+      toast.error('Failed to fetch employees');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddEmployee = async () => {
+    if (!formData.name || !formData.email || !formData.password) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const response = await axios.post(`${API}/users`, formData);
+      toast.success('Employee added successfully');
+      fetchEmployees();
+      setShowAddModal(false);
+      resetForm();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to add employee');
+    }
+  };
+
+  const handleEditEmployee = async () => {
+    try {
+      const updateData = { ...formData };
+      if (!updateData.password) {
+        delete updateData.password; // Don't update password if not provided
+      }
+      
+      const response = await axios.put(`${API}/users/${selectedEmployee.id}`, updateData);
+      toast.success('Employee updated successfully');
+      fetchEmployees();
+      setShowEditModal(false);
+      resetForm();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to update employee');
+    }
+  };
+
+  const handleDeleteEmployee = async (employeeId, employeeName) => {
+    if (!confirm(`Are you sure you want to delete ${employeeName}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await axios.delete(`${API}/users/${employeeId}`);
+      toast.success('Employee deleted successfully');
+      fetchEmployees();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to delete employee');
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      email: '',
+      password: '',
+      role: 'employee',
+      start_time: '09:00',
+      manager_id: ''
+    });
+    setSelectedEmployee(null);
+  };
+
+  const openEditModal = (employee) => {
+    setSelectedEmployee(employee);
+    setFormData({
+      name: employee.name,
+      email: employee.email,
+      password: '', // Leave empty for security
+      role: employee.role,
+      start_time: employee.start_time || '09:00',
+      manager_id: employee.manager_id || ''
+    });
+    setShowEditModal(true);
+  };
+
+  const filteredEmployees = employees.filter(employee => {
+    const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         employee.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = filterRole === 'all' || employee.role === filterRole;
+    return matchesSearch && matchesRole;
+  });
+
+  const getRoleBadge = (role) => {
+    switch (role) {
+      case 'super_admin': return 'bg-purple-100 text-purple-800';
+      case 'manager': return 'bg-blue-100 text-blue-800';
+      case 'employee': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getRoleDisplay = (role) => {
+    switch (role) {
+      case 'super_admin': return 'Super Admin';
+      case 'manager': return 'Manager';
+      case 'employee': return 'Employee';
+      default: return role;
+    }
+  };
+
+  return (
+    <div className="space-y-6" data-testid="employee-management-tab">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">👥 Employee Management</h2>
+        <Button onClick={() => setShowAddModal(true)} className="bg-blue-500 hover:bg-blue-600">
+          ➕ Add Employee
+        </Button>
+      </div>
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{employees.length}</div>
+              <div className="text-sm text-gray-600">Total Employees</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">
+                {employees.filter(e => e.role === 'employee').length}
+              </div>
+              <div className="text-sm text-gray-600">Employees</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">
+                {employees.filter(e => e.role === 'manager').length}
+              </div>
+              <div className="text-sm text-gray-600">Managers</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-600">
+                {employees.filter(e => e.is_active).length}
+              </div>
+              <div className="text-sm text-gray-600">Active Users</div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search and Filter */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Search & Filter</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <Input
+                placeholder="Search by name or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div className="md:w-48">
+              <select
+                className="w-full p-2 border rounded"
+                value={filterRole}
+                onChange={(e) => setFilterRole(e.target.value)}
+              >
+                <option value="all">All Roles</option>
+                <option value="employee">Employee</option>
+                <option value="manager">Manager</option>
+                <option value="super_admin">Super Admin</option>
+              </select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Employee List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Employee Directory ({filteredEmployees.length} employees)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+              <p className="text-gray-600">Loading employees...</p>
+            </div>
+          ) : filteredEmployees.length > 0 ? (
+            <div className="space-y-3">
+              {filteredEmployees.map((employee) => (
+                <div key={employee.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 font-medium">
+                        {employee.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="font-medium">{employee.name}</h3>
+                      <p className="text-sm text-gray-600">{employee.email}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge className={getRoleBadge(employee.role)}>
+                          {getRoleDisplay(employee.role)}
+                        </Badge>
+                        <Badge variant={employee.is_active ? 'default' : 'secondary'}>
+                          {employee.is_active ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openEditModal(employee)}
+                    >
+                      ✏️ Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => handleDeleteEmployee(employee.id, employee.name)}
+                    >
+                      🗑️ Delete
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <div className="text-4xl mb-2">👥</div>
+              <p>No employees found matching your criteria</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Add Employee Modal */}
+      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>➕ Add New Employee</DialogTitle>
+            <DialogDescription>
+              Create a new employee account in the system
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label>Full Name *</Label>
+              <Input
+                placeholder="Enter full name"
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+              />
+            </div>
+            <div>
+              <Label>Email *</Label>
+              <Input
+                type="email"
+                placeholder="Enter email address"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+              />
+            </div>
+            <div>
+              <Label>Password *</Label>
+              <Input
+                type="password"
+                placeholder="Create password"
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+              />
+            </div>
+            <div>
+              <Label>Role</Label>
+              <select
+                className="w-full p-2 border rounded"
+                value={formData.role}
+                onChange={(e) => setFormData({...formData, role: e.target.value})}
+              >
+                <option value="employee">Employee</option>
+                <option value="manager">Manager</option>
+                <option value="super_admin">Super Admin</option>
+              </select>
+            </div>
+            <div>
+              <Label>Start Time</Label>
+              <Input
+                type="time"
+                value={formData.start_time}
+                onChange={(e) => setFormData({...formData, start_time: e.target.value})}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {setShowAddModal(false); resetForm();}}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddEmployee}>
+              Add Employee
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Employee Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>✏️ Edit Employee</DialogTitle>
+            <DialogDescription>
+              Update employee information
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label>Full Name *</Label>
+              <Input
+                placeholder="Enter full name"
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+              />
+            </div>
+            <div>
+              <Label>Email *</Label>
+              <Input
+                type="email"
+                placeholder="Enter email address"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+              />
+            </div>
+            <div>
+              <Label>New Password (leave blank to keep current)</Label>
+              <Input
+                type="password"
+                placeholder="Enter new password or leave blank"
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+              />
+            </div>
+            <div>
+              <Label>Role</Label>
+              <select
+                className="w-full p-2 border rounded"
+                value={formData.role}
+                onChange={(e) => setFormData({...formData, role: e.target.value})}
+              >
+                <option value="employee">Employee</option>
+                <option value="manager">Manager</option>
+                <option value="super_admin">Super Admin</option>
+              </select>
+            </div>
+            <div>
+              <Label>Start Time</Label>
+              <Input
+                type="time"
+                value={formData.start_time}
+                onChange={(e) => setFormData({...formData, start_time: e.target.value})}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {setShowEditModal(false); resetForm();}}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditEmployee}>
+              Update Employee
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
 
 const PerformanceManagementTab = () => (
   <div className="space-y-6" data-testid="performance-management-tab">

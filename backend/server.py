@@ -70,6 +70,17 @@ class UserCreate(BaseModel):
     geofence_radius: Optional[int] = 100
     manager_id: Optional[str] = None
 
+class UserUpdate(BaseModel):
+    email: EmailStr
+    name: str
+    password: Optional[str] = None  # Optional for updates
+    role: str
+    start_time: Optional[str] = None  # "09:00"
+    workplace_lat: Optional[float] = None
+    workplace_lng: Optional[float] = None
+    geofence_radius: Optional[int] = 100
+    manager_id: Optional[str] = None
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str

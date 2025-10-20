@@ -2007,6 +2007,325 @@ def main_employee_management():
         print("❌ Employee Management Backend Testing: FAILED")
         return False
 
+class SuperAdminUserTester:
+    def __init__(self):
+        self.session = requests.Session()
+        self.auth_token = None
+        self.user_data = None
+        
+    def authenticate(self, email="admin@company.com", password="admin123"):
+        """Authenticate user and get access token"""
+        print(f"\n🔐 Authenticating user: {email}")
+        
+        login_data = {
+            "email": email,
+            "password": password
+        }
+        
+        try:
+            response = self.session.post(f"{API_BASE}/auth/login", json=login_data)
+            print(f"Login response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.auth_token = data.get('access_token')
+                self.user_data = data.get('user')
+                
+                # Set authorization header for future requests
+                self.session.headers.update({
+                    'Authorization': f'Bearer {self.auth_token}',
+                    'Content-Type': 'application/json'
+                })
+                
+                print(f"✅ Authentication successful")
+                print(f"   User: {self.user_data.get('name')} ({self.user_data.get('role')})")
+                return True
+            else:
+                print(f"❌ Authentication failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Authentication error: {str(e)}")
+            return False
+    
+    def check_existing_user(self, email):
+        """Check if user with given email already exists"""
+        print(f"\n🔍 Checking if user exists: {email}")
+        
+        try:
+            response = self.session.get(f"{API_BASE}/users")
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                users = response.json()
+                existing_user = next((user for user in users if user.get('email') == email), None)
+                
+                if existing_user:
+                    print(f"   ✅ User found:")
+                    print(f"      ID: {existing_user.get('id')}")
+                    print(f"      Name: {existing_user.get('name')}")
+                    print(f"      Email: {existing_user.get('email')}")
+                    print(f"      Role: {existing_user.get('role')}")
+                    print(f"      Active: {existing_user.get('is_active')}")
+                    return True, existing_user
+                else:
+                    print(f"   ℹ️  User not found")
+                    return False, None
+            else:
+                print(f"   ❌ Failed to retrieve users: {response.text}")
+                return False, None
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False, None
+    
+    def create_super_admin_user(self, email, name, password):
+        """Create new super admin user"""
+        print(f"\n➕ Creating super admin user: {email}")
+        
+        user_data = {
+            "email": email,
+            "name": name,
+            "password": password,
+            "role": "super_admin",
+            "start_time": "09:00"
+        }
+        
+        try:
+            response = self.session.post(f"{API_BASE}/users", json=user_data)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"   ✅ Success: {result.get('message')}")
+                print(f"   User ID: {result.get('user_id')}")
+                return True, result.get('user_id')
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False, None
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False, None
+    
+    def update_user_to_super_admin(self, user_id, user_data):
+        """Update existing user to super admin role"""
+        print(f"\n✏️ Updating user to super admin: {user_id}")
+        
+        update_data = {
+            "email": user_data["email"],
+            "name": user_data["name"],
+            "role": "super_admin",
+            "start_time": user_data.get("start_time", "09:00"),
+            "workplace_lat": user_data.get("workplace_lat"),
+            "workplace_lng": user_data.get("workplace_lng"),
+            "geofence_radius": user_data.get("geofence_radius", 100)
+        }
+        
+        try:
+            response = self.session.put(f"{API_BASE}/users/{user_id}", json=update_data)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"   ✅ Success: {result.get('message')}")
+                return True
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def verify_super_admin_access(self, email, password):
+        """Verify user can login and has super admin access"""
+        print(f"\n🔐 Verifying super admin access: {email}")
+        
+        # Create new session for the user
+        user_session = requests.Session()
+        user_session.headers.update({'Content-Type': 'application/json'})
+        
+        login_data = {
+            "email": email,
+            "password": password
+        }
+        
+        try:
+            # Test login
+            response = user_session.post(f"{API_BASE}/auth/login", json=login_data)
+            print(f"   Login response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                data = response.json()
+                user_info = data.get('user', {})
+                
+                print(f"   ✅ Login successful")
+                print(f"   📋 User details:")
+                print(f"      Name: {user_info.get('name')}")
+                print(f"      Email: {user_info.get('email')}")
+                print(f"      Role: {user_info.get('role')}")
+                print(f"      Active: {user_info.get('is_active')}")
+                
+                # Verify role is super_admin
+                if user_info.get('role') == 'super_admin':
+                    print(f"   ✅ Role verified: super_admin")
+                    
+                    # Test admin-only endpoint access
+                    token = data.get('access_token')
+                    user_session.headers.update({
+                        'Authorization': f'Bearer {token}'
+                    })
+                    
+                    # Test access to users endpoint
+                    users_response = user_session.get(f"{API_BASE}/users")
+                    if users_response.status_code == 200:
+                        users = users_response.json()
+                        print(f"   ✅ Admin access verified: Can access users endpoint ({len(users)} users)")
+                        return True, user_info
+                    else:
+                        print(f"   ❌ Admin access failed: Cannot access users endpoint")
+                        return False, user_info
+                else:
+                    print(f"   ❌ Role verification failed: Expected super_admin, got {user_info.get('role')}")
+                    return False, user_info
+            else:
+                print(f"   ❌ Login failed: {response.text}")
+                return False, {}
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False, {}
+    
+    def test_super_admin_user_creation(self, target_email="lbj1288@gmail.com", target_name="LBJ Admin", target_password="admin123"):
+        """Test complete super admin user creation/update workflow"""
+        print("=" * 60)
+        print("👑 SUPER ADMIN USER CREATION/UPDATE TEST")
+        print("=" * 60)
+        
+        # Authenticate as existing admin
+        if not self.authenticate():
+            print("❌ Cannot proceed without admin authentication")
+            return False
+        
+        test_results = {
+            "authentication": True,
+            "user_check": False,
+            "user_creation_or_update": False,
+            "verification": False,
+            "admin_access": False
+        }
+        
+        # Step 1: Check if user already exists
+        print("\n" + "=" * 40)
+        print("🔍 STEP 1: CHECK EXISTING USER")
+        print("=" * 40)
+        
+        user_exists, existing_user = self.check_existing_user(target_email)
+        test_results["user_check"] = True  # This step always succeeds if we can query
+        
+        # Step 2: Create or Update User
+        print("\n" + "=" * 40)
+        print("🔧 STEP 2: CREATE OR UPDATE USER")
+        print("=" * 40)
+        
+        if user_exists:
+            # Update existing user to super admin
+            print(f"   User exists - updating to super admin role")
+            success = self.update_user_to_super_admin(existing_user['id'], existing_user)
+            test_results["user_creation_or_update"] = success
+        else:
+            # Create new user with super admin role
+            print(f"   User doesn't exist - creating new super admin user")
+            success, user_id = self.create_super_admin_user(target_email, target_name, target_password)
+            test_results["user_creation_or_update"] = success
+        
+        # Step 3: Verify user creation/update
+        print("\n" + "=" * 40)
+        print("✅ STEP 3: VERIFY USER IN SYSTEM")
+        print("=" * 40)
+        
+        if test_results["user_creation_or_update"]:
+            user_exists_now, updated_user = self.check_existing_user(target_email)
+            if user_exists_now and updated_user.get('role') == 'super_admin':
+                print(f"   ✅ User verification successful")
+                print(f"   📋 Final user details:")
+                print(f"      ID: {updated_user.get('id')}")
+                print(f"      Name: {updated_user.get('name')}")
+                print(f"      Email: {updated_user.get('email')}")
+                print(f"      Role: {updated_user.get('role')}")
+                print(f"      Active: {updated_user.get('is_active')}")
+                test_results["verification"] = True
+            else:
+                print(f"   ❌ User verification failed")
+        else:
+            print(f"   ⚠️  Skipping verification - user creation/update failed")
+        
+        # Step 4: Test super admin access
+        print("\n" + "=" * 40)
+        print("🔐 STEP 4: TEST SUPER ADMIN ACCESS")
+        print("=" * 40)
+        
+        if test_results["verification"]:
+            access_success, user_info = self.verify_super_admin_access(target_email, target_password)
+            test_results["admin_access"] = access_success
+        else:
+            print(f"   ⚠️  Skipping access test - user verification failed")
+        
+        # Summary
+        print("\n" + "=" * 60)
+        print("📋 SUPER ADMIN USER TEST RESULTS")
+        print("=" * 60)
+        
+        total_tests = 0
+        passed_tests = 0
+        
+        for test_name, result in test_results.items():
+            status = 'PASS' if result else 'FAIL'
+            display_name = test_name.replace('_', ' ').title()
+            print(f"{'✅' if result else '❌'} {display_name}: {status}")
+            total_tests += 1
+            if result:
+                passed_tests += 1
+        
+        print(f"\n🎯 OVERALL RESULT: {passed_tests}/{total_tests} tests passed")
+        
+        # Final verification
+        print("\n" + "=" * 60)
+        print("🎯 FINAL VERIFICATION")
+        print("=" * 60)
+        
+        if all(test_results.values()):
+            print(f"✅ Super admin user '{target_email}' successfully created/updated")
+            print(f"✅ User has super_admin role and can access admin functions")
+            print(f"✅ User can login and access employee management system")
+            print(f"\n🎉 SUPER ADMIN USER SETUP: COMPLETE")
+            return True
+        else:
+            print(f"❌ Super admin user setup incomplete")
+            failed_steps = [name for name, result in test_results.items() if not result]
+            print(f"❌ Failed steps: {', '.join(failed_steps)}")
+            print(f"\n⚠️  SUPER ADMIN USER SETUP: FAILED")
+            return False
+
+def main_super_admin():
+    """Main super admin user test execution"""
+    tester = SuperAdminUserTester()
+    
+    print(f"🌐 Backend URL: {API_BASE}")
+    print(f"🕐 Test started at: {datetime.now()}")
+    
+    success = tester.test_super_admin_user_creation()
+    
+    print(f"\n🕐 Test completed at: {datetime.now()}")
+    
+    if success:
+        print("✅ Super Admin User Creation: SUCCESS")
+        return True
+    else:
+        print("❌ Super Admin User Creation: FAILED")
+        return False
+
 if __name__ == "__main__":
     import sys
     

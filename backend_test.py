@@ -2243,7 +2243,7 @@ class SuperAdminUserTester:
         if user_exists:
             # Update existing user to super admin
             print(f"   User exists - updating to super admin role")
-            success = self.update_user_to_super_admin(existing_user['id'], existing_user)
+            success = self.update_user_to_super_admin(existing_user['id'], existing_user, target_password)
             test_results["user_creation_or_update"] = success
         else:
             # Create new user with super admin role

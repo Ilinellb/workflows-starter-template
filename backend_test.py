@@ -2112,11 +2112,19 @@ class SuperAdminUserTester:
         """Update existing user to super admin role"""
         print(f"\n✏️ Updating user to super admin: {user_id}")
         
+        # Handle start_time format - ensure it's in HH:MM format
+        start_time = user_data.get("start_time")
+        if start_time and isinstance(start_time, str) and len(start_time) > 5:
+            # If it's a full time string like "09:00:00", extract just HH:MM
+            start_time = start_time[:5]
+        elif not start_time:
+            start_time = "09:00"
+        
         update_data = {
             "email": user_data["email"],
             "name": user_data["name"],
             "role": "super_admin",
-            "start_time": user_data.get("start_time", "09:00"),
+            "start_time": start_time,
             "workplace_lat": user_data.get("workplace_lat"),
             "workplace_lng": user_data.get("workplace_lng"),
             "geofence_radius": user_data.get("geofence_radius", 100)

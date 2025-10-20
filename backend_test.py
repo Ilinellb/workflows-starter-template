@@ -1322,6 +1322,691 @@ def main_registration():
         print("❌ User Registration Backend Testing: FAILED")
         return False
 
+class EmployeeManagementTester:
+    def __init__(self):
+        self.session = requests.Session()
+        self.auth_token = None
+        self.user_data = None
+        
+    def authenticate(self, email="admin@company.com", password="admin123"):
+        """Authenticate user and get access token"""
+        print(f"\n🔐 Authenticating user: {email}")
+        
+        login_data = {
+            "email": email,
+            "password": password
+        }
+        
+        try:
+            response = self.session.post(f"{API_BASE}/auth/login", json=login_data)
+            print(f"Login response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.auth_token = data.get('access_token')
+                self.user_data = data.get('user')
+                
+                # Set authorization header for future requests
+                self.session.headers.update({
+                    'Authorization': f'Bearer {self.auth_token}',
+                    'Content-Type': 'application/json'
+                })
+                
+                print(f"✅ Authentication successful")
+                print(f"   User: {self.user_data.get('name')} ({self.user_data.get('role')})")
+                return True
+            else:
+                print(f"❌ Authentication failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Authentication error: {str(e)}")
+            return False
+    
+    def test_get_users_as_manager(self):
+        """Test GET /api/users as manager - should see their employees"""
+        print(f"\n👥 Testing GET /api/users as manager")
+        
+        try:
+            response = self.session.get(f"{API_BASE}/users")
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                users = response.json()
+                print(f"   ✅ Success: Retrieved {len(users)} users")
+                
+                # Display user data structure
+                if users:
+                    print("   📋 Sample user data structure:")
+                    sample_user = users[0]
+                    for key, value in sample_user.items():
+                        if key != 'password_hash':  # Don't display password hash
+                            print(f"      {key}: {value}")
+                
+                return True, users
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False, []
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False, []
+    
+    def test_get_users_as_employee(self):
+        """Test GET /api/users as employee - should get 403"""
+        print(f"\n🚫 Testing GET /api/users as employee (should fail)")
+        
+        # First create an employee for testing
+        employee_email = f"testemployee{datetime.now().strftime('%Y%m%d%H%M%S')}@company.com"
+        employee_data = {
+            "email": employee_email,
+            "name": "Test Employee",
+            "password": "testpass123",
+            "role": "employee",
+            "start_time": "09:00"
+        }
+        
+        # Create employee as admin
+        create_response = self.session.post(f"{API_BASE}/users", json=employee_data)
+        if create_response.status_code != 200:
+            print(f"   ❌ Failed to create test employee: {create_response.text}")
+            return False
+        
+        # Now authenticate as employee
+        employee_session = requests.Session()
+        employee_session.headers.update({'Content-Type': 'application/json'})
+        
+        login_data = {
+            "email": employee_email,
+            "password": "testpass123"
+        }
+        
+        login_response = employee_session.post(f"{API_BASE}/auth/login", json=login_data)
+        if login_response.status_code != 200:
+            print(f"   ❌ Failed to authenticate as employee: {login_response.text}")
+            return False
+        
+        employee_token = login_response.json().get('access_token')
+        employee_session.headers.update({
+            'Authorization': f'Bearer {employee_token}'
+        })
+        
+        # Try to get users as employee
+        try:
+            response = employee_session.get(f"{API_BASE}/users")
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 403:
+                print(f"   ✅ Success: Employee correctly denied access (403)")
+                return True
+            else:
+                print(f"   ❌ Failed: Employee should not have access to user list")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_create_user_valid(self):
+        """Test POST /api/users with valid data"""
+        print(f"\n➕ Testing POST /api/users with valid data")
+        
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        user_data = {
+            "email": f"newuser{timestamp}@company.com",
+            "name": f"New User {timestamp}",
+            "password": "newpass123",
+            "role": "employee",
+            "start_time": "09:00",
+            "workplace_lat": 40.7128,
+            "workplace_lng": -74.0060,
+            "geofence_radius": 100
+        }
+        
+        try:
+            response = self.session.post(f"{API_BASE}/users", json=user_data)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"   ✅ Success: {result.get('message')}")
+                print(f"   User ID: {result.get('user_id')}")
+                return True, result.get('user_id'), user_data
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False, None, None
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False, None, None
+    
+    def test_create_user_duplicate_email(self):
+        """Test POST /api/users with duplicate email"""
+        print(f"\n🚫 Testing POST /api/users with duplicate email")
+        
+        # Use admin email which already exists
+        user_data = {
+            "email": "admin@company.com",
+            "name": "Duplicate Admin",
+            "password": "newpass123",
+            "role": "employee",
+            "start_time": "09:00"
+        }
+        
+        try:
+            response = self.session.post(f"{API_BASE}/users", json=user_data)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 400 and "already registered" in response.text:
+                print(f"   ✅ Success: Duplicate email correctly rejected")
+                return True
+            else:
+                print(f"   ❌ Failed: Duplicate email should be rejected")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_create_user_invalid_data(self):
+        """Test POST /api/users with invalid data"""
+        print(f"\n❌ Testing POST /api/users with invalid data")
+        
+        # Test with invalid time format
+        user_data = {
+            "email": f"invalidtime{datetime.now().strftime('%Y%m%d%H%M%S')}@company.com",
+            "name": "Invalid Time User",
+            "password": "testpass123",
+            "role": "employee",
+            "start_time": "25:00"  # Invalid time
+        }
+        
+        try:
+            response = self.session.post(f"{API_BASE}/users", json=user_data)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 400:
+                print(f"   ✅ Success: Invalid time format correctly rejected")
+                return True
+            else:
+                print(f"   ❌ Failed: Invalid data should be rejected")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_update_user_valid(self, user_id, original_data):
+        """Test PUT /api/users/{user_id} with valid data"""
+        print(f"\n✏️ Testing PUT /api/users/{user_id} with valid data")
+        
+        update_data = {
+            "email": original_data["email"],
+            "name": f"Updated {original_data['name']}",
+            "role": "manager",  # Change role
+            "start_time": "10:00",  # Change start time
+            "workplace_lat": 41.0000,
+            "workplace_lng": -75.0000,
+            "geofence_radius": 150
+        }
+        
+        try:
+            response = self.session.put(f"{API_BASE}/users/{user_id}", json=update_data)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"   ✅ Success: {result.get('message')}")
+                return True, update_data
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False, None
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False, None
+    
+    def test_update_user_password(self, user_id, original_data):
+        """Test PUT /api/users/{user_id} with password update"""
+        print(f"\n🔒 Testing PUT /api/users/{user_id} with password update")
+        
+        update_data = {
+            "email": original_data["email"],
+            "name": original_data["name"],
+            "password": "newpassword456",  # New password
+            "role": original_data["role"],
+            "start_time": original_data["start_time"]
+        }
+        
+        try:
+            response = self.session.put(f"{API_BASE}/users/{user_id}", json=update_data)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"   ✅ Success: {result.get('message')}")
+                
+                # Test login with new password
+                print(f"   🔐 Testing login with new password...")
+                login_session = requests.Session()
+                login_session.headers.update({'Content-Type': 'application/json'})
+                
+                login_data = {
+                    "email": original_data["email"],
+                    "password": "newpassword456"
+                }
+                
+                login_response = login_session.post(f"{API_BASE}/auth/login", json=login_data)
+                if login_response.status_code == 200:
+                    print(f"   ✅ Password update verified - login successful")
+                    return True
+                else:
+                    print(f"   ❌ Password update failed - cannot login with new password")
+                    return False
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_update_user_email_conflict(self, user_id):
+        """Test PUT /api/users/{user_id} with conflicting email"""
+        print(f"\n🚫 Testing PUT /api/users/{user_id} with conflicting email")
+        
+        update_data = {
+            "email": "admin@company.com",  # Already exists
+            "name": "Conflict User",
+            "role": "employee",
+            "start_time": "09:00"
+        }
+        
+        try:
+            response = self.session.put(f"{API_BASE}/users/{user_id}", json=update_data)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 400 and "already registered" in response.text:
+                print(f"   ✅ Success: Email conflict correctly detected")
+                return True
+            else:
+                print(f"   ❌ Failed: Email conflict should be detected")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_update_nonexistent_user(self):
+        """Test PUT /api/users/{user_id} with non-existent user"""
+        print(f"\n❓ Testing PUT /api/users with non-existent user")
+        
+        fake_user_id = "nonexistent-user-id-12345"
+        update_data = {
+            "email": "fake@company.com",
+            "name": "Fake User",
+            "role": "employee",
+            "start_time": "09:00"
+        }
+        
+        try:
+            response = self.session.put(f"{API_BASE}/users/{fake_user_id}", json=update_data)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 404:
+                print(f"   ✅ Success: Non-existent user correctly returns 404")
+                return True
+            else:
+                print(f"   ❌ Failed: Should return 404 for non-existent user")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_delete_user_valid(self, user_id):
+        """Test DELETE /api/users/{user_id} with valid user"""
+        print(f"\n🗑️ Testing DELETE /api/users/{user_id}")
+        
+        try:
+            response = self.session.delete(f"{API_BASE}/users/{user_id}")
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"   ✅ Success: {result.get('message')}")
+                return True
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_delete_self_prevention(self):
+        """Test DELETE /api/users/{user_id} - prevent self deletion"""
+        print(f"\n🚫 Testing DELETE self-deletion prevention")
+        
+        # Get current user ID
+        current_user_id = self.user_data.get('id')
+        
+        try:
+            response = self.session.delete(f"{API_BASE}/users/{current_user_id}")
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 400 and "Cannot delete your own account" in response.text:
+                print(f"   ✅ Success: Self-deletion correctly prevented")
+                return True
+            else:
+                print(f"   ❌ Failed: Self-deletion should be prevented")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_delete_nonexistent_user(self):
+        """Test DELETE /api/users/{user_id} with non-existent user"""
+        print(f"\n❓ Testing DELETE /api/users with non-existent user")
+        
+        fake_user_id = "nonexistent-user-id-67890"
+        
+        try:
+            response = self.session.delete(f"{API_BASE}/users/{fake_user_id}")
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 404:
+                print(f"   ✅ Success: Non-existent user correctly returns 404")
+                return True
+            else:
+                print(f"   ❌ Failed: Should return 404 for non-existent user")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_employee_permissions(self):
+        """Test that employees cannot perform user management operations"""
+        print(f"\n🚫 Testing employee permission restrictions")
+        
+        # Create an employee for testing
+        employee_email = f"permtest{datetime.now().strftime('%Y%m%d%H%M%S')}@company.com"
+        employee_data = {
+            "email": employee_email,
+            "name": "Permission Test Employee",
+            "password": "testpass123",
+            "role": "employee",
+            "start_time": "09:00"
+        }
+        
+        # Create employee as admin
+        create_response = self.session.post(f"{API_BASE}/users", json=employee_data)
+        if create_response.status_code != 200:
+            print(f"   ❌ Failed to create test employee: {create_response.text}")
+            return False
+        
+        created_user_id = create_response.json().get('user_id')
+        
+        # Authenticate as employee
+        employee_session = requests.Session()
+        employee_session.headers.update({'Content-Type': 'application/json'})
+        
+        login_data = {
+            "email": employee_email,
+            "password": "testpass123"
+        }
+        
+        login_response = employee_session.post(f"{API_BASE}/auth/login", json=login_data)
+        if login_response.status_code != 200:
+            print(f"   ❌ Failed to authenticate as employee: {login_response.text}")
+            return False
+        
+        employee_token = login_response.json().get('access_token')
+        employee_session.headers.update({
+            'Authorization': f'Bearer {employee_token}'
+        })
+        
+        # Test employee cannot create users
+        test_user_data = {
+            "email": f"shouldfail{datetime.now().strftime('%Y%m%d%H%M%S')}@company.com",
+            "name": "Should Fail User",
+            "password": "testpass123",
+            "role": "employee",
+            "start_time": "09:00"
+        }
+        
+        create_test = employee_session.post(f"{API_BASE}/users", json=test_user_data)
+        create_success = create_test.status_code == 403
+        
+        # Test employee cannot update users
+        update_test = employee_session.put(f"{API_BASE}/users/{created_user_id}", json=test_user_data)
+        update_success = update_test.status_code == 403
+        
+        # Test employee cannot delete users
+        delete_test = employee_session.delete(f"{API_BASE}/users/{created_user_id}")
+        delete_success = delete_test.status_code == 403
+        
+        print(f"   Create permission denied: {'✅' if create_success else '❌'}")
+        print(f"   Update permission denied: {'✅' if update_success else '❌'}")
+        print(f"   Delete permission denied: {'✅' if delete_success else '❌'}")
+        
+        return create_success and update_success and delete_success
+    
+    def run_comprehensive_employee_management_tests(self):
+        """Run all employee management tests in sequence"""
+        print("=" * 60)
+        print("👥 EMPLOYEE MANAGEMENT SYSTEM - BACKEND TESTING")
+        print("=" * 60)
+        
+        # Test authentication
+        if not self.authenticate():
+            print("❌ Cannot proceed without authentication")
+            return False
+        
+        test_results = {
+            "authentication": True,
+            "get_users_manager": False,
+            "get_users_employee_denied": False,
+            "create_user_valid": False,
+            "create_user_duplicate_email": False,
+            "create_user_invalid_data": False,
+            "update_user_valid": False,
+            "update_user_password": False,
+            "update_user_email_conflict": False,
+            "update_nonexistent_user": False,
+            "delete_user_valid": False,
+            "delete_self_prevention": False,
+            "delete_nonexistent_user": False,
+            "employee_permissions": False
+        }
+        
+        created_user_id = None
+        created_user_data = None
+        
+        # Test 1: User Listing API
+        print("\n" + "=" * 40)
+        print("📋 TESTING USER LISTING API")
+        print("=" * 40)
+        
+        success, users_data = self.test_get_users_as_manager()
+        test_results["get_users_manager"] = success
+        
+        # Test employee access denial
+        success = self.test_get_users_as_employee()
+        test_results["get_users_employee_denied"] = success
+        
+        # Test 2: User Creation API
+        print("\n" + "=" * 40)
+        print("➕ TESTING USER CREATION API")
+        print("=" * 40)
+        
+        success, user_id, user_data = self.test_create_user_valid()
+        test_results["create_user_valid"] = success
+        if success:
+            created_user_id = user_id
+            created_user_data = user_data
+        
+        success = self.test_create_user_duplicate_email()
+        test_results["create_user_duplicate_email"] = success
+        
+        success = self.test_create_user_invalid_data()
+        test_results["create_user_invalid_data"] = success
+        
+        # Test 3: User Update API
+        print("\n" + "=" * 40)
+        print("✏️ TESTING USER UPDATE API")
+        print("=" * 40)
+        
+        if created_user_id and created_user_data:
+            success, updated_data = self.test_update_user_valid(created_user_id, created_user_data)
+            test_results["update_user_valid"] = success
+            
+            if updated_data:
+                created_user_data.update(updated_data)
+            
+            success = self.test_update_user_password(created_user_id, created_user_data)
+            test_results["update_user_password"] = success
+            
+            success = self.test_update_user_email_conflict(created_user_id)
+            test_results["update_user_email_conflict"] = success
+        else:
+            print("   ⚠️  Skipping update tests - user creation failed")
+        
+        success = self.test_update_nonexistent_user()
+        test_results["update_nonexistent_user"] = success
+        
+        # Test 4: User Deletion API
+        print("\n" + "=" * 40)
+        print("🗑️ TESTING USER DELETION API")
+        print("=" * 40)
+        
+        success = self.test_delete_self_prevention()
+        test_results["delete_self_prevention"] = success
+        
+        success = self.test_delete_nonexistent_user()
+        test_results["delete_nonexistent_user"] = success
+        
+        if created_user_id:
+            success = self.test_delete_user_valid(created_user_id)
+            test_results["delete_user_valid"] = success
+        else:
+            print("   ⚠️  Skipping delete test - user creation failed")
+        
+        # Test 5: Permission Validation
+        print("\n" + "=" * 40)
+        print("🔒 TESTING PERMISSION VALIDATION")
+        print("=" * 40)
+        
+        success = self.test_employee_permissions()
+        test_results["employee_permissions"] = success
+        
+        # Summary
+        print("\n" + "=" * 60)
+        print("📋 EMPLOYEE MANAGEMENT TEST RESULTS SUMMARY")
+        print("=" * 60)
+        
+        total_tests = 0
+        passed_tests = 0
+        
+        for test_name, result in test_results.items():
+            status = 'PASS' if result else 'FAIL'
+            display_name = test_name.replace('_', ' ').title()
+            print(f"{'✅' if result else '❌'} {display_name}: {status}")
+            total_tests += 1
+            if result:
+                passed_tests += 1
+        
+        print(f"\n🎯 OVERALL RESULT: {passed_tests}/{total_tests} tests passed")
+        
+        # Key requirements verification
+        print("\n" + "=" * 60)
+        print("🎯 KEY REQUIREMENTS VERIFICATION")
+        print("=" * 60)
+        
+        requirements_met = []
+        
+        # User Listing API
+        if test_results["get_users_manager"] and test_results["get_users_employee_denied"]:
+            requirements_met.append("✅ User listing API with role-based access working")
+        else:
+            requirements_met.append("❌ User listing API issues")
+        
+        # User Creation API
+        if (test_results["create_user_valid"] and 
+            test_results["create_user_duplicate_email"] and 
+            test_results["create_user_invalid_data"]):
+            requirements_met.append("✅ User creation API with validation working")
+        else:
+            requirements_met.append("❌ User creation API issues")
+        
+        # User Update API
+        if (test_results["update_user_valid"] and 
+            test_results["update_user_password"] and 
+            test_results["update_user_email_conflict"] and
+            test_results["update_nonexistent_user"]):
+            requirements_met.append("✅ User update API with validation working")
+        else:
+            requirements_met.append("❌ User update API issues")
+        
+        # User Deletion API
+        if (test_results["delete_user_valid"] and 
+            test_results["delete_self_prevention"] and 
+            test_results["delete_nonexistent_user"]):
+            requirements_met.append("✅ User deletion API with safety checks working")
+        else:
+            requirements_met.append("❌ User deletion API issues")
+        
+        # Permission validation
+        if test_results["employee_permissions"]:
+            requirements_met.append("✅ Permission validation working correctly")
+        else:
+            requirements_met.append("❌ Permission validation issues")
+        
+        for req in requirements_met:
+            print(f"   {req}")
+        
+        # Success criteria: Core functionality working
+        core_tests_passed = (
+            test_results["authentication"] and
+            test_results["get_users_manager"] and
+            test_results["get_users_employee_denied"] and
+            test_results["create_user_valid"] and
+            test_results["create_user_duplicate_email"] and
+            test_results["update_user_valid"] and
+            test_results["update_user_password"] and
+            test_results["delete_user_valid"] and
+            test_results["delete_self_prevention"] and
+            test_results["employee_permissions"]
+        )
+        
+        if core_tests_passed:
+            print("\n🎉 EMPLOYEE MANAGEMENT SYSTEM WORKING!")
+            print("   ✅ All CRUD operations and permissions working correctly")
+            return True
+        else:
+            print("\n⚠️  EMPLOYEE MANAGEMENT SYSTEM ISSUES FOUND")
+            return False
+
+def main_employee_management():
+    """Main employee management test execution"""
+    tester = EmployeeManagementTester()
+    
+    print(f"🌐 Backend URL: {API_BASE}")
+    print(f"🕐 Test started at: {datetime.now()}")
+    
+    success = tester.run_comprehensive_employee_management_tests()
+    
+    print(f"\n🕐 Test completed at: {datetime.now()}")
+    
+    if success:
+        print("✅ Employee Management Backend Testing: SUCCESS")
+        return True
+    else:
+        print("❌ Employee Management Backend Testing: FAILED")
+        return False
+
 if __name__ == "__main__":
     import sys
     
@@ -1334,8 +2019,12 @@ if __name__ == "__main__":
             # Run registration tests
             success = main_registration()
             exit(0 if success else 1)
+        elif sys.argv[1] == "employee":
+            # Run employee management tests
+            success = main_employee_management()
+            exit(0 if success else 1)
         else:
-            print("Usage: python backend_test.py [time|registration]")
+            print("Usage: python backend_test.py [time|registration|employee]")
             print("Default: room management tests")
     
     # Run room management tests (default)

@@ -2108,7 +2108,7 @@ class SuperAdminUserTester:
             print(f"   ❌ Error: {str(e)}")
             return False, None
     
-    def update_user_to_super_admin(self, user_id, user_data):
+    def update_user_to_super_admin(self, user_id, user_data, new_password="admin123"):
         """Update existing user to super admin role"""
         print(f"\n✏️ Updating user to super admin: {user_id}")
         
@@ -2123,12 +2123,15 @@ class SuperAdminUserTester:
         update_data = {
             "email": user_data["email"],
             "name": user_data["name"],
+            "password": new_password,  # Set a known password
             "role": "super_admin",
             "start_time": start_time,
             "workplace_lat": user_data.get("workplace_lat"),
             "workplace_lng": user_data.get("workplace_lng"),
             "geofence_radius": user_data.get("geofence_radius", 100)
         }
+        
+        print(f"   Setting password to: {new_password}")
         
         try:
             response = self.session.put(f"{API_BASE}/users/{user_id}", json=update_data)

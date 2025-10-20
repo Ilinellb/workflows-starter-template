@@ -369,6 +369,79 @@ async def get_users(current_user: User = Depends(get_current_user)):
     users = await db.users.find(query).to_list(1000)
     return [User(**parse_from_mongo(user)).dict() for user in users]
 
+@api_router.put("/users/{user_id}")
+async def update_user(user_id: str, user_data: UserCreate, current_user: User = Depends(get_current_user)):
+    # Check permissions
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.MANAGER]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    # Find the user to update
+    existing_user = await db.users.find_one({"id": user_id})
+    if not existing_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check if email is being changed and if it's already taken
+    if user_data.email != existing_user["email"]:
+        email_taken = await db.users.find_one({"email": user_data.email})
+        if email_taken:
+            raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Parse start time if provided
+    start_time_obj = None
+    if user_data.start_time:
+        try:
+            start_time_obj = datetime.strptime(user_data.start_time, "%H:%M").time()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid time format. Use HH:MM")
+    
+    # Prepare update data
+    update_data = {
+        "email": user_data.email,
+        "name": user_data.name,
+        "role": user_data.role,
+        "start_time": start_time_obj,
+        "workplace_lat": user_data.workplace_lat,
+        "workplace_lng": user_data.workplace_lng,
+        "geofence_radius": user_data.geofence_radius,
+        "manager_id": user_data.manager_id
+    }
+    
+    # Only update password if provided
+    if user_data.password:
+        update_data["password_hash"] = get_password_hash(user_data.password)
+    
+    update_data = prepare_for_mongo(update_data)
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": update_data}
+    )
+    
+    return {"message": "User updated successfully"}
+
+@api_router.delete("/users/{user_id}")
+async def delete_user(user_id: str, current_user: User = Depends(get_current_user)):
+    # Check permissions
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.MANAGER]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    # Prevent self-deletion
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
+    
+    # Find the user to delete
+    existing_user = await db.users.find_one({"id": user_id})
+    if not existing_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Delete the user
+    result = await db.users.delete_one({"id": user_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"message": "User deleted successfully"}
+
 # Time Tracking Routes
 @api_router.post("/time/punch")
 async def punch_time(punch_data: PunchRequest, current_user: User = Depends(get_current_user)):

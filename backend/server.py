@@ -381,7 +381,7 @@ async def get_users(current_user: User = Depends(get_current_user)):
     return [User(**parse_from_mongo(user)).dict() for user in users]
 
 @api_router.put("/users/{user_id}")
-async def update_user(user_id: str, user_data: UserCreate, current_user: User = Depends(get_current_user)):
+async def update_user(user_id: str, user_data: UserUpdate, current_user: User = Depends(get_current_user)):
     # Check permissions
     if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.MANAGER]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")

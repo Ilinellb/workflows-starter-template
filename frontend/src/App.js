@@ -3516,13 +3516,6 @@ const EmployeeManagementTab = () => {
   );
 };
 
-const PerformanceManagementTab = () => (
-  <div className="space-y-6" data-testid="performance-management-tab">
-    <h2 className="text-2xl font-bold">🎯 Performance Management</h2>
-    <Card><CardContent className="p-6"><p className="text-gray-600 text-center">Performance management coming soon...</p></CardContent></Card>
-  </div>
-);
-
 const SystemAdminTab = () => (
   <div className="space-y-6" data-testid="system-admin-tab">
     <h2 className="text-2xl font-bold">⚙️ System Administration</h2>

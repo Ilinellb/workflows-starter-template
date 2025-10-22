@@ -3772,8 +3772,6 @@ const AppContent = () => {
         return <TeamReportsTab />;
       case 'employee-mgmt':
         return <EmployeeManagementTab />;
-      case 'performance-mgmt':
-        return <PerformanceManagementTab />;
       
       // Admin Tabs
       case 'admin':

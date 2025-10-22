@@ -3754,12 +3754,6 @@ const AppContent = () => {
         return <MyScheduleTab />;
       case 'reports':
         return user.role === 'employee' ? <MyReportsTab /> : <TeamReportsTab />;
-      case 'benefits':
-        return <BenefitsTab />;
-      case 'performance':
-        return <PerformanceTab />;
-      case 'training':
-        return <TrainingTab />;
       case 'communication':
         return <CommunicationTab />;
       

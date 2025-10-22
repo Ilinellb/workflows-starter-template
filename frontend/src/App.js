@@ -142,9 +142,6 @@ const getTabsForRole = (role) => {
       { id: 'timeoff', label: 'Time Off Requests', icon: '🏖️', category: 'time' },
       { id: 'schedule', label: 'My Schedule', icon: '📅', category: 'planning' },
       { id: 'reports', label: 'Reports', icon: '📊', category: 'reports' },
-      { id: 'benefits', label: 'Benefits', icon: '🏥', category: 'personal' },
-      { id: 'performance', label: 'Performance', icon: '🎯', category: 'growth' },
-      { id: 'training', label: 'Training', icon: '📚', category: 'growth' },
       { id: 'communication', label: 'Messages', icon: '💬', category: 'communication' },
       { id: 'profile', label: 'Profile', icon: '👤', category: 'personal' }
     ];
@@ -159,7 +156,6 @@ const getTabsForRole = (role) => {
       { id: 'scheduling', label: 'Scheduling', icon: '📅', category: 'planning' },
       { id: 'team-reports', label: 'Team Reports', icon: '📊', category: 'reports' },
       { id: 'employee-mgmt', label: 'Employee Management', icon: '👥', category: 'management' },
-      { id: 'performance-mgmt', label: 'Performance Reviews', icon: '🎯', category: 'reviews' },
       { id: 'communication', label: 'Team Messages', icon: '💬', category: 'communication' },
       ...(role === 'super_admin' ? [
         { id: 'admin', label: 'System Admin', icon: '⚙️', category: 'admin' },

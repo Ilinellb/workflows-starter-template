@@ -1867,42 +1867,6 @@ const MyReportsTab = () => {
   );
 };
 
-// Benefits Tab
-const BenefitsTab = () => (
-  <div className="space-y-6" data-testid="benefits-tab">
-    <h2 className="text-2xl font-bold">🏥 Benefits</h2>
-    <Card>
-      <CardContent className="p-6">
-        <p className="text-gray-600 text-center">Benefits information coming soon...</p>
-      </CardContent>
-    </Card>
-  </div>
-);
-
-// Performance Tab
-const PerformanceTab = () => (
-  <div className="space-y-6" data-testid="performance-tab">
-    <h2 className="text-2xl font-bold">🎯 Performance</h2>
-    <Card>
-      <CardContent className="p-6">
-        <p className="text-gray-600 text-center">Performance tracking coming soon...</p>
-      </CardContent>
-    </Card>
-  </div>
-);
-
-// Training Tab
-const TrainingTab = () => (
-  <div className="space-y-6" data-testid="training-tab">
-    <h2 className="text-2xl font-bold">📚 Training</h2>
-    <Card>
-      <CardContent className="p-6">
-        <p className="text-gray-600 text-center">Training modules coming soon...</p>
-      </CardContent>
-    </Card>
-  </div>
-);
-
 // Communication Tab
 const CommunicationTab = () => (
   <div className="space-y-6" data-testid="communication-tab">

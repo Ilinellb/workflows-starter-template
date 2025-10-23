@@ -2735,8 +2735,8 @@ const TeamSchedulingTab = () => {
               <label className="text-sm font-medium">Employee</label>
               <select 
                 className="w-full mt-1 p-2 border rounded"
-                value={selectedEmployee}
-                onChange={(e) => setSelectedEmployee(e.target.value)}
+                value={shiftForm.employeeId}
+                onChange={(e) => setShiftForm({...shiftForm, employeeId: e.target.value})}
               >
                 <option value="">Select Employee...</option>
                 {employees.map(emp => (
@@ -2746,31 +2746,56 @@ const TeamSchedulingTab = () => {
             </div>
             <div>
               <label className="text-sm font-medium">Date</label>
-              <input type="date" className="w-full mt-1 p-2 border rounded" />
+              <input 
+                type="date" 
+                className="w-full mt-1 p-2 border rounded"
+                value={shiftForm.date}
+                onChange={(e) => setShiftForm({...shiftForm, date: e.target.value})}
+              />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-sm font-medium">Start Time</label>
-                <input type="time" className="w-full mt-1 p-2 border rounded" />
+                <input 
+                  type="time" 
+                  className="w-full mt-1 p-2 border rounded"
+                  value={shiftForm.startTime}
+                  onChange={(e) => setShiftForm({...shiftForm, startTime: e.target.value})}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium">End Time</label>
-                <input type="time" className="w-full mt-1 p-2 border rounded" />
+                <input 
+                  type="time" 
+                  className="w-full mt-1 p-2 border rounded"
+                  value={shiftForm.endTime}
+                  onChange={(e) => setShiftForm({...shiftForm, endTime: e.target.value})}
+                />
               </div>
             </div>
             <div>
               <label className="text-sm font-medium">Shift Type</label>
-              <select className="w-full mt-1 p-2 border rounded">
-                <option>Regular</option>
-                <option>Evening</option>
-                <option>Night</option>
-                <option>Early</option>
-                <option>Overtime</option>
+              <select 
+                className="w-full mt-1 p-2 border rounded"
+                value={shiftForm.shiftType}
+                onChange={(e) => setShiftForm({...shiftForm, shiftType: e.target.value})}
+              >
+                <option value="Regular">Regular</option>
+                <option value="Evening">Evening</option>
+                <option value="Night">Night</option>
+                <option value="Early">Early</option>
+                <option value="Overtime">Overtime</option>
               </select>
             </div>
             <div>
               <label className="text-sm font-medium">Location</label>
-              <input type="text" placeholder="Main Office, Remote, etc." className="w-full mt-1 p-2 border rounded" />
+              <input 
+                type="text" 
+                placeholder="Main Office, Remote, etc." 
+                className="w-full mt-1 p-2 border rounded"
+                value={shiftForm.location}
+                onChange={(e) => setShiftForm({...shiftForm, location: e.target.value})}
+              />
             </div>
           </div>
           <DialogFooter>

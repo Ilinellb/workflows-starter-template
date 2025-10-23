@@ -2840,7 +2840,14 @@ const TeamSchedulingTab = () => {
               variant="outline" 
               onClick={() => {
                 setShowAssignModal(false);
-                setSelectedEmployee('');
+                setShiftForm({
+                  employeeId: '',
+                  date: '',
+                  startTime: '',
+                  endTime: '',
+                  shiftType: 'Regular',
+                  location: 'Main Office'
+                });
               }}
             >
               Cancel

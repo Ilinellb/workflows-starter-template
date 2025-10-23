@@ -2269,6 +2269,16 @@ const TeamSchedulingTab = () => {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [viewMode, setViewMode] = useState('week'); // 'week' or 'month'
+  
+  // Form state for shift assignment
+  const [shiftForm, setShiftForm] = useState({
+    employeeId: '',
+    date: '',
+    startTime: '',
+    endTime: '',
+    shiftType: 'Regular',
+    location: 'Main Office'
+  });
 
   // Fetch real employees and team schedules from backend
   useEffect(() => {

@@ -243,7 +243,7 @@
 
 ## test_plan:
   current_focus:
-    - "Team Scheduling System Active User Assignment Fix"
+    - "Team Scheduling System Active User Assignment Fix - COMPLETED"
     - "Test Room Management guest out timer display functionality"
     - "Test Employee My Schedule tab comprehensive functionality"
     - "Test Manager Team Scheduling tab comprehensive functionality" 

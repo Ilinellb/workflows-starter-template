@@ -220,6 +220,18 @@
         - agent: "testing"
         - comment: "Manager Team Scheduling tab tested comprehensively and working perfectly. Team statistics displaying correctly (Total Shifts, Confirmed, Pending, Total Hours). Week View vs Month View toggle working smoothly. Weekly team schedule grid functional with employee rows and day columns showing shift assignments with proper color coding. Week navigation (Previous/Next Week) working. Assign Shift modal opens with all form elements (employee dropdown, date input, time inputs, shift type, location). Calendar integration in month view working with shift highlighting. All manager scheduling features fully operational."
 
+  - task: "Team Scheduling System Active User Assignment Fix"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+        - agent: "main"
+        - comment: "Fixed Team Scheduling system to connect to real active employees instead of demo data. Updated fetchEmployeesAndSchedules() function to call GET /api/users endpoint and filter for active employees with employee role. Employee dropdown in Assign Shift modal should now show real users with format 'Name - Department'."
+
 ## metadata:
   created_by: "main_agent"
   version: "1.0"

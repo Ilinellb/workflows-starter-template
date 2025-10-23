@@ -3432,42 +3432,146 @@ const EmployeeManagementTab = () => {
           ) : filteredEmployees.length > 0 ? (
             <div className="space-y-3">
               {filteredEmployees.map((employee) => (
-                <div key={employee.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-blue-600 font-medium">
-                        {employee.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="font-medium">{employee.name}</h3>
-                      <p className="text-sm text-gray-600">{employee.email}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge className={getRoleBadge(employee.role)}>
-                          {getRoleDisplay(employee.role)}
-                        </Badge>
-                        <Badge variant={employee.is_active ? 'default' : 'secondary'}>
-                          {employee.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
+                <div key={employee.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start justify-between">
+                    {/* Employee Basic Info */}
+                    <div className="flex items-start space-x-4 flex-1">
+                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-blue-600 font-medium text-lg">
+                          {employee.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-medium text-lg">{employee.name}</h3>
+                        <p className="text-sm text-gray-600 mb-2">{employee.email}</p>
+                        <div className="flex items-center gap-2 mb-3">
+                          <Badge className={getRoleBadge(employee.role)}>
+                            {getRoleDisplay(employee.role)}
+                          </Badge>
+                          <Badge variant={employee.is_active ? 'default' : 'secondary'}>
+                            {employee.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </div>
+
+                        {/* Integrated Data Display */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+                          {/* Time Tracking Integration */}
+                          <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                            <h4 className="font-medium text-blue-800 text-sm mb-2">🕒 Time Tracking</h4>
+                            <div className="space-y-1 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-blue-600">Hours this month:</span>
+                                <span className="font-medium">{employee.timeData?.totalHours || 0}h</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-blue-600">Efficiency:</span>
+                                <span className={`font-medium ${
+                                  (employee.timeData?.efficiency || 0) >= 95 ? 'text-green-600' : 
+                                  (employee.timeData?.efficiency || 0) >= 85 ? 'text-blue-600' : 'text-orange-600'
+                                }`}>
+                                  {employee.timeData?.efficiency || 0}%
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-blue-600">Punctuality:</span>
+                                <span className="font-medium">{employee.timeData?.punctuality || 0}%</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Scheduling Integration */}
+                          <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                            <h4 className="font-medium text-green-800 text-sm mb-2">📅 Scheduling</h4>
+                            <div className="space-y-1 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-green-600">Upcoming shifts:</span>
+                                <span className="font-medium">{employee.scheduleData?.upcomingShifts || 0}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-green-600">Preferred:</span>
+                                <span className="font-medium">{employee.scheduleData?.preferredShift || 'Regular'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-green-600">Conflicts:</span>
+                                <span className={`font-medium ${
+                                  (employee.scheduleData?.schedulingConflicts || 0) > 0 ? 'text-red-600' : 'text-green-600'
+                                }`}>
+                                  {employee.scheduleData?.schedulingConflicts || 0}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Room Management Integration */}
+                          <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                            <h4 className="font-medium text-purple-800 text-sm mb-2">🏠 Room Management</h4>
+                            <div className="space-y-1 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-purple-600">Rooms assigned:</span>
+                                <span className="font-medium">{employee.roomData?.roomsAssigned || 0}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-purple-600">Completed:</span>
+                                <span className="font-medium text-green-600">{employee.roomData?.roomsCompleted || 0}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-purple-600">Room efficiency:</span>
+                                <span className="font-medium">{employee.roomData?.roomEfficiency || 0}%</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-purple-600">Avg time/room:</span>
+                                <span className="font-medium">{employee.roomData?.avgRoomTime || 0}min</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Performance Indicators */}
+                        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-200">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${
+                              (employee.timeData?.efficiency || 0) >= 95 ? 'bg-green-500' :
+                              (employee.timeData?.efficiency || 0) >= 85 ? 'bg-blue-500' :
+                              (employee.timeData?.efficiency || 0) >= 75 ? 'bg-orange-500' : 'bg-red-500'
+                            }`}></div>
+                            <span className="text-xs text-gray-600">Overall Performance</span>
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Specialization: {employee.roomData?.specializations || 'General'}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => openEditModal(employee)}
-                    >
-                      ✏️ Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-red-600 hover:text-red-700"
-                      onClick={() => handleDeleteEmployee(employee.id, employee.name)}
-                    >
-                      🗑️ Delete
-                    </Button>
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col gap-2 ml-4">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openEditModal(employee)}
+                      >
+                        ✏️ Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 hover:text-red-700"
+                        onClick={() => handleDeleteEmployee(employee.id, employee.name)}
+                      >
+                        🗑️ Delete
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-blue-600 hover:text-blue-700"
+                        onClick={() => {
+                          toast.info(`Viewing detailed analytics for ${employee.name}`);
+                          // Could open a detailed employee analytics modal
+                        }}
+                      >
+                        📊 Analytics
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}

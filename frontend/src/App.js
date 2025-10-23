@@ -3325,8 +3325,8 @@ const EmployeeManagementTab = () => {
         </Button>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Enhanced Statistics Cards with Integration Data */}
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
@@ -3339,9 +3339,9 @@ const EmployeeManagementTab = () => {
           <CardContent className="p-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                {employees.filter(e => e.role === 'employee').length}
+                {employees.filter(e => e.is_active).length}
               </div>
-              <div className="text-sm text-gray-600">Employees</div>
+              <div className="text-sm text-gray-600">Active Users</div>
             </div>
           </CardContent>
         </Card>
@@ -3349,9 +3349,9 @@ const EmployeeManagementTab = () => {
           <CardContent className="p-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
-                {employees.filter(e => e.role === 'manager').length}
+                {employees.filter(e => e.timeData?.totalHours > 0).length}
               </div>
-              <div className="text-sm text-gray-600">Managers</div>
+              <div className="text-sm text-gray-600">Working This Month</div>
             </div>
           </CardContent>
         </Card>
@@ -3359,9 +3359,29 @@ const EmployeeManagementTab = () => {
           <CardContent className="p-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-orange-600">
-                {employees.filter(e => e.is_active).length}
+                {employees.reduce((sum, e) => sum + (e.scheduleData?.upcomingShifts || 0), 0)}
               </div>
-              <div className="text-sm text-gray-600">Active Users</div>
+              <div className="text-sm text-gray-600">Scheduled Shifts</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-indigo-600">
+                {employees.reduce((sum, e) => sum + (e.roomData?.roomsAssigned || 0), 0)}
+              </div>
+              <div className="text-sm text-gray-600">Rooms Assigned</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-teal-600">
+                {(employees.reduce((sum, e) => sum + (e.timeData?.efficiency || 0), 0) / employees.length).toFixed(1)}%
+              </div>
+              <div className="text-sm text-gray-600">Avg Efficiency</div>
             </div>
           </CardContent>
         </Card>

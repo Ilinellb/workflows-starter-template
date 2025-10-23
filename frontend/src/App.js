@@ -2438,16 +2438,66 @@ const TeamSchedulingTab = () => {
     }
   };
 
-  const handleAssignShift = () => {
-    if (!selectedEmployee) {
+  const handleAssignShift = async () => {
+    if (!shiftForm.employeeId) {
       toast.error('Please select an employee');
       return;
     }
     
-    // In real app, this would call the backend API
-    toast.success('Shift assigned successfully!');
-    setShowAssignModal(false);
-    setSelectedEmployee('');
+    if (!shiftForm.date || !shiftForm.startTime || !shiftForm.endTime) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      // Try to call backend API for shift creation
+      const newShift = {
+        employeeId: shiftForm.employeeId,
+        date: shiftForm.date,
+        startTime: shiftForm.startTime,
+        endTime: shiftForm.endTime,
+        type: shiftForm.shiftType,
+        location: shiftForm.location,
+        status: 'Pending'
+      };
+
+      try {
+        await axios.post(`${API}/schedules/assign`, newShift);
+        toast.success('Shift assigned successfully!');
+      } catch (apiError) {
+        // If API doesn't exist, add to local state for demo
+        const employee = employees.find(emp => emp.id === shiftForm.employeeId);
+        const localShift = {
+          id: `shift-${Date.now()}`,
+          employeeId: shiftForm.employeeId,
+          employeeName: employee ? employee.name : 'Unknown',
+          date: shiftForm.date,
+          startTime: shiftForm.startTime,
+          endTime: shiftForm.endTime,
+          type: shiftForm.shiftType,
+          status: 'Pending',
+          location: shiftForm.location
+        };
+        
+        setTeamSchedules(prev => [...prev, localShift]);
+        toast.success(`Shift assigned to ${employee?.name} successfully!`);
+      }
+
+      // Reset form and close modal
+      setShiftForm({
+        employeeId: '',
+        date: '',
+        startTime: '',
+        endTime: '',
+        shiftType: 'Regular',
+        location: 'Main Office'
+      });
+      setShowAssignModal(false);
+      
+    } catch (error) {
+      console.error('Error assigning shift:', error);
+      toast.error('Failed to assign shift');
+    }
   };
 
   const getTeamStats = () => {

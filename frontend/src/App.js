@@ -2349,7 +2349,44 @@ const TeamSchedulingTab = () => {
     setTeamSchedules(schedules);
   };
 
-  const generateDemoSchedulesForSampleEmployees = () =>
+  const generateDemoSchedulesForSampleEmployees = () => {
+    const sampleTeamSchedules = [
+      {
+        id: 'team-shift-1',
+        employeeId: 'emp-1',
+        employeeName: 'John Employee',
+        date: new Date().toISOString().split('T')[0],
+        startTime: '09:00',
+        endTime: '17:00',
+        type: 'Regular',
+        status: 'Confirmed',
+        location: 'Main Office'
+      },
+      {
+        id: 'team-shift-2',
+        employeeId: 'emp-2',
+        employeeName: 'Jane Smith',
+        date: new Date().toISOString().split('T')[0],
+        startTime: '14:00',
+        endTime: '22:00',
+        type: 'Evening',
+        status: 'Confirmed',
+        location: 'Main Office'
+      },
+      {
+        id: 'team-shift-3',
+        employeeId: 'emp-3',
+        employeeName: 'Mike Johnson',
+        date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        startTime: '06:00',
+        endTime: '14:00',
+        type: 'Early',
+        status: 'Pending',
+        location: 'Facility'
+      }
+    ];
+    setTeamSchedules(sampleTeamSchedules);
+  };
 
     const sampleTeamSchedules = [
       {

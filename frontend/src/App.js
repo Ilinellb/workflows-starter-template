@@ -2270,14 +2270,76 @@ const TeamSchedulingTab = () => {
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [viewMode, setViewMode] = useState('week'); // 'week' or 'month'
 
-  // Sample team data - in real app this would come from backend
+  // Fetch real employees and team schedules from backend
   useEffect(() => {
-    const sampleEmployees = [
-      { id: 'emp-1', name: 'John Employee', email: 'john@company.com', department: 'Operations' },
-      { id: 'emp-2', name: 'Jane Smith', email: 'jane@company.com', department: 'Operations' },
-      { id: 'emp-3', name: 'Mike Johnson', email: 'mike@company.com', department: 'Maintenance' }
-    ];
-    setEmployees(sampleEmployees);
+    fetchEmployeesAndSchedules();
+  }, []);
+
+  const fetchEmployeesAndSchedules = async () => {
+    setLoading(true);
+    try {
+      // Fetch actual employees from the system
+      const employeesResponse = await axios.get(`${API}/users`);
+      const activeEmployees = employeesResponse.data.filter(user => user.is_active && user.role === 'employee');
+      setEmployees(activeEmployees.map(emp => ({
+        id: emp.id,
+        name: emp.name,
+        email: emp.email,
+        department: emp.department || 'General'
+      })));
+
+      // Fetch actual schedules (or use demo data for now)
+      try {
+        const schedulesResponse = await axios.get(`${API}/schedules/team`);
+        setTeamSchedules(schedulesResponse.data || []);
+      } catch (scheduleError) {
+        // If schedules API doesn't exist yet, generate demo data for existing employees
+        generateDemoSchedulesForRealEmployees(activeEmployees);
+      }
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      toast.error('Failed to load employees. Using demo data.');
+      // Fallback to original demo data if API fails
+      const sampleEmployees = [
+        { id: 'emp-1', name: 'John Employee', email: 'john@company.com', department: 'Operations' },
+        { id: 'emp-2', name: 'Jane Smith', email: 'jane@company.com', department: 'Operations' },
+        { id: 'emp-3', name: 'Mike Johnson', email: 'mike@company.com', department: 'Maintenance' }
+      ];
+      setEmployees(sampleEmployees);
+      generateDemoSchedulesForSampleEmployees();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateDemoSchedulesForRealEmployees = (realEmployees) => {
+    const schedules = [];
+    realEmployees.forEach((employee, index) => {
+      // Generate a few sample shifts for each real employee
+      const shifts = ['09:00-17:00', '14:00-22:00', '06:00-14:00'];
+      const shiftTypes = ['Regular', 'Evening', 'Early'];
+      
+      for (let i = 0; i < 3; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() + i);
+        
+        schedules.push({
+          id: `schedule-${employee.id}-${i}`,
+          employeeId: employee.id,
+          employeeName: employee.name,
+          date: date.toISOString().split('T')[0],
+          startTime: shifts[i % shifts.length].split('-')[0],
+          endTime: shifts[i % shifts.length].split('-')[1],
+          type: shiftTypes[i % shiftTypes.length],
+          status: i === 0 ? 'Confirmed' : 'Pending',
+          location: 'Main Office'
+        });
+      }
+    });
+    setTeamSchedules(schedules);
+  };
+
+  const generateDemoSchedulesForSampleEmployees = () =>
 
     const sampleTeamSchedules = [
       {

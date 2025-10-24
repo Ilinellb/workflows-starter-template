@@ -2353,7 +2353,8 @@ const CommunicationTab = () => {
   // Initialize WebSocket connection
   useEffect(() => {
     if (user && token) {
-      const websocket = new WebSocket(`${BACKEND_URL.replace('http', 'ws')}/api/ws/${user.id}`);
+      const wsUrl = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://');
+      const websocket = new WebSocket(`${wsUrl}/api/ws/${user.id}`);
       
       websocket.onopen = () => {
         console.log('WebSocket connected');

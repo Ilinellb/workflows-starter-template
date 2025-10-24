@@ -1486,7 +1486,192 @@ const TimeOffRequestsTab = () => {
 
       {/* Request History */}
       <Card>
-        <CardHeader></CardHeader>
+        <CardHeader>
+          <CardTitle>📋 Request History</CardTitle>
+          <CardDescription>All your time off requests ({requests.length} total)</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+              <p className="text-gray-600">Loading requests...</p>
+            </div>
+          ) : requests.length > 0 ? (
+            <div className="space-y-3">
+              {requests.map((request) => (
+                <div key={request.id} className="p-4 border rounded-lg hover:bg-gray-50">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-start gap-3">
+                      <div className="text-2xl">{getRequestTypeIcon(request.requestType)}</div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-medium capitalize">{request.requestType} Request</h3>
+                          <Badge className={getStatusColor(request.status)}>
+                            {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-gray-600 space-y-1">
+                          <p><strong>Dates:</strong> {formatDate(request.startDate)} - {formatDate(request.endDate)} ({request.daysRequested} days)</p>
+                          <p><strong>Reason:</strong> {request.reason}</p>
+                          <p><strong>Submitted:</strong> {formatDate(request.submittedDate)}</p>
+                          {request.approvedBy && (
+                            <p><strong>Approved by:</strong> {request.approvedBy}</p>
+                          )}
+                          {request.rejectedReason && (
+                            <p className="text-red-600"><strong>Rejection reason:</strong> {request.rejectedReason}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {request.status === 'pending' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-600"
+                          onClick={() => {
+                            if (confirm('Are you sure you want to cancel this request?')) {
+                              setRequests(prev => prev.filter(r => r.id !== request.id));
+                              toast.success('Request cancelled');
+                            }
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          toast.info(`Request Details:\n\nType: ${request.requestType}\nDates: ${request.startDate} to ${request.endDate}\nReason: ${request.reason}\nEmergency Contact: ${request.emergencyContact || 'Not provided'}\nWork Coverage: ${request.workCoverage || 'Not specified'}`);
+                        }}
+                      >
+                        View Details
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <div className="text-4xl mb-2">📋</div>
+              <p>No time off requests yet</p>
+              <p className="text-sm mt-1">Click "New Request" to submit your first request</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Detailed Request Modal */}
+      <Dialog open={showRequestForm} onOpenChange={setShowRequestForm}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>📝 New Time Off Request</DialogTitle>
+            <DialogDescription>
+              Submit a detailed time off request for manager approval
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label>Request Type *</Label>
+              <select
+                className="w-full mt-1 p-2 border rounded"
+                value={requestForm.requestType}
+                onChange={(e) => setRequestForm({...requestForm, requestType: e.target.value})}
+              >
+                <option value="vacation">🏖️ Vacation</option>
+                <option value="sick">🤒 Sick Leave</option>
+                <option value="personal">👨‍👩‍👧‍👦 Personal</option>
+                <option value="bereavement">🕊️ Bereavement</option>
+                <option value="maternity">👶 Maternity/Paternity</option>
+                <option value="emergency">🚨 Emergency</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Start Date *</Label>
+                <Input
+                  type="date"
+                  value={requestForm.startDate}
+                  onChange={(e) => setRequestForm({...requestForm, startDate: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label>End Date *</Label>
+                <Input
+                  type="date"
+                  value={requestForm.endDate}
+                  onChange={(e) => setRequestForm({...requestForm, endDate: e.target.value})}
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Reason for Request *</Label>
+              <textarea
+                className="w-full mt-1 p-2 border rounded h-20"
+                placeholder="Please provide details about your time off request..."
+                value={requestForm.reason}
+                onChange={(e) => setRequestForm({...requestForm, reason: e.target.value})}
+              />
+            </div>
+            <div>
+              <Label>Emergency Contact</Label>
+              <Input
+                placeholder="Name and phone number"
+                value={requestForm.emergencyContact}
+                onChange={(e) => setRequestForm({...requestForm, emergencyContact: e.target.value})}
+              />
+            </div>
+            <div>
+              <Label>Work Coverage Arrangement</Label>
+              <textarea
+                className="w-full mt-1 p-2 border rounded h-16"
+                placeholder="Who will cover your responsibilities? Any special instructions?"
+                value={requestForm.workCoverage}
+                onChange={(e) => setRequestForm({...requestForm, workCoverage: e.target.value})}
+              />
+            </div>
+            
+            {/* Request Summary */}
+            {requestForm.startDate && requestForm.endDate && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-medium text-blue-800 mb-2">📊 Request Summary</h4>
+                <div className="text-sm text-blue-700">
+                  <p>Days requested: {requestForm.startDate && requestForm.endDate ? 
+                    Math.ceil((new Date(requestForm.endDate).getTime() - new Date(requestForm.startDate).getTime()) / (1000 * 3600 * 24)) + 1 : 0}</p>
+                  <p>Remaining balance after approval: {balance.remaining - (requestForm.startDate && requestForm.endDate ? 
+                    Math.ceil((new Date(requestForm.endDate).getTime() - new Date(requestForm.startDate).getTime()) / (1000 * 3600 * 24)) + 1 : 0)} days</p>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowRequestForm(false);
+                setRequestForm({
+                  startDate: '',
+                  endDate: '',
+                  requestType: 'vacation',
+                  reason: '',
+                  emergencyContact: '',
+                  workCoverage: ''
+                });
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitRequest}>
+              Submit Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
           <CardTitle>My Time Off Balance</CardTitle>
         </CardHeader>
         <CardContent>

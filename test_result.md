@@ -297,10 +297,9 @@
 
 ## test_plan:
   current_focus:
-    - "Employee Time Off Requests Tab - COMPLETED"
-    - "Manager Time Off Approvals Tab - COMPLETED"
-    - "Complete Time Off Workflow Testing - COMPLETED"
-    - "Time Off Calendar Integration and UI/UX Testing - COMPLETED"
+    - "Messages/Communication System Backend APIs - NEEDS TESTING"
+    - "Messages/Communication Tab (Employee & Manager) - NEEDS TESTING"
+    - "Complete Messaging Workflow Testing (WebSocket, File Upload, Categories) - NEEDS TESTING"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"

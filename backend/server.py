@@ -450,6 +450,18 @@ async def get_users(current_user: User = Depends(get_current_user)):
     users = await db.users.find(query).to_list(1000)
     return [User(**parse_from_mongo(user)).dict() for user in users]
 
+@api_router.get("/users/for-messaging")
+async def get_users_for_messaging(current_user: User = Depends(get_current_user)):
+    """Get all active users for messaging purposes (limited info)"""
+    users = await db.users.find({"is_active": True}).to_list(1000)
+    # Return only necessary info for messaging
+    return [{
+        "id": user["id"],
+        "name": user["name"],
+        "email": user["email"],
+        "role": user["role"]
+    } for user in users if user["id"] != current_user.id]  # Exclude current user
+
 @api_router.put("/users/{user_id}")
 async def update_user(user_id: str, user_data: UserUpdate, current_user: User = Depends(get_current_user)):
     # Check permissions

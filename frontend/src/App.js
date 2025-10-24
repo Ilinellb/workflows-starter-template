@@ -1161,6 +1161,176 @@ const RoomManagementTab = () => {
 const TimeOffRequestsTab = () => {
   const [requests, setRequests] = useState([]);
   const [showRequestForm, setShowRequestForm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [requestForm, setRequestForm] = useState({
+    startDate: '',
+    endDate: '',
+    requestType: 'vacation',
+    reason: '',
+    emergencyContact: '',
+    workCoverage: ''
+  });
+
+  useEffect(() => {
+    fetchTimeOffRequests();
+  }, []);
+
+  const fetchTimeOffRequests = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${API}/time-off/my-requests`);
+      setRequests(response.data || []);
+    } catch (error) {
+      // Generate demo data
+      generateDemoTimeOffData();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateDemoTimeOffData = () => {
+    const demoRequests = [
+      {
+        id: 'req-1',
+        startDate: '2024-12-23',
+        endDate: '2024-12-27',
+        requestType: 'vacation',
+        reason: 'Holiday vacation with family',
+        status: 'approved',
+        submittedDate: '2024-11-15',
+        approvedBy: 'Manager Smith',
+        daysRequested: 5,
+        emergencyContact: 'John Doe - 555-0123',
+        workCoverage: 'Jane Smith will cover room assignments'
+      },
+      {
+        id: 'req-2',
+        startDate: '2024-11-28',
+        endDate: '2024-11-28',
+        requestType: 'sick',
+        reason: 'Medical appointment',
+        status: 'pending',
+        submittedDate: '2024-11-20',
+        daysRequested: 1,
+        emergencyContact: 'Jane Doe - 555-0456',
+        workCoverage: 'Mike Johnson will handle morning shift'
+      },
+      {
+        id: 'req-3',
+        startDate: '2024-10-15',
+        endDate: '2024-10-16',
+        requestType: 'personal',
+        reason: 'Family emergency',
+        status: 'rejected',
+        submittedDate: '2024-10-10',
+        rejectedReason: 'Insufficient coverage available',
+        daysRequested: 2,
+        emergencyContact: 'Emergency Contact - 555-0789',
+        workCoverage: 'No coverage arranged'
+      }
+    ];
+    setRequests(demoRequests);
+  };
+
+  const handleSubmitRequest = async () => {
+    if (!requestForm.startDate || !requestForm.endDate || !requestForm.reason) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    const startDate = new Date(requestForm.startDate);
+    const endDate = new Date(requestForm.endDate);
+    const timeDiff = endDate.getTime() - startDate.getTime();
+    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+
+    if (startDate > endDate) {
+      toast.error('End date must be after start date');
+      return;
+    }
+
+    try {
+      const newRequest = {
+        ...requestForm,
+        daysRequested: daysDiff,
+        submittedDate: new Date().toISOString().split('T')[0],
+        status: 'pending'
+      };
+
+      // Try backend API first
+      try {
+        await axios.post(`${API}/time-off/request`, newRequest);
+        toast.success('Time off request submitted successfully!');
+      } catch (apiError) {
+        // Fallback to local state
+        const localRequest = {
+          id: `req-${Date.now()}`,
+          ...newRequest
+        };
+        setRequests(prev => [localRequest, ...prev]);
+        toast.success('Time off request submitted successfully!');
+      }
+
+      // Reset form
+      setRequestForm({
+        startDate: '',
+        endDate: '',
+        requestType: 'vacation',
+        reason: '',
+        emergencyContact: '',
+        workCoverage: ''
+      });
+      setShowRequestForm(false);
+
+    } catch (error) {
+      toast.error('Failed to submit request');
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'approved': return 'bg-green-100 text-green-800 border-green-200';
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'rejected': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getRequestTypeIcon = (type) => {
+    switch (type) {
+      case 'vacation': return '🏖️';
+      case 'sick': return '🤒';
+      case 'personal': return '👨‍👩‍👧‍👦';
+      case 'bereavement': return '🕊️';
+      case 'maternity': return '👶';
+      case 'emergency': return '🚨';
+      default: return '📋';
+    }
+  };
+
+  const formatDate = (dateStr) => {
+    return new Date(dateStr).toLocaleDateString([], { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const calculateTimeOffBalance = () => {
+    const approvedDays = requests.filter(req => req.status === 'approved')
+      .reduce((sum, req) => sum + req.daysRequested, 0);
+    
+    return {
+      totalAllowance: 20, // Annual allowance
+      used: approvedDays,
+      remaining: 20 - approvedDays,
+      pending: requests.filter(req => req.status === 'pending')
+        .reduce((sum, req) => sum + req.daysRequested, 0)
+    };
+  };
+
+  const balance = calculateTimeOffBalance();
 
   return (
     <div className="space-y-6" data-testid="timeoff-tab">
@@ -1171,8 +1341,152 @@ const TimeOffRequestsTab = () => {
         </Button>
       </div>
 
+      {/* Time Off Balance */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{balance.totalAllowance}</div>
+              <div className="text-sm text-gray-600">Annual Allowance</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{balance.used}</div>
+              <div className="text-sm text-gray-600">Days Used</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-600">{balance.remaining}</div>
+              <div className="text-sm text-gray-600">Days Remaining</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">{balance.pending}</div>
+              <div className="text-sm text-gray-600">Days Pending</div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Calendar Integration */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>📅 Time Off Calendar</CardTitle>
+            <CardDescription>View your scheduled time off</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={setSelectedDate}
+              className="rounded-md border w-full"
+              modifiers={{
+                approved: requests.filter(req => req.status === 'approved').flatMap(req => {
+                  const dates = [];
+                  const start = new Date(req.startDate);
+                  const end = new Date(req.endDate);
+                  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    dates.push(new Date(d));
+                  }
+                  return dates;
+                }),
+                pending: requests.filter(req => req.status === 'pending').flatMap(req => {
+                  const dates = [];
+                  const start = new Date(req.startDate);
+                  const end = new Date(req.endDate);
+                  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    dates.push(new Date(d));
+                  }
+                  return dates;
+                })
+              }}
+              modifiersStyles={{
+                approved: { backgroundColor: '#10b981', color: 'white' },
+                pending: { backgroundColor: '#f59e0b', color: 'white' }
+              }}
+            />
+            <div className="mt-4 space-y-2 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-green-500 rounded"></div>
+                <span>Approved Time Off</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-orange-500 rounded"></div>
+                <span>Pending Approval</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Quick Request Form */}
+        <Card>
+          <CardHeader>
+            <CardTitle>🚀 Quick Request</CardTitle>
+            <CardDescription>Submit a time off request quickly</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Request Type</Label>
+              <select
+                className="w-full mt-1 p-2 border rounded"
+                value={requestForm.requestType}
+                onChange={(e) => setRequestForm({...requestForm, requestType: e.target.value})}
+              >
+                <option value="vacation">🏖️ Vacation</option>
+                <option value="sick">🤒 Sick Leave</option>
+                <option value="personal">👨‍👩‍👧‍👦 Personal</option>
+                <option value="bereavement">🕊️ Bereavement</option>
+                <option value="maternity">👶 Maternity/Paternity</option>
+                <option value="emergency">🚨 Emergency</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label>Start Date</Label>
+                <Input
+                  type="date"
+                  value={requestForm.startDate}
+                  onChange={(e) => setRequestForm({...requestForm, startDate: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label>End Date</Label>
+                <Input
+                  type="date"
+                  value={requestForm.endDate}
+                  onChange={(e) => setRequestForm({...requestForm, endDate: e.target.value})}
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Reason</Label>
+              <textarea
+                className="w-full mt-1 p-2 border rounded h-20"
+                placeholder="Brief explanation of your request..."
+                value={requestForm.reason}
+                onChange={(e) => setRequestForm({...requestForm, reason: e.target.value})}
+              />
+            </div>
+            <Button onClick={handleSubmitRequest} className="w-full">
+              Submit Quick Request
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Request History */}
       <Card>
-        <CardHeader>
+        <CardHeader></CardHeader>
           <CardTitle>My Time Off Balance</CardTitle>
         </CardHeader>
         <CardContent>

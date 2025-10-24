@@ -2337,6 +2337,772 @@ def main_super_admin():
         print("❌ Super Admin User Creation: FAILED")
         return False
 
+class MessagesTester:
+    def __init__(self):
+        self.session = requests.Session()
+        self.auth_token = None
+        self.user_data = None
+        self.uploaded_files = []  # Track uploaded files for cleanup
+        
+    def authenticate(self, email="john@company.com", password="password123"):
+        """Authenticate user and get access token"""
+        print(f"\n🔐 Authenticating user: {email}")
+        
+        login_data = {
+            "email": email,
+            "password": password
+        }
+        
+        try:
+            response = self.session.post(f"{API_BASE}/auth/login", json=login_data)
+            print(f"Login response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.auth_token = data.get('access_token')
+                self.user_data = data.get('user')
+                
+                # Set authorization header for future requests
+                self.session.headers.update({
+                    'Authorization': f'Bearer {self.auth_token}',
+                    'Content-Type': 'application/json'
+                })
+                
+                print(f"✅ Authentication successful")
+                print(f"   User: {self.user_data.get('name')} ({self.user_data.get('role')})")
+                return True
+            else:
+                print(f"❌ Authentication failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Authentication error: {str(e)}")
+            return False
+    
+    def test_file_upload(self):
+        """Test POST /api/messages/upload - file upload functionality"""
+        print(f"\n📎 Testing file upload API")
+        
+        # Create a test file
+        test_content = "This is a test file for messaging system"
+        test_filename = "test_message_attachment.txt"
+        
+        try:
+            # Prepare multipart form data
+            files = {
+                'file': (test_filename, test_content, 'text/plain')
+            }
+            
+            # Remove Content-Type header for multipart upload
+            headers = {'Authorization': f'Bearer {self.auth_token}'}
+            
+            response = requests.post(f"{API_BASE}/messages/upload", files=files, headers=headers)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"   ✅ Success: File uploaded")
+                print(f"   📋 Upload details:")
+                print(f"      Filename: {result.get('filename')}")
+                print(f"      Original: {result.get('original_filename')}")
+                print(f"      Size: {result.get('file_size')} bytes")
+                print(f"      Type: {result.get('file_type')}")
+                print(f"      URL: {result.get('file_url')}")
+                
+                # Store for later tests
+                self.uploaded_files.append(result.get('filename'))
+                return True, result
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False, {}
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False, {}
+    
+    def test_file_download(self, filename):
+        """Test GET /api/messages/download/{filename} - file download functionality"""
+        print(f"\n📥 Testing file download API: {filename}")
+        
+        try:
+            response = self.session.get(f"{API_BASE}/messages/download/{filename}")
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                print(f"   ✅ Success: File downloaded")
+                print(f"   📋 Download details:")
+                print(f"      Content-Length: {response.headers.get('content-length', 'Unknown')}")
+                print(f"      Content-Type: {response.headers.get('content-type', 'Unknown')}")
+                return True
+            elif response.status_code == 404:
+                print(f"   ❌ File not found (404)")
+                return False
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_send_direct_message(self, recipient_id, subject="Test Direct Message", content="This is a test direct message"):
+        """Test POST /api/messages - send direct message"""
+        print(f"\n💬 Testing send direct message")
+        
+        message_data = {
+            "category": "direct",
+            "recipients": [recipient_id],
+            "subject": subject,
+            "content": content
+        }
+        
+        try:
+            response = self.session.post(f"{API_BASE}/messages", json=message_data)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"   ✅ Success: {result.get('message')}")
+                print(f"   📋 Message details:")
+                print(f"      Message ID: {result.get('message_id')}")
+                print(f"      Thread ID: {result.get('thread_id')}")
+                return True, result
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False, {}
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False, {}
+    
+    def test_send_group_message(self, recipient_ids, subject="Test Group Message", content="This is a test group message"):
+        """Test POST /api/messages - send group message"""
+        print(f"\n👥 Testing send group message to {len(recipient_ids)} recipients")
+        
+        message_data = {
+            "category": "group",
+            "recipients": recipient_ids,
+            "subject": subject,
+            "content": content
+        }
+        
+        try:
+            response = self.session.post(f"{API_BASE}/messages", json=message_data)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"   ✅ Success: {result.get('message')}")
+                print(f"   📋 Message details:")
+                print(f"      Message ID: {result.get('message_id')}")
+                print(f"      Thread ID: {result.get('thread_id')}")
+                return True, result
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False, {}
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False, {}
+    
+    def test_send_announcement_as_manager(self, subject="Test Announcement", content="This is a test announcement"):
+        """Test POST /api/messages - send announcement as manager"""
+        print(f"\n📢 Testing send announcement as manager")
+        
+        message_data = {
+            "category": "announcement",
+            "recipients": [],  # Empty for all employees
+            "subject": subject,
+            "content": content
+        }
+        
+        try:
+            response = self.session.post(f"{API_BASE}/messages", json=message_data)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"   ✅ Success: {result.get('message')}")
+                print(f"   📋 Announcement details:")
+                print(f"      Message ID: {result.get('message_id')}")
+                print(f"      Thread ID: {result.get('thread_id')}")
+                return True, result
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False, {}
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False, {}
+    
+    def test_send_announcement_as_employee(self):
+        """Test POST /api/messages - send announcement as employee (should fail)"""
+        print(f"\n🚫 Testing send announcement as employee (should fail)")
+        
+        message_data = {
+            "category": "announcement",
+            "recipients": [],
+            "subject": "Unauthorized Announcement",
+            "content": "This should fail"
+        }
+        
+        try:
+            response = self.session.post(f"{API_BASE}/messages", json=message_data)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 403:
+                print(f"   ✅ Success: Employee correctly denied announcement permission")
+                return True
+            else:
+                print(f"   ❌ Failed: Employee should not be able to send announcements")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_get_messages(self, category=None, thread_id=None, limit=50):
+        """Test GET /api/messages - retrieve messages"""
+        print(f"\n📨 Testing get messages (category: {category}, thread_id: {thread_id})")
+        
+        params = {"limit": limit}
+        if category:
+            params["category"] = category
+        if thread_id:
+            params["thread_id"] = thread_id
+        
+        try:
+            response = self.session.get(f"{API_BASE}/messages", params=params)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                messages = result.get('messages', [])
+                print(f"   ✅ Success: Retrieved {len(messages)} messages")
+                
+                if messages:
+                    print("   📋 Sample message structure:")
+                    sample_msg = messages[0]
+                    for key, value in sample_msg.items():
+                        if key not in ['content']:  # Skip long content
+                            print(f"      {key}: {value}")
+                
+                return True, messages
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False, []
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False, []
+    
+    def test_get_message_threads(self, category=None):
+        """Test GET /api/messages/threads - retrieve message threads"""
+        print(f"\n🧵 Testing get message threads (category: {category})")
+        
+        params = {}
+        if category:
+            params["category"] = category
+        
+        try:
+            response = self.session.get(f"{API_BASE}/messages/threads", params=params)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                threads = result.get('threads', [])
+                print(f"   ✅ Success: Retrieved {len(threads)} threads")
+                
+                if threads:
+                    print("   📋 Sample thread structure:")
+                    sample_thread = threads[0]
+                    for key, value in sample_thread.items():
+                        print(f"      {key}: {value}")
+                
+                return True, threads
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False, []
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False, []
+    
+    def test_mark_message_read(self, message_id):
+        """Test PUT /api/messages/{message_id}/read - mark message as read"""
+        print(f"\n✅ Testing mark message as read: {message_id}")
+        
+        try:
+            response = self.session.put(f"{API_BASE}/messages/{message_id}/read")
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"   ✅ Success: {result.get('message')}")
+                return True
+            elif response.status_code == 403:
+                print(f"   ❌ Permission denied: Not a recipient")
+                return False
+            elif response.status_code == 404:
+                print(f"   ❌ Message not found")
+                return False
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_edit_message(self, message_id, new_content="This is an edited message"):
+        """Test PUT /api/messages/{message_id} - edit message"""
+        print(f"\n✏️ Testing edit message: {message_id}")
+        
+        try:
+            response = self.session.put(f"{API_BASE}/messages/{message_id}", json={"content": new_content})
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"   ✅ Success: {result.get('message')}")
+                return True
+            elif response.status_code == 403:
+                print(f"   ❌ Permission denied: Not the sender")
+                return False
+            elif response.status_code == 404:
+                print(f"   ❌ Message not found")
+                return False
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_delete_message(self, message_id):
+        """Test DELETE /api/messages/{message_id} - delete message"""
+        print(f"\n🗑️ Testing delete message: {message_id}")
+        
+        try:
+            response = self.session.delete(f"{API_BASE}/messages/{message_id}")
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"   ✅ Success: {result.get('message')}")
+                return True
+            elif response.status_code == 403:
+                print(f"   ❌ Permission denied: Not the sender")
+                return False
+            elif response.status_code == 404:
+                print(f"   ❌ Message not found")
+                return False
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_add_attachments_to_message(self, message_id, attachments):
+        """Test POST /api/messages/{message_id}/attachments - add attachments"""
+        print(f"\n📎 Testing add attachments to message: {message_id}")
+        
+        try:
+            response = self.session.post(f"{API_BASE}/messages/{message_id}/attachments", json=attachments)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"   ✅ Success: {result.get('message')}")
+                return True
+            elif response.status_code == 403:
+                print(f"   ❌ Permission denied: Not the sender")
+                return False
+            elif response.status_code == 404:
+                print(f"   ❌ Message not found")
+                return False
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def get_all_users(self):
+        """Get all users for testing purposes"""
+        print(f"\n👥 Getting all users for testing")
+        
+        # Authenticate as admin to get users
+        admin_session = requests.Session()
+        admin_session.headers.update({'Content-Type': 'application/json'})
+        
+        login_data = {
+            "email": "admin@company.com",
+            "password": "admin123"
+        }
+        
+        try:
+            login_response = admin_session.post(f"{API_BASE}/auth/login", json=login_data)
+            if login_response.status_code != 200:
+                # Try alternative admin account
+                login_data["email"] = "lbj1288@gmail.com"
+                login_response = admin_session.post(f"{API_BASE}/auth/login", json=login_data)
+                if login_response.status_code != 200:
+                    print(f"   ❌ Cannot authenticate as admin")
+                    return []
+            
+            admin_token = login_response.json().get('access_token')
+            admin_session.headers.update({
+                'Authorization': f'Bearer {admin_token}'
+            })
+            
+            users_response = admin_session.get(f"{API_BASE}/users")
+            if users_response.status_code == 200:
+                users = users_response.json()
+                print(f"   ✅ Retrieved {len(users)} users")
+                return users
+            else:
+                print(f"   ❌ Failed to get users: {users_response.text}")
+                return []
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return []
+    
+    def run_comprehensive_messages_tests(self):
+        """Run all messaging system tests in sequence"""
+        print("=" * 60)
+        print("💬 MESSAGES/COMMUNICATION SYSTEM - BACKEND TESTING")
+        print("=" * 60)
+        
+        test_results = {
+            "employee_auth": False,
+            "manager_auth": False,
+            "file_upload": False,
+            "file_download": False,
+            "send_direct_message": False,
+            "send_group_message": False,
+            "send_announcement_manager": False,
+            "send_announcement_employee_denied": False,
+            "get_messages": False,
+            "get_message_threads": False,
+            "mark_message_read": False,
+            "edit_message": False,
+            "delete_message": False,
+            "add_attachments": False,
+            "permission_validation": False
+        }
+        
+        # Get users for testing
+        all_users = self.get_all_users()
+        if not all_users:
+            print("❌ Cannot proceed without user data")
+            return False
+        
+        # Find test users
+        employee_user = next((u for u in all_users if u.get('email') == 'john@company.com'), None)
+        manager_user = next((u for u in all_users if u.get('role') in ['manager', 'super_admin']), None)
+        
+        if not employee_user:
+            print("❌ Employee test user (john@company.com) not found")
+            return False
+        
+        if not manager_user:
+            print("❌ Manager/admin user not found")
+            return False
+        
+        print(f"📋 Test users identified:")
+        print(f"   Employee: {employee_user.get('name')} ({employee_user.get('email')})")
+        print(f"   Manager: {manager_user.get('name')} ({manager_user.get('email')})")
+        
+        # Test 1: Employee Authentication
+        print("\n" + "=" * 40)
+        print("🔐 TESTING EMPLOYEE AUTHENTICATION")
+        print("=" * 40)
+        
+        test_results["employee_auth"] = self.authenticate("john@company.com", "password123")
+        if not test_results["employee_auth"]:
+            print("❌ Cannot proceed without employee authentication")
+            return False
+        
+        # Test 2: File Upload API
+        print("\n" + "=" * 40)
+        print("📎 TESTING FILE UPLOAD API")
+        print("=" * 40)
+        
+        upload_success, upload_result = self.test_file_upload()
+        test_results["file_upload"] = upload_success
+        
+        # Test 3: File Download API
+        print("\n" + "=" * 40)
+        print("📥 TESTING FILE DOWNLOAD API")
+        print("=" * 40)
+        
+        if upload_success and upload_result.get('filename'):
+            test_results["file_download"] = self.test_file_download(upload_result.get('filename'))
+        else:
+            print("   ⚠️  Skipping file download test - upload failed")
+        
+        # Test 4: Send Direct Message
+        print("\n" + "=" * 40)
+        print("💬 TESTING SEND DIRECT MESSAGE")
+        print("=" * 40)
+        
+        direct_success, direct_result = self.test_send_direct_message(
+            manager_user.get('id'), 
+            "Test Direct Message from Employee",
+            "Hello manager, this is a test direct message from the employee."
+        )
+        test_results["send_direct_message"] = direct_success
+        
+        # Test 5: Send Group Message
+        print("\n" + "=" * 40)
+        print("👥 TESTING SEND GROUP MESSAGE")
+        print("=" * 40)
+        
+        # Get multiple recipients (limit to 3 for testing)
+        recipient_ids = [u.get('id') for u in all_users[:3] if u.get('id') != employee_user.get('id')]
+        if recipient_ids:
+            group_success, group_result = self.test_send_group_message(
+                recipient_ids,
+                "Test Group Message",
+                "This is a test group message to multiple recipients."
+            )
+            test_results["send_group_message"] = group_success
+        else:
+            print("   ⚠️  No recipients available for group message test")
+        
+        # Test 6: Send Announcement as Employee (should fail)
+        print("\n" + "=" * 40)
+        print("🚫 TESTING ANNOUNCEMENT AS EMPLOYEE (SHOULD FAIL)")
+        print("=" * 40)
+        
+        test_results["send_announcement_employee_denied"] = self.test_send_announcement_as_employee()
+        
+        # Test 7: Manager Authentication and Announcement
+        print("\n" + "=" * 40)
+        print("🔐 TESTING MANAGER AUTHENTICATION")
+        print("=" * 40)
+        
+        manager_email = manager_user.get('email')
+        manager_password = "admin123" if "admin" in manager_email else "password123"
+        
+        test_results["manager_auth"] = self.authenticate(manager_email, manager_password)
+        
+        if test_results["manager_auth"]:
+            # Test 8: Send Announcement as Manager
+            print("\n" + "=" * 40)
+            print("📢 TESTING SEND ANNOUNCEMENT AS MANAGER")
+            print("=" * 40)
+            
+            announcement_success, announcement_result = self.test_send_announcement_as_manager(
+                "Company-wide Announcement",
+                "This is a test company-wide announcement from management."
+            )
+            test_results["send_announcement_manager"] = announcement_success
+        
+        # Switch back to employee for remaining tests
+        self.authenticate("john@company.com", "password123")
+        
+        # Test 9: Get Messages API
+        print("\n" + "=" * 40)
+        print("📨 TESTING GET MESSAGES API")
+        print("=" * 40)
+        
+        messages_success, messages = self.test_get_messages()
+        test_results["get_messages"] = messages_success
+        
+        # Test with category filter
+        if messages_success:
+            print("\n   📂 Testing category filtering...")
+            self.test_get_messages(category="direct")
+            self.test_get_messages(category="announcement")
+            self.test_get_messages(category="group")
+        
+        # Test 10: Get Message Threads API
+        print("\n" + "=" * 40)
+        print("🧵 TESTING GET MESSAGE THREADS API")
+        print("=" * 40)
+        
+        threads_success, threads = self.test_get_message_threads()
+        test_results["get_message_threads"] = threads_success
+        
+        # Test 11: Mark Message as Read
+        print("\n" + "=" * 40)
+        print("✅ TESTING MARK MESSAGE AS READ")
+        print("=" * 40)
+        
+        if messages_success and messages:
+            # Find a message where current user is recipient
+            readable_message = None
+            for msg in messages:
+                if employee_user.get('id') in msg.get('recipients', []):
+                    readable_message = msg
+                    break
+            
+            if readable_message:
+                test_results["mark_message_read"] = self.test_mark_message_read(readable_message.get('id'))
+            else:
+                print("   ⚠️  No readable messages found for current user")
+        
+        # Test 12: Edit Message
+        print("\n" + "=" * 40)
+        print("✏️ TESTING EDIT MESSAGE")
+        print("=" * 40)
+        
+        if direct_success and direct_result.get('message_id'):
+            test_results["edit_message"] = self.test_edit_message(
+                direct_result.get('message_id'),
+                "This message has been edited by the sender."
+            )
+        else:
+            print("   ⚠️  No message available for editing test")
+        
+        # Test 13: Add Attachments to Message
+        print("\n" + "=" * 40)
+        print("📎 TESTING ADD ATTACHMENTS TO MESSAGE")
+        print("=" * 40)
+        
+        if direct_success and direct_result.get('message_id') and upload_success:
+            attachments = [upload_result]  # Use the uploaded file
+            test_results["add_attachments"] = self.test_add_attachments_to_message(
+                direct_result.get('message_id'),
+                attachments
+            )
+        else:
+            print("   ⚠️  Prerequisites not met for attachment test")
+        
+        # Test 14: Delete Message
+        print("\n" + "=" * 40)
+        print("🗑️ TESTING DELETE MESSAGE")
+        print("=" * 40)
+        
+        if group_success and group_result.get('message_id'):
+            test_results["delete_message"] = self.test_delete_message(group_result.get('message_id'))
+        else:
+            print("   ⚠️  No message available for deletion test")
+        
+        # Test 15: Permission Validation Summary
+        print("\n" + "=" * 40)
+        print("🔒 PERMISSION VALIDATION SUMMARY")
+        print("=" * 40)
+        
+        permission_checks = [
+            test_results["send_announcement_employee_denied"],  # Employee can't send announcements
+            test_results["send_announcement_manager"],  # Manager can send announcements
+        ]
+        
+        test_results["permission_validation"] = all(permission_checks)
+        
+        if test_results["permission_validation"]:
+            print("   ✅ All permission validations working correctly")
+        else:
+            print("   ❌ Some permission validations failed")
+        
+        # Summary
+        print("\n" + "=" * 60)
+        print("📋 MESSAGES SYSTEM TEST RESULTS SUMMARY")
+        print("=" * 60)
+        
+        total_tests = 0
+        passed_tests = 0
+        
+        for test_name, result in test_results.items():
+            status = 'PASS' if result else 'FAIL'
+            display_name = test_name.replace('_', ' ').title()
+            print(f"{'✅' if result else '❌'} {display_name}: {status}")
+            total_tests += 1
+            if result:
+                passed_tests += 1
+        
+        print(f"\n🎯 OVERALL RESULT: {passed_tests}/{total_tests} tests passed")
+        
+        # Key requirements verification
+        print("\n" + "=" * 60)
+        print("🎯 KEY REQUIREMENTS VERIFICATION")
+        print("=" * 60)
+        
+        requirements_met = []
+        
+        # File upload/download
+        if test_results["file_upload"] and test_results["file_download"]:
+            requirements_met.append("✅ File upload/download system working")
+        else:
+            requirements_met.append("❌ File upload/download system failed")
+        
+        # Message sending
+        if test_results["send_direct_message"] and test_results["send_group_message"]:
+            requirements_met.append("✅ Direct and group messaging working")
+        else:
+            requirements_met.append("❌ Message sending issues found")
+        
+        # Announcement system
+        if test_results["send_announcement_manager"] and test_results["send_announcement_employee_denied"]:
+            requirements_met.append("✅ Announcement system with proper permissions")
+        else:
+            requirements_met.append("❌ Announcement system permission issues")
+        
+        # Message retrieval
+        if test_results["get_messages"] and test_results["get_message_threads"]:
+            requirements_met.append("✅ Message and thread retrieval working")
+        else:
+            requirements_met.append("❌ Message retrieval issues found")
+        
+        # Message management
+        message_mgmt_tests = [test_results["mark_message_read"], test_results["edit_message"], test_results["delete_message"]]
+        if any(message_mgmt_tests):  # At least one should work
+            requirements_met.append("✅ Message management features working")
+        else:
+            requirements_met.append("❌ Message management features failed")
+        
+        # Authentication
+        if test_results["employee_auth"] and test_results["manager_auth"]:
+            requirements_met.append("✅ Authentication working for both roles")
+        else:
+            requirements_met.append("❌ Authentication issues found")
+        
+        for req in requirements_met:
+            print(f"   {req}")
+        
+        # Success criteria: Core functionality working
+        core_tests_passed = (
+            test_results["employee_auth"] and
+            test_results["file_upload"] and
+            test_results["send_direct_message"] and
+            test_results["get_messages"] and
+            test_results["permission_validation"]
+        )
+        
+        if core_tests_passed:
+            print("\n🎉 CORE MESSAGING FUNCTIONALITY WORKING!")
+            print("   ✅ Messages/Communication system is operational")
+            return True
+        else:
+            print("\n⚠️  CORE MESSAGING FUNCTIONALITY ISSUES FOUND")
+            return False
+
+def main_messages():
+    """Main messages test execution"""
+    tester = MessagesTester()
+    
+    print(f"🌐 Backend URL: {API_BASE}")
+    print(f"🕐 Test started at: {datetime.now()}")
+    
+    success = tester.run_comprehensive_messages_tests()
+    
+    print(f"\n🕐 Test completed at: {datetime.now()}")
+    
+    if success:
+        print("✅ Messages/Communication Backend Testing: SUCCESS")
+        return True
+    else:
+        print("❌ Messages/Communication Backend Testing: FAILED")
+        return False
+
 if __name__ == "__main__":
     import sys
     
@@ -2357,8 +3123,12 @@ if __name__ == "__main__":
             # Run super admin user creation tests
             success = main_super_admin()
             exit(0 if success else 1)
+        elif sys.argv[1] == "messages":
+            # Run messages/communication tests
+            success = main_messages()
+            exit(0 if success else 1)
         else:
-            print("Usage: python backend_test.py [time|registration|employee|superadmin]")
+            print("Usage: python backend_test.py [time|registration|employee|superadmin|messages]")
             print("Default: room management tests")
     
     # Run room management tests (default)

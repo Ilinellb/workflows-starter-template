@@ -105,6 +105,18 @@
 ## user_problem_statement: Employee time tracking and room management application with scheduling system implementation and user registration system
 
 ## backend:
+  - task: "Messages/Communication System Backend APIs"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+        - agent: "main"
+        - comment: "Complete messaging system implemented with WebSocket support for real-time messaging. Features: POST /api/messages (send message), GET /api/messages (get messages with filters), GET /api/messages/threads (get conversation threads), PUT /api/messages/{id}/read (mark as read), PUT /api/messages/{id} (edit message), DELETE /api/messages/{id} (delete message), POST /api/messages/upload (file upload with chunked support), GET /api/messages/download/{filename} (file download), POST /api/messages/{id}/attachments (add attachments), WebSocket endpoint /api/ws/{user_id} for real-time updates. Includes Message, MessageCreate, MessageAttachment models. WebSocket ConnectionManager for real-time message broadcasting. File upload system with chunked upload support, stored in /uploads directory. Message categories: announcements (manager-only broadcast), direct messages (1-on-1), group chats (multiple participants). Role-based permissions enforced."
+  
   - task: "Room Management API endpoints"
     implemented: true
     working: true

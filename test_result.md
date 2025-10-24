@@ -300,7 +300,6 @@
 
 ## test_plan:
   current_focus:
-    - "Messages/Communication System Backend APIs - NEEDS TESTING"
     - "Messages/Communication Tab (Employee & Manager) - NEEDS TESTING"
     - "Complete Messaging Workflow Testing (WebSocket, File Upload, Categories) - NEEDS TESTING"
   stuck_tasks: []

@@ -2336,16 +2336,478 @@ const MyReportsTab = () => {
 };
 
 // Communication Tab
-const CommunicationTab = () => (
-  <div className="space-y-6" data-testid="communication-tab">
-    <h2 className="text-2xl font-bold">💬 Messages</h2>
-    <Card>
-      <CardContent className="p-6">
-        <p className="text-gray-600 text-center">Team communication coming soon...</p>
-      </CardContent>
-    </Card>
-  </div>
-);
+const CommunicationTab = () => {
+  const [messageCategory, setMessageCategory] = useState('all');
+  const [messages, setMessages] = useState([]);
+  const [threads, setThreads] = useState([]);
+  const [selectedThread, setSelectedThread] = useState(null);
+  const [threadMessages, setThreadMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState({ content: '', subject: '', recipients: [], category: 'direct' });
+  const [showComposer, setShowComposer] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [ws, setWs] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Initialize WebSocket connection
+  useEffect(() => {
+    if (user && token) {
+      const websocket = new WebSocket(`${BACKEND_URL.replace('http', 'ws')}/api/ws/${user.id}`);
+      
+      websocket.onopen = () => {
+        console.log('WebSocket connected');
+      };
+      
+      websocket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'new_message') {
+          toast.info('New message received!');
+          fetchThreads();
+          if (selectedThread) {
+            fetchThreadMessages(selectedThread);
+          }
+        } else if (data.type === 'message_edited' || data.type === 'message_deleted') {
+          if (selectedThread) {
+            fetchThreadMessages(selectedThread);
+          }
+        }
+      };
+      
+      websocket.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+      
+      websocket.onclose = () => {
+        console.log('WebSocket disconnected');
+      };
+      
+      setWs(websocket);
+      
+      return () => {
+        websocket.close();
+      };
+    }
+  }, [user, token]);
+
+  // Fetch message threads
+  const fetchThreads = async () => {
+    try {
+      const response = await axios.get(`${API}/messages/threads`, {
+        params: messageCategory !== 'all' ? { category: messageCategory } : {},
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setThreads(response.data.threads || []);
+      
+      // Calculate unread count
+      const totalUnread = response.data.threads.reduce((sum, thread) => sum + thread.unread_count, 0);
+      setUnreadCount(totalUnread);
+    } catch (error) {
+      console.error('Error fetching threads:', error);
+      toast.error('Failed to load message threads');
+    }
+  };
+
+  // Fetch messages for a specific thread
+  const fetchThreadMessages = async (threadId) => {
+    try {
+      const response = await axios.get(`${API}/messages`, {
+        params: { thread_id: threadId },
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setThreadMessages(response.data.messages || []);
+      
+      // Mark messages as read
+      for (const msg of response.data.messages) {
+        if (msg.sender_id !== user.id && !msg.is_read_by.includes(user.id)) {
+          await axios.put(`${API}/messages/${msg.id}/read`, {}, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
+      }
+      
+      fetchThreads(); // Refresh to update unread counts
+    } catch (error) {
+      console.error('Error fetching thread messages:', error);
+    }
+  };
+
+  // Fetch users for recipient selection
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get(`${API}/users`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  // Handle file upload
+  const handleFileUpload = async (file) => {
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const response = await axios.post(`${API}/messages/upload`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      setSelectedFile(response.data);
+      toast.success('File uploaded successfully!');
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast.error('File upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Send message
+  const handleSendMessage = async () => {
+    if (!newMessage.content.trim()) {
+      toast.error('Message content is required');
+      return;
+    }
+
+    try {
+      const messageData = {
+        category: newMessage.category,
+        recipients: newMessage.category === 'announcement' ? [] : newMessage.recipients,
+        subject: newMessage.subject || 'No Subject',
+        content: newMessage.content,
+        thread_id: selectedThread
+      };
+
+      const response = await axios.post(`${API}/messages`, messageData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // If file was uploaded, attach it to the message
+      if (selectedFile) {
+        await axios.post(`${API}/messages/${response.data.message_id}/attachments`, [selectedFile], {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+
+      toast.success('Message sent successfully!');
+      setNewMessage({ content: '', subject: '', recipients: [], category: 'direct' });
+      setSelectedFile(null);
+      setShowComposer(false);
+      fetchThreads();
+      
+      if (selectedThread) {
+        fetchThreadMessages(selectedThread);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast.error('Failed to send message');
+    }
+  };
+
+  // Load initial data
+  useEffect(() => {
+    if (token) {
+      fetchThreads();
+      fetchUsers();
+    }
+  }, [token, messageCategory]);
+
+  // Handle thread selection
+  const handleThreadClick = (thread) => {
+    setSelectedThread(thread.thread_id);
+    fetchThreadMessages(thread.thread_id);
+  };
+
+  return (
+    <div className="space-y-6" data-testid="communication-tab">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold">💬 Messages</h2>
+          {unreadCount > 0 && (
+            <Badge variant="destructive" className="ml-2">{unreadCount} Unread</Badge>
+          )}
+        </div>
+        <Button onClick={() => setShowComposer(true)}>+ New Message</Button>
+      </div>
+
+      {/* Message Category Filter */}
+      <div className="flex gap-2">
+        <Button
+          variant={messageCategory === 'all' ? 'default' : 'outline'}
+          onClick={() => setMessageCategory('all')}
+        >
+          All Messages
+        </Button>
+        <Button
+          variant={messageCategory === 'announcement' ? 'default' : 'outline'}
+          onClick={() => setMessageCategory('announcement')}
+        >
+          📢 Announcements
+        </Button>
+        <Button
+          variant={messageCategory === 'direct' ? 'default' : 'outline'}
+          onClick={() => setMessageCategory('direct')}
+        >
+          💬 Direct Messages
+        </Button>
+        <Button
+          variant={messageCategory === 'group' ? 'default' : 'outline'}
+          onClick={() => setMessageCategory('group')}
+        >
+          👥 Group Chats
+        </Button>
+      </div>
+
+      {/* Main Content */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Thread List */}
+        <Card className="md:col-span-1">
+          <CardHeader>
+            <CardTitle>Conversations</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="max-h-[600px] overflow-y-auto">
+              {threads.length === 0 ? (
+                <div className="p-6 text-center text-gray-500">
+                  No conversations yet
+                </div>
+              ) : (
+                threads.map((thread) => (
+                  <div
+                    key={thread.thread_id}
+                    className={`p-4 border-b cursor-pointer hover:bg-gray-50 ${selectedThread === thread.thread_id ? 'bg-blue-50' : ''}`}
+                    onClick={() => handleThreadClick(thread)}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="font-semibold text-sm">
+                        {thread.category === 'announcement' && '📢 '}
+                        {thread.category === 'group' && '👥 '}
+                        {thread.subject}
+                      </div>
+                      {thread.unread_count > 0 && (
+                        <Badge variant="destructive" className="text-xs">{thread.unread_count}</Badge>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-600 truncate">{thread.last_message}</div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      {thread.last_sender} • {new Date(thread.last_updated).toLocaleDateString()}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Message View */}
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle>
+              {selectedThread ? threads.find(t => t.thread_id === selectedThread)?.subject : 'Select a conversation'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!selectedThread ? (
+              <div className="text-center py-20 text-gray-500">
+                <div className="text-6xl mb-4">💬</div>
+                <p>Select a conversation to view messages</p>
+              </div>
+            ) : (
+              <div>
+                {/* Messages */}
+                <div className="max-h-[400px] overflow-y-auto mb-4 space-y-4">
+                  {threadMessages.length === 0 ? (
+                    <div className="text-center text-gray-500 py-10">
+                      No messages in this thread
+                    </div>
+                  ) : (
+                    threadMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`p-3 rounded-lg ${msg.sender_id === user.id ? 'bg-blue-100 ml-auto' : 'bg-gray-100'} max-w-[80%]`}
+                      >
+                        <div className="font-semibold text-sm mb-1">{msg.sender_name}</div>
+                        <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
+                        {msg.attachments && msg.attachments.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {msg.attachments.map((att, idx) => (
+                              <div key={idx} className="flex items-center gap-2 text-xs">
+                                <Badge variant="outline">📎</Badge>
+                                <a
+                                  href={`${API}${att.file_url}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  {att.original_filename}
+                                </a>
+                                <span className="text-gray-500">({(att.file_size / 1024).toFixed(1)} KB)</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div className="text-xs text-gray-500 mt-1">
+                          {new Date(msg.created_at).toLocaleString()}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Reply Section */}
+                <Separator className="my-4" />
+                <div className="space-y-2">
+                  <textarea
+                    className="w-full p-2 border rounded-lg"
+                    rows="3"
+                    placeholder="Type your reply..."
+                    value={newMessage.content}
+                    onChange={(e) => setNewMessage({...newMessage, content: e.target.value})}
+                  />
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      type="file"
+                      onChange={(e) => e.target.files[0] && handleFileUpload(e.target.files[0])}
+                      className="flex-1"
+                      disabled={uploading}
+                    />
+                    <Button onClick={handleSendMessage} disabled={uploading}>
+                      {uploading ? 'Uploading...' : 'Send Reply'}
+                    </Button>
+                  </div>
+                  {selectedFile && (
+                    <div className="text-xs text-green-600">
+                      ✓ File attached: {selectedFile.original_filename}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* New Message Composer Dialog */}
+      <Dialog open={showComposer} onOpenChange={setShowComposer}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>New Message</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Message Type</Label>
+              <Select
+                value={newMessage.category}
+                onValueChange={(value) => setNewMessage({...newMessage, category: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="direct">Direct Message</SelectItem>
+                  <SelectItem value="group">Group Chat</SelectItem>
+                  {(user?.role === 'manager' || user?.role === 'super_admin') && (
+                    <SelectItem value="announcement">Announcement (to all employees)</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {newMessage.category !== 'announcement' && (
+              <div>
+                <Label>Recipients</Label>
+                <Select
+                  onValueChange={(value) => {
+                    if (!newMessage.recipients.includes(value)) {
+                      setNewMessage({...newMessage, recipients: [...newMessage.recipients, value]});
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select recipients..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.name} ({u.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {newMessage.recipients.map((recipientId) => {
+                    const recipient = users.find(u => u.id === recipientId);
+                    return (
+                      <Badge key={recipientId} variant="secondary">
+                        {recipient?.name}
+                        <button
+                          onClick={() => setNewMessage({
+                            ...newMessage,
+                            recipients: newMessage.recipients.filter(id => id !== recipientId)
+                          })}
+                          className="ml-2 text-red-500"
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <Label>Subject</Label>
+              <Input
+                value={newMessage.subject}
+                onChange={(e) => setNewMessage({...newMessage, subject: e.target.value})}
+                placeholder="Message subject..."
+              />
+            </div>
+
+            <div>
+              <Label>Message</Label>
+              <textarea
+                className="w-full p-2 border rounded-lg"
+                rows="5"
+                value={newMessage.content}
+                onChange={(e) => setNewMessage({...newMessage, content: e.target.value})}
+                placeholder="Type your message..."
+              />
+            </div>
+
+            <div>
+              <Label>Attachment (Optional)</Label>
+              <Input
+                type="file"
+                onChange={(e) => e.target.files[0] && handleFileUpload(e.target.files[0])}
+                disabled={uploading}
+              />
+              {selectedFile && (
+                <div className="text-xs text-green-600 mt-1">
+                  ✓ File attached: {selectedFile.original_filename}
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowComposer(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSendMessage} disabled={uploading}>
+              Send Message
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
 
 // ============ MANAGER TAB COMPONENTS ============
 

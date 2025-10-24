@@ -189,6 +189,30 @@
         - working: true
         - agent: "testing"
         - comment: "Room Management system tested successfully. All 38 rooms (1-41 excluding 8,9,13,16,25,26 plus A,B,C) are displayed with proper Radix UI Select dropdowns. Laundry functionality working (count updates correctly). Workload progress bar and status summary functional. Quick actions working. Minor issue: Duration modal for occupied status not triggering properly, but core room management features are operational. Guest out timer logic is implemented in code but needs modal trigger fix for full testing."
+
+  - task: "Employee Time Off Requests Tab"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+        - agent: "main"
+        - comment: "Complete Time Off system implemented with employee requests interface. Features include time off balance display, calendar integration with approved/pending highlighting, quick request form, detailed modal form, request history with status badges, and form validation."
+
+  - task: "Manager Time Off Approvals Tab"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+        - agent: "main"
+        - comment: "Manager Time Off Approvals interface implemented with approval statistics dashboard, urgent actions queue, filtering by status, approval/rejection workflow with modal, conflict detection, and approval comments system."
   
   - task: "Employee My Schedule Tab"
     implemented: true

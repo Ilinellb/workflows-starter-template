@@ -1154,11 +1154,16 @@ async def get_messages(
     
     messages = await db.messages.find(query).sort([("created_at", -1)]).limit(limit).to_list(limit)
     
-    # Parse datetime fields
+    # Parse datetime fields and remove MongoDB ObjectId
+    result = []
     for msg in messages:
+        # Remove MongoDB ObjectId field
+        if '_id' in msg:
+            del msg['_id']
         msg = parse_from_mongo(msg)
+        result.append(msg)
     
-    return {"messages": messages}
+    return {"messages": result}
 
 @api_router.get("/messages/threads")
 async def get_message_threads(

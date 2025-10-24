@@ -273,10 +273,10 @@
 
 ## test_plan:
   current_focus:
-    - "Employee Time Off Requests Tab"
-    - "Manager Time Off Approvals Tab"
-    - "Complete Time Off Workflow Testing"
-    - "Time Off Calendar Integration and UI/UX Testing"
+    - "Employee Time Off Requests Tab - COMPLETED"
+    - "Manager Time Off Approvals Tab - COMPLETED"
+    - "Complete Time Off Workflow Testing - COMPLETED"
+    - "Time Off Calendar Integration and UI/UX Testing - COMPLETED"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"

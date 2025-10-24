@@ -1228,10 +1228,13 @@ async def mark_message_read(
     
     return {"message": "Message marked as read"}
 
+class MessageEdit(BaseModel):
+    content: str
+
 @api_router.put("/messages/{message_id}")
 async def edit_message(
     message_id: str,
-    content: str,
+    message_edit: MessageEdit,
     current_user: User = Depends(get_current_user)
 ):
     """Edit a message (only sender can edit)"""
@@ -1244,14 +1247,14 @@ async def edit_message(
     
     await db.messages.update_one(
         {"id": message_id},
-        {"$set": {"content": content, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        {"$set": {"content": message_edit.content, "updated_at": datetime.now(timezone.utc).isoformat()}}
     )
     
     # Notify recipients of edit via WebSocket
     notification_data = {
         "type": "message_edited",
         "message_id": message_id,
-        "new_content": content
+        "new_content": message_edit.content
     }
     await manager.broadcast_message(notification_data, message["recipients"])
     

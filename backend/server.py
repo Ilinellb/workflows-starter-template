@@ -155,6 +155,37 @@ class Notification(BaseModel):
     is_read: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class MessageAttachment(BaseModel):
+    filename: str
+    original_filename: str
+    file_size: int
+    file_type: str
+    file_url: str
+
+class Message(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    sender_id: str
+    sender_name: str
+    category: str  # "announcement", "direct", "group"
+    recipients: List[str]  # User IDs
+    subject: Optional[str] = None
+    content: str
+    attachments: List[MessageAttachment] = []
+    thread_id: Optional[str] = None  # For grouping related messages
+    parent_message_id: Optional[str] = None  # For replies
+    is_read_by: List[str] = []  # User IDs who have read the message
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: Optional[datetime] = None
+    deleted_at: Optional[datetime] = None
+
+class MessageCreate(BaseModel):
+    category: str  # "announcement", "direct", "group"
+    recipients: List[str]  # User IDs (empty for announcements to all)
+    subject: Optional[str] = None
+    content: str
+    thread_id: Optional[str] = None
+    parent_message_id: Optional[str] = None
+
 # Utility Functions
 def verify_password(plain_password, hashed_password):
     # Simplified password verification using hashlib (demo only)

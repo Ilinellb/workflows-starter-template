@@ -3348,38 +3348,56 @@ class EmailNotificationsTester:
         print(f"\n📋 Checking backend logs for placeholder email logging")
         
         try:
-            # Check supervisor backend logs
+            # Check both supervisor backend logs (out and err)
             import subprocess
-            result = subprocess.run(
+            
+            # Check error log first (where logging.info messages go)
+            result_err = subprocess.run(
+                ["tail", "-n", "50", "/var/log/supervisor/backend.err.log"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            placeholder_logs = []
+            
+            if result_err.returncode == 0:
+                log_content = result_err.stdout
+                print(f"   📊 Retrieved {len(log_content.splitlines())} error log lines")
+                
+                # Look for placeholder email logs
+                for line in log_content.splitlines():
+                    if "[PLACEHOLDER EMAIL]" in line:
+                        placeholder_logs.append(line)
+            
+            # Also check output log
+            result_out = subprocess.run(
                 ["tail", "-n", "50", "/var/log/supervisor/backend.out.log"],
                 capture_output=True,
                 text=True,
                 timeout=10
             )
             
-            if result.returncode == 0:
-                log_content = result.stdout
-                print(f"   📊 Retrieved {len(log_content.splitlines())} log lines")
+            if result_out.returncode == 0:
+                log_content = result_out.stdout
+                print(f"   📊 Retrieved {len(log_content.splitlines())} output log lines")
                 
                 # Look for placeholder email logs
-                placeholder_logs = []
                 for line in log_content.splitlines():
                     if "[PLACEHOLDER EMAIL]" in line:
                         placeholder_logs.append(line)
-                
-                if placeholder_logs:
-                    print(f"   ✅ Found {len(placeholder_logs)} placeholder email log entries:")
-                    for log in placeholder_logs[-3:]:  # Show last 3
+            
+            if placeholder_logs:
+                print(f"   ✅ Found {len(placeholder_logs)} placeholder email log entries:")
+                for log in placeholder_logs[-3:]:  # Show last 3
+                    # Truncate long log lines for readability
+                    if len(log) > 120:
+                        print(f"      {log[:120]}...")
+                    else:
                         print(f"      {log}")
-                    return True
-                else:
-                    print(f"   ℹ️  No placeholder email logs found in recent entries")
-                    print(f"   📋 Recent log sample (last 5 lines):")
-                    for line in log_content.splitlines()[-5:]:
-                        print(f"      {line}")
-                    return False
+                return True
             else:
-                print(f"   ❌ Failed to read backend logs: {result.stderr}")
+                print(f"   ℹ️  No placeholder email logs found in recent entries")
                 return False
                 
         except subprocess.TimeoutExpired:

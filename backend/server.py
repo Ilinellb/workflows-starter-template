@@ -267,6 +267,37 @@ def parse_from_mongo(item):
     
     return item
 
+# WebSocket Connection Manager
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: Dict[str, WebSocket] = {}
+    
+    async def connect(self, websocket: WebSocket, user_id: str):
+        await websocket.accept()
+        self.active_connections[user_id] = websocket
+        logger.info(f"WebSocket connected for user: {user_id}")
+    
+    def disconnect(self, user_id: str):
+        if user_id in self.active_connections:
+            del self.active_connections[user_id]
+            logger.info(f"WebSocket disconnected for user: {user_id}")
+    
+    async def send_personal_message(self, message: dict, user_id: str):
+        if user_id in self.active_connections:
+            try:
+                await self.active_connections[user_id].send_json(message)
+            except Exception as e:
+                logger.error(f"Error sending message to {user_id}: {e}")
+                self.disconnect(user_id)
+    
+    async def broadcast_message(self, message: dict, user_ids: List[str] = None):
+        """Broadcast to specific users or all connected users"""
+        target_users = user_ids if user_ids else list(self.active_connections.keys())
+        for user_id in target_users:
+            await self.send_personal_message(message, user_id)
+
+manager = ConnectionManager()
+
 async def send_notification_email(to_email: str, subject: str, content: str):
     """Send email notification using SendGrid"""
     try:

@@ -339,8 +339,9 @@
 
 ## test_plan:
   current_focus:
-    - "Messages/Communication Tab (Employee & Manager) - NEEDS TESTING"
-    - "Complete Messaging Workflow Testing (WebSocket, File Upload, Categories) - NEEDS TESTING"
+    - "System Admin Tab (Manager/Super Admin) - NEEDS TESTING"
+    - "Analytics Tab (Manager/Super Admin) - NEEDS TESTING"
+    - "Email Notifications System (Placeholder) - NEEDS TESTING"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"

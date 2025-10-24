@@ -1672,37 +1672,6 @@ const TimeOffRequestsTab = () => {
     </div>
   );
 };
-          <CardTitle>My Time Off Balance</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <p className="text-2xl font-bold text-blue-600">15</p>
-              <p className="text-sm text-gray-600">Vacation Days</p>
-            </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <p className="text-2xl font-bold text-green-600">8</p>
-              <p className="text-sm text-gray-600">Sick Days</p>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <p className="text-2xl font-bold text-purple-600">3</p>
-              <p className="text-sm text-gray-600">Personal Days</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Requests</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-500 text-center py-8">No time off requests yet. Create your first request above!</p>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
 
 // My Schedule Tab - Employee Calendar and Shift Management
 const MyScheduleTab = () => {

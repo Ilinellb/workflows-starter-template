@@ -1302,6 +1302,74 @@ async def delete_message(
     
     return {"message": "Message deleted successfully"}
 
+# Notification management endpoint
+@api_router.post("/notifications/check-missed-punches")
+async def check_missed_punches_endpoint(current_user: User = Depends(get_current_user)):
+    """Manually trigger check for missed punches and send notifications"""
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.MANAGER]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    try:
+        # Get all employees
+        employees = await db.users.find({"role": UserRole.EMPLOYEE, "is_active": True}).to_list(1000)
+        
+        notifications_sent = 0
+        current_time = datetime.now(timezone.utc)
+        current_date = current_time.date()
+        
+        for employee in employees:
+            # Check if employee has start_time configured
+            if not employee.get('start_time'):
+                continue
+            
+            # Parse start time
+            start_time_str = employee.get('start_time')
+            if isinstance(start_time_str, str):
+                try:
+                    start_time = datetime.strptime(start_time_str, '%H:%M:%S').time()
+                except:
+                    continue
+            else:
+                start_time = start_time_str
+            
+            # Check if current time is past start time + 15 minutes
+            scheduled_start = datetime.combine(current_date, start_time)
+            time_diff = (current_time - scheduled_start.replace(tzinfo=timezone.utc)).total_seconds() / 60
+            
+            # If more than 15 minutes late
+            if time_diff > 15:
+                # Check if already punched in today
+                time_entry = await db.time_entries.find_one({
+                    "employee_id": employee["id"],
+                    "date": current_date.isoformat()
+                })
+                
+                if not time_entry or not time_entry.get('punch_in_time'):
+                    # Send notification
+                    await create_notification(
+                        employee["id"],
+                        "Missed Punch In",
+                        f"You haven't punched in yet. Scheduled start time was {start_time.strftime('%H:%M')}",
+                        "missed_punch"
+                    )
+                    
+                    # Send placeholder email
+                    await send_notification_email(
+                        employee["email"],
+                        "Missed Punch In Reminder",
+                        f"<p>Hello {employee['name']},</p><p>You haven't punched in yet. Your scheduled start time was {start_time.strftime('%H:%M')}.</p><p>Please punch in as soon as possible.</p>"
+                    )
+                    
+                    notifications_sent += 1
+        
+        return {
+            "message": f"Checked {len(employees)} employees, sent {notifications_sent} notifications",
+            "notifications_sent": notifications_sent
+        }
+    except Exception as e:
+        logging.error(f"Error checking missed punches: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # WebSocket endpoint for real-time messaging
 @app.websocket("/api/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: str):

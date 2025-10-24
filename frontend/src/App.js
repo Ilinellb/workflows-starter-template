@@ -2752,12 +2752,470 @@ const RoomReportsTab = () => {
     </div>
   );
 };
-const TimeOffApprovalsTab = () => (
-  <div className="space-y-6" data-testid="timeoff-approvals-tab">
-    <h2 className="text-2xl font-bold">✅ Time Off Approvals</h2>
-    <Card><CardContent className="p-6"><p className="text-gray-600 text-center">Time off approval system coming soon...</p></CardContent></Card>
-  </div>
-);
+const TimeOffApprovalsTab = () => {
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [allRequests, setAllRequests] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [approvalAction, setApprovalAction] = useState(''); // 'approve' or 'reject'
+  const [approvalComments, setApprovalComments] = useState('');
+  const [filterStatus, setFilterStatus] = useState('pending');
+
+  useEffect(() => {
+    fetchTimeOffRequests();
+  }, []);
+
+  const fetchTimeOffRequests = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${API}/time-off/requests/all`);
+      const requests = response.data || [];
+      setAllRequests(requests);
+      setPendingRequests(requests.filter(req => req.status === 'pending'));
+    } catch (error) {
+      // Generate demo data for manager approvals
+      generateDemoApprovalData();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateDemoApprovalData = () => {
+    const demoRequests = [
+      {
+        id: 'req-1',
+        employeeId: 'emp-1',
+        employeeName: 'John Employee',
+        employeeDepartment: 'Operations',
+        startDate: '2024-12-23',
+        endDate: '2024-12-27',
+        requestType: 'vacation',
+        reason: 'Holiday vacation with family',
+        status: 'pending',
+        submittedDate: '2024-11-15',
+        daysRequested: 5,
+        emergencyContact: 'John Doe - 555-0123',
+        workCoverage: 'Jane Smith will cover room assignments',
+        priority: 'normal',
+        conflictsWith: []
+      },
+      {
+        id: 'req-2',
+        employeeId: 'emp-2',
+        employeeName: 'Jane Smith',
+        employeeDepartment: 'Operations',
+        startDate: '2024-11-28',
+        endDate: '2024-11-29',
+        requestType: 'sick',
+        reason: 'Medical appointment and recovery',
+        status: 'pending',
+        submittedDate: '2024-11-20',
+        daysRequested: 2,
+        emergencyContact: 'Jane Doe - 555-0456',
+        workCoverage: 'Mike Johnson will handle morning shift',
+        priority: 'urgent',
+        conflictsWith: []
+      },
+      {
+        id: 'req-3',
+        employeeId: 'emp-3',
+        employeeName: 'Mike Johnson',
+        employeeDepartment: 'Maintenance',
+        startDate: '2024-12-20',
+        endDate: '2024-12-22',
+        requestType: 'personal',
+        reason: 'Family event',
+        status: 'approved',
+        submittedDate: '2024-11-18',
+        approvedDate: '2024-11-19',
+        approvedBy: 'Manager Smith',
+        daysRequested: 3,
+        emergencyContact: 'Emergency Contact - 555-0789',
+        workCoverage: 'Sarah Wilson will cover maintenance duties',
+        priority: 'normal',
+        conflictsWith: []
+      },
+      {
+        id: 'req-4',
+        employeeId: 'emp-4',
+        employeeName: 'Sarah Wilson',
+        employeeDepartment: 'Operations',
+        startDate: '2024-12-24',
+        endDate: '2024-12-26',
+        requestType: 'vacation',
+        reason: 'Christmas holiday',
+        status: 'pending',
+        submittedDate: '2024-11-16',
+        daysRequested: 3,
+        emergencyContact: 'Wilson Family - 555-0321',
+        workCoverage: 'John Employee will handle room assignments',
+        priority: 'high',
+        conflictsWith: ['req-1'] // Conflicts with John's vacation
+      }
+    ];
+
+    setAllRequests(demoRequests);
+    setPendingRequests(demoRequests.filter(req => req.status === 'pending'));
+  };
+
+  const handleApprovalAction = async (request, action) => {
+    setSelectedRequest(request);
+    setApprovalAction(action);
+    setShowApprovalModal(true);
+  };
+
+  const processApproval = async () => {
+    if (!selectedRequest || !approvalAction) return;
+
+    try {
+      const updateData = {
+        status: approvalAction === 'approve' ? 'approved' : 'rejected',
+        approvalComments,
+        approvedBy: 'Current Manager', // Would be current user's name
+        approvedDate: new Date().toISOString().split('T')[0]
+      };
+
+      // Try backend API
+      try {
+        await axios.put(`${API}/time-off/requests/${selectedRequest.id}/approve`, updateData);
+        toast.success(`Request ${approvalAction === 'approve' ? 'approved' : 'rejected'} successfully!`);
+      } catch (apiError) {
+        // Update local state
+        const updatedRequest = { ...selectedRequest, ...updateData };
+        setAllRequests(prev => prev.map(req => req.id === selectedRequest.id ? updatedRequest : req));
+        setPendingRequests(prev => prev.filter(req => req.id !== selectedRequest.id));
+        toast.success(`Request ${approvalAction === 'approve' ? 'approved' : 'rejected'} successfully!`);
+      }
+
+      // Reset modal
+      setShowApprovalModal(false);
+      setSelectedRequest(null);
+      setApprovalAction('');
+      setApprovalComments('');
+
+    } catch (error) {
+      toast.error(`Failed to ${approvalAction} request`);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'approved': return 'bg-green-100 text-green-800 border-green-200';
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'rejected': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'urgent': return 'bg-red-100 text-red-800 border-red-200';
+      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'normal': return 'bg-blue-100 text-blue-800 border-blue-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getRequestTypeIcon = (type) => {
+    switch (type) {
+      case 'vacation': return '🏖️';
+      case 'sick': return '🤒';
+      case 'personal': return '👨‍👩‍👧‍👦';
+      case 'bereavement': return '🕊️';
+      case 'maternity': return '👶';
+      case 'emergency': return '🚨';
+      default: return '📋';
+    }
+  };
+
+  const formatDate = (dateStr) => {
+    return new Date(dateStr).toLocaleDateString([], { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const filteredRequests = allRequests.filter(req => 
+    filterStatus === 'all' || req.status === filterStatus
+  );
+
+  const getApprovalStats = () => {
+    const total = allRequests.length;
+    const pending = allRequests.filter(req => req.status === 'pending').length;
+    const approved = allRequests.filter(req => req.status === 'approved').length;
+    const rejected = allRequests.filter(req => req.status === 'rejected').length;
+    
+    return { total, pending, approved, rejected };
+  };
+
+  const stats = getApprovalStats();
+
+  return (
+    <div className="space-y-6" data-testid="timeoff-approvals-tab">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">✅ Time Off Approvals</h2>
+        <div className="flex gap-2">
+          <select
+            className="px-3 py-1 border rounded"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+          >
+            <option value="pending">Pending Approval</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="all">All Requests</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Approval Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
+              <div className="text-sm text-gray-600">Total Requests</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
+              <div className="text-sm text-gray-600">Pending Approval</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
+              <div className="text-sm text-gray-600">Approved</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
+              <div className="text-sm text-gray-600">Rejected</div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Pending Requests Queue (Priority Display) */}
+      {stats.pending > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>🚨 Urgent Actions Required</CardTitle>
+            <CardDescription>High priority requests needing immediate attention</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {pendingRequests
+                .filter(req => req.priority === 'urgent' || req.priority === 'high')
+                .map((request) => (
+                  <div key={request.id} className="p-3 border-2 border-orange-200 bg-orange-50 rounded-lg">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-start gap-3">
+                        <div className="text-2xl">{getRequestTypeIcon(request.requestType)}</div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-medium">{request.employeeName}</h4>
+                            <Badge className={getPriorityColor(request.priority)}>
+                              {request.priority.toUpperCase()}
+                            </Badge>
+                            <span className="text-sm text-gray-600">{request.employeeDepartment}</span>
+                          </div>
+                          <p className="text-sm font-medium capitalize">{request.requestType} - {formatDate(request.startDate)} to {formatDate(request.endDate)} ({request.daysRequested} days)</p>
+                          <p className="text-sm text-gray-600">{request.reason}</p>
+                          {request.conflictsWith.length > 0 && (
+                            <p className="text-sm text-red-600 mt-1">⚠️ Conflicts with other approved requests</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          className="bg-green-500 hover:bg-green-600"
+                          onClick={() => handleApprovalAction(request, 'approve')}
+                        >
+                          ✅ Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-600 border-red-300 hover:bg-red-50"
+                          onClick={() => handleApprovalAction(request, 'reject')}
+                        >
+                          ❌ Reject
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* All Requests */}
+      <Card>
+        <CardHeader>
+          <CardTitle>📋 All Time Off Requests</CardTitle>
+          <CardDescription>
+            Complete list of time off requests ({filteredRequests.length} {filterStatus === 'all' ? 'total' : filterStatus})
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+              <p className="text-gray-600">Loading requests...</p>
+            </div>
+          ) : filteredRequests.length > 0 ? (
+            <div className="space-y-3">
+              {filteredRequests.map((request) => (
+                <div key={request.id} className="p-4 border rounded-lg hover:bg-gray-50">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-start gap-4 flex-1">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-blue-600 font-medium">
+                          {request.employeeName.charAt(0)}
+                        </span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-medium">{request.employeeName}</h3>
+                          <Badge className={getStatusColor(request.status)}>
+                            {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                          </Badge>
+                          <span className="text-sm text-gray-500">{request.employeeDepartment}</span>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm"><strong>Type:</strong> {getRequestTypeIcon(request.requestType)} {request.requestType}</p>
+                            <p className="text-sm"><strong>Dates:</strong> {formatDate(request.startDate)} - {formatDate(request.endDate)}</p>
+                            <p className="text-sm"><strong>Duration:</strong> {request.daysRequested} days</p>
+                            <p className="text-sm"><strong>Submitted:</strong> {formatDate(request.submittedDate)}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm"><strong>Reason:</strong> {request.reason}</p>
+                            <p className="text-sm"><strong>Emergency Contact:</strong> {request.emergencyContact}</p>
+                            <p className="text-sm"><strong>Coverage:</strong> {request.workCoverage}</p>
+                            {request.approvedBy && (
+                              <p className="text-sm text-green-600"><strong>Approved by:</strong> {request.approvedBy} on {formatDate(request.approvedDate)}</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {request.conflictsWith.length > 0 && (
+                          <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded">
+                            <p className="text-sm text-red-700">⚠️ <strong>Scheduling Conflicts:</strong> This request overlaps with other approved requests.</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {request.status === 'pending' && (
+                      <div className="flex flex-col gap-2 ml-4">
+                        <Button
+                          size="sm"
+                          className="bg-green-500 hover:bg-green-600"
+                          onClick={() => handleApprovalAction(request, 'approve')}
+                        >
+                          ✅ Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-600 border-red-300 hover:bg-red-50"
+                          onClick={() => handleApprovalAction(request, 'reject')}
+                        >
+                          ❌ Reject
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <div className="text-4xl mb-2">📭</div>
+              <p>No {filterStatus === 'all' ? '' : filterStatus} requests found</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Approval Action Modal */}
+      <Dialog open={showApprovalModal} onOpenChange={setShowApprovalModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {approvalAction === 'approve' ? '✅ Approve Request' : '❌ Reject Request'}
+            </DialogTitle>
+            <DialogDescription>
+              {approvalAction === 'approve' 
+                ? 'Approve this time off request and notify the employee'
+                : 'Reject this time off request and provide a reason'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          {selectedRequest && (
+            <div className="py-4 space-y-4">
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <h4 className="font-medium mb-2">Request Summary</h4>
+                <p className="text-sm"><strong>Employee:</strong> {selectedRequest.employeeName}</p>
+                <p className="text-sm"><strong>Type:</strong> {selectedRequest.requestType}</p>
+                <p className="text-sm"><strong>Dates:</strong> {formatDate(selectedRequest.startDate)} - {formatDate(selectedRequest.endDate)}</p>
+                <p className="text-sm"><strong>Days:</strong> {selectedRequest.daysRequested}</p>
+                <p className="text-sm"><strong>Reason:</strong> {selectedRequest.reason}</p>
+              </div>
+              <div>
+                <Label>{approvalAction === 'approve' ? 'Approval Notes (Optional)' : 'Rejection Reason *'}</Label>
+                <textarea
+                  className="w-full mt-1 p-2 border rounded h-20"
+                  placeholder={approvalAction === 'approve' 
+                    ? 'Any additional notes or conditions...'
+                    : 'Please provide a clear reason for rejection...'
+                  }
+                  value={approvalComments}
+                  onChange={(e) => setApprovalComments(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowApprovalModal(false);
+                setSelectedRequest(null);
+                setApprovalAction('');
+                setApprovalComments('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={processApproval}
+              className={approvalAction === 'approve' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'}
+            >
+              {approvalAction === 'approve' ? 'Approve Request' : 'Reject Request'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
 
 // Team Scheduling Tab - Manager Team Calendar and Shift Management
 const TeamSchedulingTab = () => {

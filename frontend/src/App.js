@@ -2438,7 +2438,7 @@ const CommunicationTab = () => {
   // Fetch users for recipient selection
   const fetchUsers = async () => {
     try {
-      const response = await axios.get(`${API}/users`, {
+      const response = await axios.get(`${API}/users/for-messaging`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsers(response.data);

@@ -996,6 +996,306 @@ async def export_timesheet(
     
     return {"message": "Timesheet exported successfully", "filename": filename}
 
+# ============ MESSAGES API ============
+
+@api_router.post("/messages/upload")
+async def upload_file(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload file attachment for messages (chunked upload support)"""
+    try:
+        # Generate unique filename
+        file_extension = Path(file.filename).suffix
+        unique_filename = f"{uuid.uuid4()}{file_extension}"
+        file_path = UPLOAD_DIR / unique_filename
+        
+        # Save file in chunks
+        async with aiofiles.open(file_path, 'wb') as f:
+            while chunk := await file.read(1024 * 1024):  # 1MB chunks
+                await f.write(chunk)
+        
+        # Get file size
+        file_size = os.path.getsize(file_path)
+        
+        # Store file metadata
+        file_metadata = {
+            "id": str(uuid.uuid4()),
+            "filename": unique_filename,
+            "original_filename": file.filename,
+            "file_size": file_size,
+            "file_type": file.content_type,
+            "uploaded_by": current_user.id,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.file_uploads.insert_one(file_metadata)
+        
+        return {
+            "filename": unique_filename,
+            "original_filename": file.filename,
+            "file_size": file_size,
+            "file_type": file.content_type,
+            "file_url": f"/api/messages/download/{unique_filename}"
+        }
+    except Exception as e:
+        logger.error(f"File upload error: {e}")
+        raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
+
+@api_router.get("/messages/download/{filename}")
+async def download_file(
+    filename: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Download file attachment"""
+    file_path = UPLOAD_DIR / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    return FileResponse(
+        file_path,
+        media_type='application/octet-stream',
+        filename=filename
+    )
+
+@api_router.post("/messages")
+async def create_message(
+    message_data: MessageCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Send a new message"""
+    # Validate category
+    if message_data.category not in ["announcement", "direct", "group"]:
+        raise HTTPException(status_code=400, detail="Invalid message category")
+    
+    # For announcements, only managers/super_admin can send
+    if message_data.category == "announcement" and current_user.role == UserRole.EMPLOYEE:
+        raise HTTPException(status_code=403, detail="Only managers can send announcements")
+    
+    # Determine recipients
+    recipients = message_data.recipients
+    if message_data.category == "announcement" and not recipients:
+        # Send to all employees
+        all_employees = await db.users.find({"role": UserRole.EMPLOYEE, "is_active": True}).to_list(1000)
+        recipients = [emp["id"] for emp in all_employees]
+    
+    # Create thread_id if not provided
+    thread_id = message_data.thread_id or str(uuid.uuid4())
+    
+    # Create message
+    new_message = Message(
+        sender_id=current_user.id,
+        sender_name=current_user.name,
+        category=message_data.category,
+        recipients=recipients,
+        subject=message_data.subject,
+        content=message_data.content,
+        thread_id=thread_id,
+        parent_message_id=message_data.parent_message_id,
+        attachments=[]
+    )
+    
+    message_dict = new_message.dict()
+    await db.messages.insert_one(prepare_for_mongo(message_dict))
+    
+    # Send real-time notification via WebSocket
+    notification_data = {
+        "type": "new_message",
+        "message": message_dict
+    }
+    await manager.broadcast_message(notification_data, recipients)
+    
+    return {"message": "Message sent successfully", "message_id": new_message.id, "thread_id": thread_id}
+
+@api_router.post("/messages/{message_id}/attachments")
+async def add_message_attachments(
+    message_id: str,
+    attachments: List[Dict[str, Any]],
+    current_user: User = Depends(get_current_user)
+):
+    """Add attachments to a message"""
+    # Find message
+    message = await db.messages.find_one({"id": message_id})
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    # Check if user is the sender
+    if message["sender_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="Can only add attachments to your own messages")
+    
+    # Update message with attachments
+    await db.messages.update_one(
+        {"id": message_id},
+        {"$set": {"attachments": attachments}}
+    )
+    
+    return {"message": "Attachments added successfully"}
+
+@api_router.get("/messages")
+async def get_messages(
+    category: Optional[str] = None,
+    thread_id: Optional[str] = None,
+    limit: int = 50,
+    current_user: User = Depends(get_current_user)
+):
+    """Get messages for current user"""
+    query = {
+        "deleted_at": None,
+        "$or": [
+            {"sender_id": current_user.id},
+            {"recipients": current_user.id}
+        ]
+    }
+    
+    if category:
+        query["category"] = category
+    
+    if thread_id:
+        query["thread_id"] = thread_id
+    
+    messages = await db.messages.find(query).sort([("created_at", -1)]).limit(limit).to_list(limit)
+    
+    # Parse datetime fields
+    for msg in messages:
+        msg = parse_from_mongo(msg)
+    
+    return {"messages": messages}
+
+@api_router.get("/messages/threads")
+async def get_message_threads(
+    category: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get unique message threads for current user"""
+    query = {
+        "deleted_at": None,
+        "$or": [
+            {"sender_id": current_user.id},
+            {"recipients": current_user.id}
+        ]
+    }
+    
+    if category:
+        query["category"] = category
+    
+    # Get all messages and group by thread_id
+    messages = await db.messages.find(query).sort([("created_at", -1)]).to_list(1000)
+    
+    threads = {}
+    for msg in messages:
+        msg = parse_from_mongo(msg)
+        thread_id = msg.get("thread_id")
+        if thread_id and thread_id not in threads:
+            # Get unread count
+            unread_count = len([m for m in messages if m.get("thread_id") == thread_id and current_user.id not in m.get("is_read_by", [])])
+            
+            threads[thread_id] = {
+                "thread_id": thread_id,
+                "category": msg["category"],
+                "subject": msg.get("subject", "No Subject"),
+                "last_message": msg["content"][:100],
+                "last_sender": msg["sender_name"],
+                "last_updated": msg["created_at"],
+                "unread_count": unread_count,
+                "participants": list(set([msg["sender_id"]] + msg["recipients"]))
+            }
+    
+    return {"threads": list(threads.values())}
+
+@api_router.put("/messages/{message_id}/read")
+async def mark_message_read(
+    message_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Mark message as read"""
+    message = await db.messages.find_one({"id": message_id})
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    # Check if user is a recipient
+    if current_user.id not in message.get("recipients", []):
+        raise HTTPException(status_code=403, detail="Not a recipient of this message")
+    
+    # Add user to is_read_by list
+    await db.messages.update_one(
+        {"id": message_id},
+        {"$addToSet": {"is_read_by": current_user.id}}
+    )
+    
+    return {"message": "Message marked as read"}
+
+@api_router.put("/messages/{message_id}")
+async def edit_message(
+    message_id: str,
+    content: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Edit a message (only sender can edit)"""
+    message = await db.messages.find_one({"id": message_id})
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    if message["sender_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="Can only edit your own messages")
+    
+    await db.messages.update_one(
+        {"id": message_id},
+        {"$set": {"content": content, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Notify recipients of edit via WebSocket
+    notification_data = {
+        "type": "message_edited",
+        "message_id": message_id,
+        "new_content": content
+    }
+    await manager.broadcast_message(notification_data, message["recipients"])
+    
+    return {"message": "Message updated successfully"}
+
+@api_router.delete("/messages/{message_id}")
+async def delete_message(
+    message_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Soft delete a message (only sender can delete)"""
+    message = await db.messages.find_one({"id": message_id})
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    if message["sender_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="Can only delete your own messages")
+    
+    await db.messages.update_one(
+        {"id": message_id},
+        {"$set": {"deleted_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Notify recipients via WebSocket
+    notification_data = {
+        "type": "message_deleted",
+        "message_id": message_id
+    }
+    await manager.broadcast_message(notification_data, message["recipients"])
+    
+    return {"message": "Message deleted successfully"}
+
+# WebSocket endpoint for real-time messaging
+@app.websocket("/api/ws/{user_id}")
+async def websocket_endpoint(websocket: WebSocket, user_id: str):
+    """WebSocket connection for real-time messaging"""
+    await manager.connect(websocket, user_id)
+    try:
+        while True:
+            # Keep connection alive and receive any client messages
+            data = await websocket.receive_text()
+            # Echo back for connection verification
+            await websocket.send_json({"type": "pong", "data": data})
+    except WebSocketDisconnect:
+        manager.disconnect(user_id)
+    except Exception as e:
+        logger.error(f"WebSocket error for user {user_id}: {e}")
+        manager.disconnect(user_id)
+
 # Background task for checking missed punches (simplified version)
 async def check_missed_punches():
     """Check for employees who haven't punched in 15 minutes after start time"""

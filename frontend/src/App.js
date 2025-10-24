@@ -2337,6 +2337,8 @@ const MyReportsTab = () => {
 
 // Communication Tab
 const CommunicationTab = () => {
+  const { user } = React.useContext(AuthContext);
+  const token = localStorage.getItem('token');
   const [messageCategory, setMessageCategory] = useState('all');
   const [messages, setMessages] = useState([]);
   const [threads, setThreads] = useState([]);

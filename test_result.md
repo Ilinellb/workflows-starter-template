@@ -267,11 +267,10 @@
 
 ## test_plan:
   current_focus:
-    - "Team Scheduling System Active User Assignment Fix - COMPLETED"
-    - "Test Room Management guest out timer display functionality"
-    - "Test Employee My Schedule tab comprehensive functionality"
-    - "Test Manager Team Scheduling tab comprehensive functionality" 
-    - "Verify scheduling system integration with backend APIs"
+    - "Employee Time Off Requests Tab"
+    - "Manager Time Off Approvals Tab"
+    - "Complete Time Off Workflow Testing"
+    - "Time Off Calendar Integration and UI/UX Testing"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"

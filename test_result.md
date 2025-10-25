@@ -347,9 +347,7 @@
   run_ui: false
 
 ## test_plan:
-  current_focus:
-    - "System Admin Tab (Manager/Super Admin) - NEEDS TESTING"
-    - "Analytics Tab (Manager/Super Admin) - NEEDS TESTING"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"

@@ -5835,8 +5835,8 @@ const OrganizationTab = () => {
   };
 
   const getRoleLabel = (role) => {
-    if (role === 'ops_manager') return 'OPS Assistant Manager';
-    if (role === 'assistant_manager') return 'Assistant Assistant Manager';
+    if (role === 'ops_manager') return 'OPS Manager';
+    if (role === 'assistant_manager') return 'Assistant Manager';
     return 'Attendant';
   };
 

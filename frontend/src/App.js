@@ -6253,6 +6253,8 @@ const AppContent = () => {
         return user.role === 'attendant' ? <MyReportsTab /> : <TeamReportsTab />;
       case 'communication':
         return <CommunicationTab />;
+      case 'organization':
+        return <OrganizationTab />;
       
       // Assistant Manager Tabs  
       case 'overview':

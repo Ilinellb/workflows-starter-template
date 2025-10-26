@@ -135,39 +135,45 @@ const AuthProvider = ({ children }) => {
 
 // Tab Configuration - Attendant Success Focused
 const getTabsForRole = (role) => {
+  // Attendant tabs
+  const attendantTabs = [
+    { id: 'timecard', label: 'Time Card', icon: '🕒', category: 'time' },
+    { id: 'rooms', label: 'Room Management', icon: '🏠', category: 'operations' },
+    { id: 'timeoff', label: 'Time Off Requests', icon: '🏖️', category: 'time' },
+    { id: 'schedule', label: 'My Schedule', icon: '📅', category: 'planning' },
+    { id: 'reports', label: 'Reports', icon: '📊', category: 'reports' },
+    { id: 'communication', label: 'Messages', icon: '💬', category: 'communication' },
+    { id: 'organization', label: 'Organization', icon: '🏢', category: 'organization' },
+    { id: 'profile', label: 'Profile', icon: '👤', category: 'personal' }
+  ];
+
   if (role === 'attendant') {
-    return [
-      { id: 'timecard', label: 'Time Card', icon: '🕒', category: 'time' },
-      { id: 'rooms', label: 'Room Management', icon: '🏠', category: 'operations' },
-      { id: 'timeoff', label: 'Time Off Requests', icon: '🏖️', category: 'time' },
-      { id: 'schedule', label: 'My Schedule', icon: '📅', category: 'planning' },
-      { id: 'reports', label: 'Reports', icon: '📊', category: 'reports' },
-      { id: 'communication', label: 'Messages', icon: '💬', category: 'communication' },
-      { id: 'profile', label: 'Profile', icon: '👤', category: 'personal' }
-    ];
+    return attendantTabs;
   }
 
   if (role === 'assistant_manager' || role === 'ops_manager') {
-    return [
+    // Assistant Managers and OPS Assistant Managers see ALL attendant tabs + their management tabs
+    const managerTabs = [
       { id: 'overview', label: 'Team Overview', icon: '📈', category: 'management' },
       { id: 'timecards', label: 'Team Time Cards', icon: '🕒', category: 'time' },
       { id: 'room-mgmt', label: 'Room Reports', icon: '🏨', category: 'operations' },
       { id: 'timeoff-approvals', label: 'Time Off Approvals', icon: '✅', category: 'approvals' },
       { id: 'scheduling', label: 'Scheduling', icon: '📅', category: 'planning' },
       { id: 'team-reports', label: 'Team Reports', icon: '📊', category: 'reports' },
-      { id: 'employee-mgmt', label: 'Attendant Management', icon: '👥', category: 'management' },
-      { id: 'communication', label: 'Team Messages', icon: '💬', category: 'communication' },
-      ...(role === 'ops_manager' ? [
-        { id: 'admin', label: 'System Admin', icon: '⚙️', category: 'admin' },
-        { id: 'analytics', label: 'Analytics', icon: '📈', category: 'admin' }
-      ] : []),
-      { id: 'profile', label: 'Profile', icon: '👤', category: 'personal' }
+      { id: 'employee-mgmt', label: 'Attendant Management', icon: '👥', category: 'management' }
     ];
+
+    // OPS Assistant Manager gets additional admin tabs
+    const adminTabs = role === 'ops_manager' ? [
+      { id: 'admin', label: 'System Admin', icon: '⚙️', category: 'admin' },
+      { id: 'analytics', label: 'Analytics', icon: '📈', category: 'admin' }
+    ] : [];
+
+    // Combine all tabs: attendant tabs + manager tabs + admin tabs (if OPS Assistant Manager)
+    return [...attendantTabs, ...managerTabs, ...adminTabs];
   }
 
-  return [
-    { id: 'timecard', label: 'Time Card', icon: '🕒', category: 'time' }
-  ];
+  return attendantTabs;
 };
 
 // Login Component

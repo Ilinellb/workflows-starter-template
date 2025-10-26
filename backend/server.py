@@ -448,10 +448,14 @@ async def get_users(current_user: User = Depends(get_current_user)):
     if current_user.role == UserRole.ATTENDANT:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
-    query = {}
-    if current_user.role == UserRole.ASSISTANT_MANAGER:
-        # Managers can only see their employees
-        query = {"manager_id": current_user.id}
+    query = {"is_active": True}
+    
+    # OPS Managers and Assistant Managers can see all attendants
+    # This is needed for scheduling, team management, etc.
+    if current_user.role in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+        # Return all users for ops managers, all attendants for assistant managers
+        if current_user.role == UserRole.ASSISTANT_MANAGER:
+            query["role"] = UserRole.ATTENDANT
     
     users = await db.users.find(query).to_list(1000)
     return [User(**parse_from_mongo(user)).dict() for user in users]

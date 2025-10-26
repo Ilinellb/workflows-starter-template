@@ -78,6 +78,7 @@ class UserCreate(BaseModel):
     workplace_lng: Optional[float] = None
     geofence_radius: Optional[int] = 100
     manager_id: Optional[str] = None
+    department: Optional[str] = None
 
 class UserUpdate(BaseModel):
     email: EmailStr
@@ -89,6 +90,7 @@ class UserUpdate(BaseModel):
     workplace_lng: Optional[float] = None
     geofence_radius: Optional[int] = 100
     manager_id: Optional[str] = None
+    department: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: EmailStr

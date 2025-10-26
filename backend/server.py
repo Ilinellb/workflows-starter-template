@@ -533,6 +533,42 @@ async def update_user(user_id: str, user_data: UserUpdate, current_user: User = 
     
     return {"message": "User updated successfully"}
 
+@api_router.put("/profile/demographics")
+async def update_profile_demographics(
+    demographics: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Update user's demographic information"""
+    try:
+        # Allowed demographic fields
+        allowed_fields = [
+            'date_of_birth', 'gender', 'phone_number',
+            'address_street', 'address_city', 'address_state', 'address_zip',
+            'emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relationship'
+        ]
+        
+        # Filter to only allowed fields
+        update_data = {k: v for k, v in demographics.items() if k in allowed_fields}
+        
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No valid demographic fields provided")
+        
+        # Update the user's demographics
+        result = await db.users.update_one(
+            {"id": current_user.id},
+            {"$set": update_data}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        return {"message": "Demographics updated successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating demographics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.delete("/users/{user_id}")
 async def delete_user(user_id: str, current_user: User = Depends(get_current_user)):
     # Check permissions

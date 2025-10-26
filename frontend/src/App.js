@@ -323,13 +323,7 @@ const LoginPage = () => {
             </Button>
           </div>
 
-          {isLogin ? (
-            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600 mb-2">Demo Accounts:</p>
-              <p className="text-xs text-gray-500">Admin: admin@company.com / admin123</p>
-              <p className="text-xs text-gray-500">Employee: john@company.com / password123</p>
-            </div>
-          ) : (
+          {!isLogin && (
             <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-sm text-blue-700 font-medium mb-2">✨ Registration Info:</p>
               <p className="text-xs text-blue-600">• New accounts are automatically assigned employee role</p>

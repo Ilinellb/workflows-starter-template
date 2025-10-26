@@ -67,6 +67,17 @@ class User(BaseModel):
     geofence_radius: Optional[int] = None  # in meters
     manager_id: Optional[str] = None
     department: Optional[str] = None  # "business_operations", "daily_operations", "front_desk_operations"
+    # Demographics
+    date_of_birth: Optional[str] = None  # ISO date string
+    gender: Optional[str] = None
+    phone_number: Optional[str] = None
+    address_street: Optional[str] = None
+    address_city: Optional[str] = None
+    address_state: Optional[str] = None
+    address_zip: Optional[str] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
+    emergency_contact_relationship: Optional[str] = None
 
 class UserCreate(BaseModel):
     email: EmailStr

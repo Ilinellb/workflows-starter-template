@@ -1393,6 +1393,77 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
         logger.error(f"WebSocket error for user {user_id}: {e}")
         manager.disconnect(user_id)
 
+# ============ ORGANIZATION HIERARCHY API ============
+
+@api_router.get("/organization/hierarchy")
+async def get_organization_hierarchy(current_user: User = Depends(get_current_user)):
+    """Get organization hierarchy with all users and their relationships"""
+    try:
+        # Fetch all active users
+        users = await db.users.find({"is_active": True}).to_list(1000)
+        
+        # Organize by department and role
+        hierarchy = {
+            "business_operations": [],
+            "daily_operations": [],
+            "front_desk_operations": []
+        }
+        
+        for user in users:
+            user_data = {
+                "id": user["id"],
+                "name": user["name"],
+                "email": user["email"],
+                "role": user["role"],
+                "manager_id": user.get("manager_id"),
+                "department": user.get("department", "front_desk_operations")  # Default department
+            }
+            
+            dept = user.get("department", "front_desk_operations")
+            if dept in hierarchy:
+                hierarchy[dept].append(user_data)
+        
+        return {"hierarchy": hierarchy}
+    except Exception as e:
+        logger.error(f"Error fetching organization hierarchy: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/organization/update-user")
+async def update_user_organization(
+    user_id: str,
+    department: Optional[str] = None,
+    manager_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Update user's department and/or manager"""
+    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    try:
+        update_data = {}
+        if department:
+            update_data["department"] = department
+        if manager_id is not None:
+            update_data["manager_id"] = manager_id
+        
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No update data provided")
+        
+        result = await db.users.update_one(
+            {"id": user_id},
+            {"$set": update_data}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        return {"message": "User organization updated successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating user organization: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Background task for checking missed punches (simplified version)
 async def check_missed_punches():
     """Check for employees who haven't punched in 15 minutes after start time"""

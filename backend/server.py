@@ -1420,18 +1420,18 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
 async def startup_event():
-    # Create super admin if doesn't exist
-    super_admin = await db.users.find_one({"role": UserRole.OPS_MANAGER})
-    if not super_admin:
+    # Create OPS Manager if doesn't exist
+    ops_manager = await db.users.find_one({"role": UserRole.OPS_MANAGER})
+    if not ops_manager:
         admin_user = User(
             email="admin@company.com",
-            name="Super Admin",
+            name="OPS Manager",
             role=UserRole.OPS_MANAGER
         )
         admin_dict = admin_user.dict()
         admin_dict["password_hash"] = get_password_hash("admin123")
         await db.users.insert_one(prepare_for_mongo(admin_dict))
-        logger.info("Super admin created: admin@company.com / admin123")
+        logger.info("OPS Manager created: admin@company.com / admin123")
     
     logger.info("Application started successfully")
 

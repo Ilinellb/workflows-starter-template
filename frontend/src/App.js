@@ -5756,6 +5756,277 @@ const AnalyticsTab = () => {
   );
 };
 
+const OrganizationTab = () => {
+  const { user } = React.useContext(AuthContext);
+  const token = localStorage.getItem('token');
+  const [hierarchy, setHierarchy] = useState({ business_operations: [], daily_operations: [], front_desk_operations: [] });
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editData, setEditData] = useState({ department: '', manager_id: '' });
+  const [users, setUsers] = useState([]);
+
+  useEffect(() => {
+    if (token) {
+      fetchHierarchy();
+      fetchUsers();
+    }
+  }, [token]);
+
+  const fetchHierarchy = async () => {
+    try {
+      const response = await axios.get(`${API}/organization/hierarchy`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setHierarchy(response.data.hierarchy);
+    } catch (error) {
+      console.error('Error fetching hierarchy:', error);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get(`${API}/users/for-messaging`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  const handleEditUser = (userData) => {
+    setSelectedUser(userData);
+    setEditData({
+      department: userData.department || 'front_desk_operations',
+      manager_id: userData.manager_id || ''
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedUser) return;
+
+    try {
+      await axios.put(
+        `${API}/organization/update-user?user_id=${selectedUser.id}`,
+        null,
+        {
+          params: {
+            department: editData.department,
+            manager_id: editData.manager_id || null
+          },
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      
+      toast.success('Organization updated successfully!');
+      setShowEditModal(false);
+      fetchHierarchy();
+    } catch (error) {
+      console.error('Error updating organization:', error);
+      toast.error('Failed to update organization');
+    }
+  };
+
+  const getRoleBadgeColor = (role) => {
+    if (role === 'ops_manager') return 'bg-purple-100 text-purple-800 border-purple-300';
+    if (role === 'assistant_manager') return 'bg-blue-100 text-blue-800 border-blue-300';
+    return 'bg-green-100 text-green-800 border-green-300';
+  };
+
+  const getRoleLabel = (role) => {
+    if (role === 'ops_manager') return 'OPS Assistant Manager';
+    if (role === 'assistant_manager') return 'Assistant Assistant Manager';
+    return 'Attendant';
+  };
+
+  const getDepartmentLabel = (dept) => {
+    if (dept === 'business_operations') return 'Business Operations';
+    if (dept === 'daily_operations') return 'Daily Operations';
+    return 'Front Desk Operations';
+  };
+
+  const canEdit = user?.role === 'ops_manager' || user?.role === 'assistant_manager';
+
+  const renderUserCard = (userData, deptUsers) => {
+    const managerData = deptUsers.find(u => u.id === userData.manager_id);
+    
+    return (
+      <div
+        key={userData.id}
+        className="bg-white border-2 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow relative"
+        style={{ minWidth: '200px' }}
+      >
+        <div className="flex flex-col items-center">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xl font-bold mb-2">
+            {userData.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+          </div>
+          <div className="text-center mb-2">
+            <div className="font-semibold text-gray-900">{userData.name}</div>
+            <div className="text-xs text-gray-500">{userData.email}</div>
+          </div>
+          <Badge className={`text-xs px-2 py-1 ${getRoleBadgeColor(userData.role)}`}>
+            {getRoleLabel(userData.role)}
+          </Badge>
+          {managerData && (
+            <div className="text-xs text-gray-500 mt-2">
+              Reports to: {managerData.name}
+            </div>
+          )}
+        </div>
+        {canEdit && (
+          <button
+            onClick={() => handleEditUser(userData)}
+            className="absolute top-2 right-2 p-1 text-gray-400 hover:text-blue-600"
+          >
+            ✏️
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6" data-testid="organization-tab">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">🏢 Organization Structure</h2>
+        <Badge className="bg-blue-100 text-blue-800">
+          {Object.values(hierarchy).flat().length} Total Members
+        </Badge>
+      </div>
+
+      {/* Hierarchy Visualization */}
+      <div className="space-y-8">
+        {/* Business Operations */}
+        <Card>
+          <CardHeader className="bg-gradient-to-r from-purple-50 to-purple-100">
+            <CardTitle className="text-purple-900">📊 Business Operations</CardTitle>
+            <p className="text-sm text-purple-700">Strategic Leadership & Direction</p>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="flex flex-wrap gap-4 justify-center">
+              {hierarchy.business_operations.length === 0 ? (
+                <div className="text-gray-500 text-center py-8">No members in this department</div>
+              ) : (
+                hierarchy.business_operations.map(userData => 
+                  renderUserCard(userData, hierarchy.business_operations)
+                )
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Connection Line */}
+        <div className="flex justify-center">
+          <div className="w-1 h-8 bg-gradient-to-b from-purple-300 to-blue-300"></div>
+        </div>
+
+        {/* Daily Operations */}
+        <Card>
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100">
+            <CardTitle className="text-blue-900">⚙️ Daily Operations</CardTitle>
+            <p className="text-sm text-blue-700">Day-to-Day Management & Coordination</p>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="flex flex-wrap gap-4 justify-center">
+              {hierarchy.daily_operations.length === 0 ? (
+                <div className="text-gray-500 text-center py-8">No members in this department</div>
+              ) : (
+                hierarchy.daily_operations.map(userData => 
+                  renderUserCard(userData, hierarchy.daily_operations)
+                )
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Connection Line */}
+        <div className="flex justify-center">
+          <div className="w-1 h-8 bg-gradient-to-b from-blue-300 to-green-300"></div>
+        </div>
+
+        {/* Front Desk Operations */}
+        <Card>
+          <CardHeader className="bg-gradient-to-r from-green-50 to-green-100">
+            <CardTitle className="text-green-900">🏨 Front Desk Operations</CardTitle>
+            <p className="text-sm text-green-700">Guest Services & Room Management</p>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="flex flex-wrap gap-4 justify-center">
+              {hierarchy.front_desk_operations.length === 0 ? (
+                <div className="text-gray-500 text-center py-8">No members in this department</div>
+              ) : (
+                hierarchy.front_desk_operations.map(userData => 
+                  renderUserCard(userData, hierarchy.front_desk_operations)
+                )
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Edit Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Organization Assignment</DialogTitle>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="space-y-4">
+              <div>
+                <Label>Attendant: {selectedUser.name}</Label>
+              </div>
+              <div>
+                <Label>Department</Label>
+                <Select
+                  value={editData.department}
+                  onValueChange={(value) => setEditData({...editData, department: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="business_operations">Business Operations</SelectItem>
+                    <SelectItem value="daily_operations">Daily Operations</SelectItem>
+                    <SelectItem value="front_desk_operations">Front Desk Operations</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Direct Assistant Manager</Label>
+                <Select
+                  value={editData.manager_id}
+                  onValueChange={(value) => setEditData({...editData, manager_id: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select assistant manager..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {users.filter(u => u.role === 'ops_manager' || u.role === 'assistant_manager').map(mgr => (
+                      <SelectItem key={mgr.id} value={mgr.id}>
+                        {mgr.name} - {getRoleLabel(mgr.role)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
 const ProfileTab = ({ user }) => (
   <div data-testid="profile-tab">
     <h2 className="text-2xl font-bold mb-4">Profile Settings</h2>

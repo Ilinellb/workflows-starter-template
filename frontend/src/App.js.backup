@@ -135,7 +135,7 @@ const AuthProvider = ({ children }) => {
 
 // Tab Configuration - Employee Success Focused
 const getTabsForRole = (role) => {
-  if (role === 'attendant') {
+  if (role === 'employee') {
     return [
       { id: 'timecard', label: 'Time Card', icon: '🕒', category: 'time' },
       { id: 'rooms', label: 'Room Management', icon: '🏠', category: 'operations' },
@@ -147,7 +147,7 @@ const getTabsForRole = (role) => {
     ];
   }
 
-  if (role === 'assistant_manager' || role === 'ops_manager') {
+  if (role === 'manager' || role === 'super_admin') {
     return [
       { id: 'overview', label: 'Team Overview', icon: '📈', category: 'management' },
       { id: 'timecards', label: 'Team Time Cards', icon: '🕒', category: 'time' },
@@ -157,7 +157,7 @@ const getTabsForRole = (role) => {
       { id: 'team-reports', label: 'Team Reports', icon: '📊', category: 'reports' },
       { id: 'employee-mgmt', label: 'Employee Management', icon: '👥', category: 'management' },
       { id: 'communication', label: 'Team Messages', icon: '💬', category: 'communication' },
-      ...(role === 'ops_manager' ? [
+      ...(role === 'super_admin' ? [
         { id: 'admin', label: 'System Admin', icon: '⚙️', category: 'admin' },
         { id: 'analytics', label: 'Analytics', icon: '📈', category: 'admin' }
       ] : []),
@@ -2714,7 +2714,7 @@ const CommunicationTab = () => {
                 <SelectContent>
                   <SelectItem value="direct">Direct Message</SelectItem>
                   <SelectItem value="group">Group Chat</SelectItem>
-                  {(user?.role === 'assistant_manager' || user?.role === 'ops_manager') && (
+                  {(user?.role === 'manager' || user?.role === 'super_admin') && (
                     <SelectItem value="announcement">Announcement (to all employees)</SelectItem>
                   )}
                 </SelectContent>
@@ -2829,7 +2829,7 @@ const TeamOverviewTab = () => {
         axios.get(`${API}/time/entries`)
       ]);
 
-      const employees = employeesRes.data.filter(u => u.role === 'attendant');
+      const employees = employeesRes.data.filter(u => u.role === 'employee');
       const entries = entriesRes.data;
       const today = new Date().toISOString().split('T')[0];
       
@@ -2911,7 +2911,7 @@ const TeamTimeCardsTab = () => {
   const fetchEmployees = async () => {
     try {
       const response = await axios.get(`${API}/users`);
-      setEmployees(response.data.filter(u => u.role === 'attendant'));
+      setEmployees(response.data.filter(u => u.role === 'employee'));
     } catch (error) {
       toast.error('Failed to fetch employees');
     }
@@ -3681,7 +3681,7 @@ const TeamSchedulingTab = () => {
     try {
       // Fetch actual employees from the system
       const employeesResponse = await axios.get(`${API}/users`);
-      const activeEmployees = employeesResponse.data.filter(user => user.is_active && user.role === 'attendant');
+      const activeEmployees = employeesResponse.data.filter(user => user.is_active && user.role === 'employee');
       setEmployees(activeEmployees.map(emp => ({
         id: emp.id,
         name: emp.name,
@@ -4245,7 +4245,7 @@ const TeamReportsTab = () => {
       { 
         id: 'emp-1', 
         name: 'John Employee', 
-        role: 'attendant',
+        role: 'employee',
         totalHours: 168.5, 
         daysWorked: 21, 
         avgHoursPerDay: 8.0, 
@@ -4259,7 +4259,7 @@ const TeamReportsTab = () => {
       { 
         id: 'emp-2', 
         name: 'Jane Smith', 
-        role: 'attendant',
+        role: 'employee',
         totalHours: 172.0, 
         daysWorked: 22, 
         avgHoursPerDay: 7.8, 
@@ -4273,7 +4273,7 @@ const TeamReportsTab = () => {
       { 
         id: 'emp-3', 
         name: 'Mike Johnson', 
-        role: 'attendant',
+        role: 'employee',
         totalHours: 164.2, 
         daysWorked: 20, 
         avgHoursPerDay: 8.2, 
@@ -4287,7 +4287,7 @@ const TeamReportsTab = () => {
       { 
         id: 'emp-4', 
         name: 'Sarah Wilson', 
-        role: 'attendant',
+        role: 'employee',
         totalHours: 176.5, 
         daysWorked: 22, 
         avgHoursPerDay: 8.0, 
@@ -4657,7 +4657,7 @@ const EmployeeManagementTab = () => {
     name: '',
     email: '',
     password: '',
-    role: 'attendant',
+    role: 'employee',
     start_time: '09:00',
     manager_id: ''
   });
@@ -4752,7 +4752,7 @@ const EmployeeManagementTab = () => {
         id: 'emp-1',
         name: 'John Employee',
         email: 'john@company.com',
-        role: 'attendant',
+        role: 'employee',
         is_active: true,
         timeData: { totalHours: 168.5, daysWorked: 21, avgDaily: 8.0, efficiency: 96.2, punctuality: 94.5 },
         scheduleData: { upcomingShifts: 7, preferredShift: 'Regular', schedulingConflicts: 1, lastScheduleUpdate: '2024-10-15' },
@@ -4815,7 +4815,7 @@ const EmployeeManagementTab = () => {
       name: '',
       email: '',
       password: '',
-      role: 'attendant',
+      role: 'employee',
       start_time: '09:00',
       manager_id: ''
     });
@@ -4844,18 +4844,18 @@ const EmployeeManagementTab = () => {
 
   const getRoleBadge = (role) => {
     switch (role) {
-      case 'ops_manager': return 'bg-purple-100 text-purple-800';
-      case 'assistant_manager': return 'bg-blue-100 text-blue-800';
-      case 'attendant': return 'bg-green-100 text-green-800';
+      case 'super_admin': return 'bg-purple-100 text-purple-800';
+      case 'manager': return 'bg-blue-100 text-blue-800';
+      case 'employee': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getRoleDisplay = (role) => {
     switch (role) {
-      case 'ops_manager': return 'Super Admin';
-      case 'assistant_manager': return 'Manager';
-      case 'attendant': return 'Employee';
+      case 'super_admin': return 'Super Admin';
+      case 'manager': return 'Manager';
+      case 'employee': return 'Employee';
       default: return role;
     }
   };
@@ -4953,9 +4953,9 @@ const EmployeeManagementTab = () => {
                 onChange={(e) => setFilterRole(e.target.value)}
               >
                 <option value="all">All Roles</option>
-                <option value="attendant">Employee</option>
-                <option value="assistant_manager">Manager</option>
-                <option value="ops_manager">Super Admin</option>
+                <option value="employee">Employee</option>
+                <option value="manager">Manager</option>
+                <option value="super_admin">Super Admin</option>
               </select>
             </div>
           </div>
@@ -5172,9 +5172,9 @@ const EmployeeManagementTab = () => {
                 value={formData.role}
                 onChange={(e) => setFormData({...formData, role: e.target.value})}
               >
-                <option value="attendant">Employee</option>
-                <option value="assistant_manager">Manager</option>
-                <option value="ops_manager">Super Admin</option>
+                <option value="employee">Employee</option>
+                <option value="manager">Manager</option>
+                <option value="super_admin">Super Admin</option>
               </select>
             </div>
             <div>
@@ -5240,9 +5240,9 @@ const EmployeeManagementTab = () => {
                 value={formData.role}
                 onChange={(e) => setFormData({...formData, role: e.target.value})}
               >
-                <option value="attendant">Employee</option>
-                <option value="assistant_manager">Manager</option>
-                <option value="ops_manager">Super Admin</option>
+                <option value="employee">Employee</option>
+                <option value="manager">Manager</option>
+                <option value="super_admin">Super Admin</option>
               </select>
             </div>
             <div>
@@ -5794,7 +5794,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
     try {
       await axios.post(`${API}/users`, {
         ...formData,
-        role: 'attendant',
+        role: 'employee',
         workplace_lat: formData.workplace_lat ? parseFloat(formData.workplace_lat) : null,
         workplace_lng: formData.workplace_lng ? parseFloat(formData.workplace_lng) : null,
         geofence_radius: parseInt(formData.geofence_radius)
@@ -5931,7 +5931,7 @@ const AppContent = () => {
   // Set default tab based on role
   useEffect(() => {
     if (user) {
-      const defaultTab = user.role === 'attendant' ? 'timecard' : 'overview';
+      const defaultTab = user.role === 'employee' ? 'timecard' : 'overview';
       setActiveTab(defaultTab);
     }
   }, [user]);
@@ -5973,7 +5973,7 @@ const AppContent = () => {
       case 'schedule':
         return <MyScheduleTab />;
       case 'reports':
-        return user.role === 'attendant' ? <MyReportsTab /> : <TeamReportsTab />;
+        return user.role === 'employee' ? <MyReportsTab /> : <TeamReportsTab />;
       case 'communication':
         return <CommunicationTab />;
       
@@ -6004,7 +6004,7 @@ const AppContent = () => {
         return <ProfileTab user={user} />;
       
       default:
-        return user.role === 'attendant' ? <TimeCardTab /> : <TeamOverviewTab />;
+        return user.role === 'employee' ? <TimeCardTab /> : <TeamOverviewTab />;
     }
   };
 

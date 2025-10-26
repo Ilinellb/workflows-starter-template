@@ -1092,6 +1092,9 @@ async def create_message(
         # Send to all employees
         all_employees = await db.users.find({"role": UserRole.EMPLOYEE, "is_active": True}).to_list(1000)
         recipients = [emp["id"] for emp in all_employees]
+    elif message_data.category in ["direct", "group"] and not recipients:
+        # Direct and group messages must have recipients
+        raise HTTPException(status_code=400, detail="Recipients are required for direct and group messages")
     
     # Create thread_id if not provided
     thread_id = message_data.thread_id or str(uuid.uuid4())

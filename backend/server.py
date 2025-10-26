@@ -66,6 +66,7 @@ class User(BaseModel):
     workplace_lng: Optional[float] = None
     geofence_radius: Optional[int] = None  # in meters
     manager_id: Optional[str] = None
+    department: Optional[str] = None  # "business_operations", "daily_operations", "front_desk_operations"
 
 class UserCreate(BaseModel):
     email: EmailStr

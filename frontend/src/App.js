@@ -6027,29 +6027,256 @@ const OrganizationTab = () => {
   );
 };
 
-const ProfileTab = ({ user }) => (
-  <div data-testid="profile-tab">
-    <h2 className="text-2xl font-bold mb-4">Profile Settings</h2>
-    <Card>
-      <CardContent className="p-6">
-        <div className="space-y-4">
-          <div>
-            <Label>Name</Label>
-            <p className="font-medium">{user.name}</p>
+const ProfileTab = ({ user }) => {
+  const token = localStorage.getItem('token');
+  const [editing, setEditing] = useState(false);
+  const [demographics, setDemographics] = useState({
+    date_of_birth: user.date_of_birth || '',
+    gender: user.gender || '',
+    phone_number: user.phone_number || '',
+    address_street: user.address_street || '',
+    address_city: user.address_city || '',
+    address_state: user.address_state || '',
+    address_zip: user.address_zip || '',
+    emergency_contact_name: user.emergency_contact_name || '',
+    emergency_contact_phone: user.emergency_contact_phone || '',
+    emergency_contact_relationship: user.emergency_contact_relationship || ''
+  });
+
+  const handleSave = async () => {
+    try {
+      await axios.put(
+        `${API}/profile/demographics`,
+        demographics,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('Profile updated successfully!');
+      setEditing(false);
+      // Refresh the page to update user data
+      window.location.reload();
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile');
+    }
+  };
+
+  return (
+    <div data-testid="profile-tab">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold">Profile Settings</h2>
+        {!editing ? (
+          <Button onClick={() => setEditing(true)}>Edit Profile</Button>
+        ) : (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
+            <Button onClick={handleSave}>Save Changes</Button>
           </div>
-          <div>
-            <Label>Email</Label>
-            <p className="font-medium">{user.email}</p>
+        )}
+      </div>
+
+      {/* Basic Information */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Basic Information</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Name</Label>
+              <p className="font-medium">{user.name}</p>
+            </div>
+            <div>
+              <Label>Email</Label>
+              <p className="font-medium">{user.email}</p>
+            </div>
+            <div>
+              <Label>Role</Label>
+              <Badge>
+                {user.role === 'ops_manager' ? 'OPS Manager' : 
+                 user.role === 'assistant_manager' ? 'Assistant Manager' : 
+                 'Attendant'}
+              </Badge>
+            </div>
+            {user.department && (
+              <div>
+                <Label>Department</Label>
+                <p className="font-medium">
+                  {user.department === 'business_operations' ? 'Business Operations' :
+                   user.department === 'daily_operations' ? 'Daily Operations' :
+                   'Front Desk Operations'}
+                </p>
+              </div>
+            )}
           </div>
-          <div>
-            <Label>Role</Label>
-            <Badge>{user.role.replace('_', ' ')}</Badge>
+        </CardContent>
+      </Card>
+
+      {/* Demographics */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Demographics</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Date of Birth</Label>
+              {editing ? (
+                <Input
+                  type="date"
+                  value={demographics.date_of_birth}
+                  onChange={(e) => setDemographics({...demographics, date_of_birth: e.target.value})}
+                />
+              ) : (
+                <p className="font-medium">{demographics.date_of_birth || 'Not set'}</p>
+              )}
+            </div>
+            <div>
+              <Label>Gender</Label>
+              {editing ? (
+                <Select
+                  value={demographics.gender}
+                  onValueChange={(value) => setDemographics({...demographics, gender: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select gender..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="non-binary">Non-binary</SelectItem>
+                    <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="font-medium">{demographics.gender || 'Not set'}</p>
+              )}
+            </div>
+            <div>
+              <Label>Phone Number</Label>
+              {editing ? (
+                <Input
+                  type="tel"
+                  value={demographics.phone_number}
+                  onChange={(e) => setDemographics({...demographics, phone_number: e.target.value})}
+                  placeholder="(555) 123-4567"
+                />
+              ) : (
+                <p className="font-medium">{demographics.phone_number || 'Not set'}</p>
+              )}
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
-  </div>
-);
+        </CardContent>
+      </Card>
+
+      {/* Address */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Address</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>Street Address</Label>
+            {editing ? (
+              <Input
+                value={demographics.address_street}
+                onChange={(e) => setDemographics({...demographics, address_street: e.target.value})}
+                placeholder="123 Main Street"
+              />
+            ) : (
+              <p className="font-medium">{demographics.address_street || 'Not set'}</p>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label>City</Label>
+              {editing ? (
+                <Input
+                  value={demographics.address_city}
+                  onChange={(e) => setDemographics({...demographics, address_city: e.target.value})}
+                  placeholder="City"
+                />
+              ) : (
+                <p className="font-medium">{demographics.address_city || 'Not set'}</p>
+              )}
+            </div>
+            <div>
+              <Label>State</Label>
+              {editing ? (
+                <Input
+                  value={demographics.address_state}
+                  onChange={(e) => setDemographics({...demographics, address_state: e.target.value})}
+                  placeholder="State"
+                />
+              ) : (
+                <p className="font-medium">{demographics.address_state || 'Not set'}</p>
+              )}
+            </div>
+            <div>
+              <Label>ZIP Code</Label>
+              {editing ? (
+                <Input
+                  value={demographics.address_zip}
+                  onChange={(e) => setDemographics({...demographics, address_zip: e.target.value})}
+                  placeholder="12345"
+                />
+              ) : (
+                <p className="font-medium">{demographics.address_zip || 'Not set'}</p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Emergency Contact */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Emergency Contact</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Contact Name</Label>
+              {editing ? (
+                <Input
+                  value={demographics.emergency_contact_name}
+                  onChange={(e) => setDemographics({...demographics, emergency_contact_name: e.target.value})}
+                  placeholder="John Doe"
+                />
+              ) : (
+                <p className="font-medium">{demographics.emergency_contact_name || 'Not set'}</p>
+              )}
+            </div>
+            <div>
+              <Label>Contact Phone</Label>
+              {editing ? (
+                <Input
+                  type="tel"
+                  value={demographics.emergency_contact_phone}
+                  onChange={(e) => setDemographics({...demographics, emergency_contact_phone: e.target.value})}
+                  placeholder="(555) 123-4567"
+                />
+              ) : (
+                <p className="font-medium">{demographics.emergency_contact_phone || 'Not set'}</p>
+              )}
+            </div>
+            <div>
+              <Label>Relationship</Label>
+              {editing ? (
+                <Input
+                  value={demographics.emergency_contact_relationship}
+                  onChange={(e) => setDemographics({...demographics, emergency_contact_relationship: e.target.value})}
+                  placeholder="Spouse, Parent, Sibling, etc."
+                />
+              ) : (
+                <p className="font-medium">{demographics.emergency_contact_relationship || 'Not set'}</p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 
 // Add Attendant Modal (keeping existing component)
 const AddAttendantModal = ({ isOpen, onClose, onSuccess }) => {

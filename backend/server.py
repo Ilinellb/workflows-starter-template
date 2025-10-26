@@ -379,7 +379,7 @@ async def register(user_data: UserRegister):
     user = User(
         email=user_data.email,
         name=user_data.name,
-        role=UserRole.EMPLOYEE,  # New registrations default to employee
+        role=UserRole.ATTENDANT,  # New registrations default to employee
         is_active=True  # Auto-approve for now, you can change this to False for admin approval
     )
     
@@ -406,7 +406,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
 @api_router.post("/users", dependencies=[Depends(get_current_user)])
 async def create_user(user_data: UserCreate, current_user: User = Depends(get_current_user)):
     # Check permissions
-    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.MANAGER]:
+    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     # Check if user already exists
@@ -442,11 +442,11 @@ async def create_user(user_data: UserCreate, current_user: User = Depends(get_cu
 
 @api_router.get("/users")
 async def get_users(current_user: User = Depends(get_current_user)):
-    if current_user.role == UserRole.EMPLOYEE:
+    if current_user.role == UserRole.ATTENDANT:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     query = {}
-    if current_user.role == UserRole.MANAGER:
+    if current_user.role == UserRole.ASSISTANT_MANAGER:
         # Managers can only see their employees
         query = {"manager_id": current_user.id}
     
@@ -468,7 +468,7 @@ async def get_users_for_messaging(current_user: User = Depends(get_current_user)
 @api_router.put("/users/{user_id}")
 async def update_user(user_id: str, user_data: UserUpdate, current_user: User = Depends(get_current_user)):
     # Check permissions
-    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.MANAGER]:
+    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     # Find the user to update
@@ -518,7 +518,7 @@ async def update_user(user_id: str, user_data: UserUpdate, current_user: User = 
 @api_router.delete("/users/{user_id}")
 async def delete_user(user_id: str, current_user: User = Depends(get_current_user)):
     # Check permissions
-    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.MANAGER]:
+    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     # Prevent self-deletion
@@ -541,7 +541,7 @@ async def delete_user(user_id: str, current_user: User = Depends(get_current_use
 # Time Tracking Routes
 @api_router.post("/time/punch")
 async def punch_time(punch_data: PunchRequest, current_user: User = Depends(get_current_user)):
-    if current_user.role != UserRole.EMPLOYEE:
+    if current_user.role != UserRole.ATTENDANT:
         raise HTTPException(status_code=403, detail="Only employees can punch in/out")
     
     today = date.today()
@@ -606,7 +606,7 @@ async def punch_time(punch_data: PunchRequest, current_user: User = Depends(get_
 
 @api_router.get("/time/status")
 async def get_time_status(current_user: User = Depends(get_current_user)):
-    if current_user.role != UserRole.EMPLOYEE:
+    if current_user.role != UserRole.ATTENDANT:
         return {"status": "not_employee"}
     
     today = date.today()
@@ -655,15 +655,15 @@ async def get_time_entries(
     query = {}
     
     # Permission check
-    if current_user.role == UserRole.EMPLOYEE:
+    if current_user.role == UserRole.ATTENDANT:
         query["employee_id"] = current_user.id
-    elif current_user.role == UserRole.MANAGER and employee_id:
+    elif current_user.role == UserRole.ASSISTANT_MANAGER and employee_id:
         # Verify employee belongs to this manager
         employee = await db.users.find_one({"id": employee_id, "manager_id": current_user.id})
         if not employee:
             raise HTTPException(status_code=403, detail="Employee not found or access denied")
         query["employee_id"] = employee_id
-    elif current_user.role == UserRole.MANAGER:
+    elif current_user.role == UserRole.ASSISTANT_MANAGER:
         # Get all employees under this manager
         employees = await db.users.find({"manager_id": current_user.id}).to_list(1000)
         employee_ids = [emp["id"] for emp in employees]
@@ -717,7 +717,7 @@ async def update_room_status(
     room_data: RoomUpdateRequest, 
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != UserRole.EMPLOYEE:
+    if current_user.role != UserRole.ATTENDANT:
         raise HTTPException(status_code=403, detail="Only employees can update room status")
     
     today = date.today()
@@ -759,7 +759,7 @@ async def extend_room_time(
     extend_hours: int = 1,
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != UserRole.EMPLOYEE:
+    if current_user.role != UserRole.ATTENDANT:
         raise HTTPException(status_code=403, detail="Only employees can extend room time")
     
     today = date.today()
@@ -788,7 +788,7 @@ async def extend_room_time(
 async def get_room_statuses(current_user: User = Depends(get_current_user)):
     today = date.today()
     
-    if current_user.role == UserRole.EMPLOYEE:
+    if current_user.role == UserRole.ATTENDANT:
         # Employee sees their own room statuses
         query = {
             "employee_id": current_user.id,
@@ -811,7 +811,7 @@ async def get_room_statuses(current_user: User = Depends(get_current_user)):
         room_status = parse_from_mongo(room_status)
         
         # Get employee name for manager view
-        if current_user.role != UserRole.EMPLOYEE:
+        if current_user.role != UserRole.ATTENDANT:
             employee = await db.users.find_one({"id": room_status["employee_id"]})
             room_status["employee_name"] = employee.get("name", "Unknown") if employee else "Unknown"
         
@@ -824,7 +824,7 @@ async def record_laundry(
     laundry_data: LaundryUpdateRequest,
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != UserRole.EMPLOYEE:
+    if current_user.role != UserRole.ATTENDANT:
         raise HTTPException(status_code=403, detail="Only employees can record laundry")
     
     today = date.today()
@@ -856,7 +856,7 @@ async def get_laundry_stats(
     date_filter: Optional[str] = None,
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role == UserRole.EMPLOYEE:
+    if current_user.role == UserRole.ATTENDANT:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     target_date = date.today()
@@ -864,7 +864,7 @@ async def get_laundry_stats(
         target_date = datetime.fromisoformat(date_filter).date()
     
     query = {"shift_date": target_date.isoformat()}
-    if current_user.role == UserRole.MANAGER:
+    if current_user.role == UserRole.ASSISTANT_MANAGER:
         # Get employees under this manager
         employees = await db.users.find({"manager_id": current_user.id}).to_list(1000)
         employee_ids = [emp["id"] for emp in employees]
@@ -889,7 +889,7 @@ async def get_room_report(
     date_filter: Optional[str] = None,
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role == UserRole.EMPLOYEE:
+    if current_user.role == UserRole.ATTENDANT:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     target_date = date.today()
@@ -898,7 +898,7 @@ async def get_room_report(
     
     # Get room statuses for the date
     query = {"shift_date": target_date.isoformat()}
-    if current_user.role == UserRole.MANAGER:
+    if current_user.role == UserRole.ASSISTANT_MANAGER:
         # Manager sees only their team's work
         employees = await db.users.find({"manager_id": current_user.id}).to_list(1000)
         employee_ids = [emp["id"] for emp in employees]
@@ -956,14 +956,14 @@ async def export_timesheet(
     end_date: str,
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role == UserRole.EMPLOYEE:
+    if current_user.role == UserRole.ATTENDANT:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     # Get employees based on role
-    if current_user.role == UserRole.MANAGER:
+    if current_user.role == UserRole.ASSISTANT_MANAGER:
         employees = await db.users.find({"manager_id": current_user.id}).to_list(1000)
     else:
-        employees = await db.users.find({"role": UserRole.EMPLOYEE}).to_list(1000)
+        employees = await db.users.find({"role": UserRole.ATTENDANT}).to_list(1000)
     
     # Create workbook
     wb = Workbook()
@@ -1083,14 +1083,14 @@ async def create_message(
         raise HTTPException(status_code=400, detail="Invalid message category")
     
     # For announcements, only managers/super_admin can send
-    if message_data.category == "announcement" and current_user.role == UserRole.EMPLOYEE:
+    if message_data.category == "announcement" and current_user.role == UserRole.ATTENDANT:
         raise HTTPException(status_code=403, detail="Only managers can send announcements")
     
     # Determine recipients
     recipients = message_data.recipients
     if message_data.category == "announcement" and not recipients:
         # Send to all employees
-        all_employees = await db.users.find({"role": UserRole.EMPLOYEE, "is_active": True}).to_list(1000)
+        all_employees = await db.users.find({"role": UserRole.ATTENDANT, "is_active": True}).to_list(1000)
         recipients = [emp["id"] for emp in all_employees]
     elif message_data.category in ["direct", "group"] and not recipients:
         # Direct and group messages must have recipients
@@ -1309,12 +1309,12 @@ async def delete_message(
 @api_router.post("/notifications/check-missed-punches")
 async def check_missed_punches_endpoint(current_user: User = Depends(get_current_user)):
     """Manually trigger check for missed punches and send notifications"""
-    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.MANAGER]:
+    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     try:
         # Get all employees
-        employees = await db.users.find({"role": UserRole.EMPLOYEE, "is_active": True}).to_list(1000)
+        employees = await db.users.find({"role": UserRole.ATTENDANT, "is_active": True}).to_list(1000)
         
         notifications_sent = 0
         current_time = datetime.now(timezone.utc)
@@ -1421,12 +1421,12 @@ logger = logging.getLogger(__name__)
 @app.on_event("startup")
 async def startup_event():
     # Create super admin if doesn't exist
-    super_admin = await db.users.find_one({"role": UserRole.SUPER_ADMIN})
+    super_admin = await db.users.find_one({"role": UserRole.OPS_MANAGER})
     if not super_admin:
         admin_user = User(
             email="admin@company.com",
             name="Super Admin",
-            role=UserRole.SUPER_ADMIN
+            role=UserRole.OPS_MANAGER
         )
         admin_dict = admin_user.dict()
         admin_dict["password_hash"] = get_password_hash("admin123")

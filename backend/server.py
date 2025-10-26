@@ -1480,6 +1480,136 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
         logger.error(f"WebSocket error for user {user_id}: {e}")
         manager.disconnect(user_id)
 
+# ============ APP CONFIGURATION API ============
+
+@api_router.get("/config/app")
+async def get_app_config():
+    """Get current app configuration (published or draft)"""
+    try:
+        config = await db.app_config.find_one({}) or {}
+        
+        # If no config exists, return default
+        if not config:
+            default_config = {
+                "id": str(uuid.uuid4()),
+                "company_name": "RSBC Workflow Pro",
+                "theme_primary_color": "#3b82f6",
+                "theme_accent_color": "#10b981",
+                "default_shift_hours": 8,
+                "break_duration_minutes": 30,
+                "overtime_threshold_hours": 40,
+                "late_threshold_minutes": 15,
+                "enable_room_management": True,
+                "enable_time_off": True,
+                "enable_messages": True,
+                "enable_organization": True,
+                "enable_analytics": True,
+                "published": True,
+                "ops_manager_tabs": [],
+                "assistant_manager_tabs": [],
+                "attendant_tabs": []
+            }
+            return default_config
+        
+        # Remove MongoDB _id field
+        config.pop('_id', None)
+        return config
+    except Exception as e:
+        logger.error(f"Error fetching app config: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/config/app/draft")
+async def get_app_config_draft(current_user: User = Depends(get_current_user)):
+    """Get draft version of app config (OPS Manager only)"""
+    if current_user.role != UserRole.OPS_MANAGER:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    try:
+        config = await db.app_config.find_one({})
+        
+        if not config:
+            # Return default config as draft
+            return await get_app_config()
+        
+        # Return draft version if exists, otherwise return published
+        if config.get('draft_version'):
+            return config['draft_version']
+        
+        config.pop('_id', None)
+        return config
+    except Exception as e:
+        logger.error(f"Error fetching draft config: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/config/app/draft")
+async def update_app_config_draft(
+    config_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Update draft version of app config (OPS Manager only)"""
+    if current_user.role != UserRole.OPS_MANAGER:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    try:
+        # Update or create draft version
+        existing_config = await db.app_config.find_one({})
+        
+        config_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+        
+        if existing_config:
+            # Store as draft version
+            await db.app_config.update_one(
+                {},
+                {"$set": {"draft_version": config_data, "updated_at": datetime.now(timezone.utc).isoformat()}}
+            )
+        else:
+            # Create new config with draft
+            new_config = {
+                "id": str(uuid.uuid4()),
+                "draft_version": config_data,
+                "published": False,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.app_config.insert_one(new_config)
+        
+        return {"message": "Draft saved successfully"}
+    except Exception as e:
+        logger.error(f"Error updating draft config: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/config/app/publish")
+async def publish_app_config(current_user: User = Depends(get_current_user)):
+    """Publish draft version to live (OPS Manager only)"""
+    if current_user.role != UserRole.OPS_MANAGER:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    try:
+        config = await db.app_config.find_one({})
+        
+        if not config or not config.get('draft_version'):
+            raise HTTPException(status_code=400, detail="No draft version to publish")
+        
+        draft = config['draft_version']
+        draft['published'] = True
+        draft['published_at'] = datetime.now(timezone.utc).isoformat()
+        
+        # Move draft to published and clear draft
+        await db.app_config.update_one(
+            {},
+            {
+                "$set": draft,
+                "$unset": {"draft_version": ""}
+            }
+        )
+        
+        return {"message": "Configuration published successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error publishing config: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ============ ORGANIZATION HIERARCHY API ============
 
 @api_router.get("/organization/hierarchy")

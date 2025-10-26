@@ -2471,6 +2471,12 @@ const CommunicationTab = () => {
       return;
     }
 
+    // Validate recipients for direct and group messages
+    if (newMessage.category !== 'announcement' && newMessage.recipients.length === 0) {
+      toast.error('Please select at least one recipient');
+      return;
+    }
+
     try {
       const messageData = {
         category: newMessage.category,
@@ -2502,7 +2508,7 @@ const CommunicationTab = () => {
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      toast.error('Failed to send message');
+      toast.error(error.response?.data?.detail || 'Failed to send message');
     }
   };
 

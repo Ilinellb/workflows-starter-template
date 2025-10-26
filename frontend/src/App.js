@@ -6353,7 +6353,9 @@ const AppContent = () => {
               <div className="text-sm text-gray-700" data-testid="user-info">
                 <span className="font-medium">{user.name}</span>
                 <Badge variant="secondary" className="ml-2">
-                  {user.role.replace('_', ' ')}
+                  {user.role === 'ops_manager' ? 'OPS Manager' : 
+                   user.role === 'assistant_manager' ? 'Assistant Manager' : 
+                   'Attendant'}
                 </Badge>
               </div>
               <Button variant="outline" size="sm" onClick={logout} data-testid="logout-button">

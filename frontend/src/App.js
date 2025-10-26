@@ -5277,13 +5277,14 @@ const AttendantManagementTab = () => {
 const SystemAdminTab = () => {
   const { user } = React.useContext(AuthContext);
   const token = localStorage.getItem('token');
-  const [systemSettings, setSystemSettings] = useState({
-    default_shift_hours: 8,
-    break_duration: 30,
-    overtime_threshold: 40,
-    late_threshold: 15
-  });
-  const [activityLogs, setActivityLogs] = useState([]);
+  const [activeSection, setActiveSection] = useState('tabs'); // 'tabs', 'settings', 'features', 'overview'
+  
+  // Draft configuration state
+  const [draftConfig, setDraftConfig] = useState(null);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  
+  // System stats
   const [systemStats, setSystemStats] = useState({
     total_users: 0,
     active_users: 0,
@@ -5293,14 +5294,24 @@ const SystemAdminTab = () => {
 
   useEffect(() => {
     if (token) {
+      fetchDraftConfig();
       fetchSystemStats();
-      fetchActivityLogs();
     }
   }, [token]);
 
+  const fetchDraftConfig = async () => {
+    try {
+      const response = await axios.get(`${API}/config/app/draft`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setDraftConfig(response.data);
+    } catch (error) {
+      console.error('Error fetching draft config:', error);
+    }
+  };
+
   const fetchSystemStats = async () => {
     try {
-      // Fetch users count
       const usersResponse = await axios.get(`${API}/users`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -5308,16 +5319,494 @@ const SystemAdminTab = () => {
       setSystemStats({
         total_users: usersResponse.data.length,
         active_users: usersResponse.data.filter(u => u.is_active).length,
-        total_messages: 0, // Placeholder
-        total_time_entries: 0 // Placeholder
+        total_messages: 0,
+        total_time_entries: 0
       });
     } catch (error) {
       console.error('Error fetching system stats:', error);
     }
   };
 
-  const fetchActivityLogs = async () => {
-    // Mock activity logs
+  const saveDraft = async () => {
+    try {
+      await axios.put(`${API}/config/app/draft`, draftConfig, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Draft saved successfully!');
+      setHasChanges(false);
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      toast.error('Failed to save draft');
+    }
+  };
+
+  const publishChanges = async () => {
+    setPublishing(true);
+    try {
+      // First save draft
+      await axios.put(`${API}/config/app/draft`, draftConfig, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Then publish
+      await axios.post(`${API}/config/app/publish`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast.success('Changes published successfully! Reloading app...');
+      setHasChanges(false);
+      
+      // Reload after 2 seconds
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } catch (error) {
+      console.error('Error publishing changes:', error);
+      toast.error('Failed to publish changes');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const updateConfig = (field, value) => {
+    setDraftConfig({...draftConfig, [field]: value});
+    setHasChanges(true);
+  };
+
+  if (!draftConfig) {
+    return <div className="flex items-center justify-center h-64">Loading configuration...</div>;
+  }
+
+  return (
+    <div className="space-y-6" data-testid="system-admin-tab">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">⚙️ System Administration</h2>
+        <div className="flex gap-2">
+          {hasChanges && (
+            <Button variant="outline" onClick={saveDraft}>
+              Save Draft
+            </Button>
+          )}
+          <Button 
+            onClick={publishChanges} 
+            disabled={publishing || !hasChanges}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            {publishing ? 'Publishing...' : '🚀 Publish Changes'}
+          </Button>
+        </div>
+      </div>
+
+      {hasChanges && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p className="text-sm text-yellow-800">
+            ⚠️ You have unpublished changes. Click "Publish Changes" to make them live.
+          </p>
+        </div>
+      )}
+
+      {/* Navigation Tabs */}
+      <div className="flex gap-2 border-b">
+        <button
+          className={`px-4 py-2 font-medium ${activeSection === 'overview' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600'}`}
+          onClick={() => setActiveSection('overview')}
+        >
+          📊 Overview
+        </button>
+        <button
+          className={`px-4 py-2 font-medium ${activeSection === 'tabs' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600'}`}
+          onClick={() => setActiveSection('tabs')}
+        >
+          📑 Tab Management
+        </button>
+        <button
+          className={`px-4 py-2 font-medium ${activeSection === 'settings' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600'}`}
+          onClick={() => setActiveSection('settings')}
+        >
+          🎨 App Settings
+        </button>
+        <button
+          className={`px-4 py-2 font-medium ${activeSection === 'features' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600'}`}
+          onClick={() => setActiveSection('features')}
+        >
+          🔧 Features
+        </button>
+      </div>
+
+      {/* Overview Section */}
+      {activeSection === 'overview' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-600">{systemStats.total_users}</div>
+                  <div className="text-sm text-gray-600 mt-2">Total Users</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-green-600">{systemStats.active_users}</div>
+                  <div className="text-sm text-gray-600 mt-2">Active Users</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-purple-600">✓</div>
+                  <div className="text-sm text-gray-600 mt-2">System Healthy</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-orange-600">v1.0</div>
+                  <div className="text-sm text-gray-600 mt-2">App Version</div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Tab Management Section */}
+      {activeSection === 'tabs' && (
+        <TabManagementSection 
+          config={draftConfig} 
+          updateConfig={updateConfig}
+        />
+      )}
+
+      {/* App Settings Section */}
+      {activeSection === 'settings' && (
+        <AppSettingsSection 
+          config={draftConfig} 
+          updateConfig={updateConfig}
+        />
+      )}
+
+      {/* Features Section */}
+      {activeSection === 'features' && (
+        <FeaturesSection 
+          config={draftConfig} 
+          updateConfig={updateConfig}
+        />
+      )}
+    </div>
+  );
+};
+
+// Tab Management Section Component
+const TabManagementSection = ({ config, updateConfig }) => {
+  const [selectedRole, setSelectedRole] = useState('attendant');
+  
+  const defaultTabs = {
+    attendant: [
+      { id: 'timecard', label: 'Time Card', icon: '🕒', category: 'time', enabled: true, order: 1 },
+      { id: 'rooms', label: 'Room Management', icon: '🏠', category: 'operations', enabled: true, order: 2 },
+      { id: 'timeoff', label: 'Time Off Requests', icon: '🏖️', category: 'time', enabled: true, order: 3 },
+      { id: 'schedule', label: 'My Schedule', icon: '📅', category: 'planning', enabled: true, order: 4 },
+      { id: 'reports', label: 'Reports', icon: '📊', category: 'reports', enabled: true, order: 5 },
+      { id: 'communication', label: 'Messages', icon: '💬', category: 'communication', enabled: true, order: 6 },
+      { id: 'organization', label: 'Organization', icon: '🏢', category: 'organization', enabled: true, order: 7 },
+      { id: 'profile', label: 'Profile', icon: '👤', category: 'personal', enabled: true, order: 8 }
+    ],
+    assistant_manager: [
+      { id: 'overview', label: 'Team Overview', icon: '📈', category: 'management', enabled: true, order: 9 },
+      { id: 'timecards', label: 'Team Time Cards', icon: '🕒', category: 'time', enabled: true, order: 10 },
+      { id: 'room-mgmt', label: 'Room Reports', icon: '🏨', category: 'operations', enabled: true, order: 11 },
+      { id: 'timeoff-approvals', label: 'Time Off Approvals', icon: '✅', category: 'approvals', enabled: true, order: 12 },
+      { id: 'scheduling', label: 'Scheduling', icon: '📅', category: 'planning', enabled: true, order: 13 },
+      { id: 'team-reports', label: 'Team Reports', icon: '📊', category: 'reports', enabled: true, order: 14 },
+      { id: 'employee-mgmt', label: 'Attendant Management', icon: '👥', category: 'management', enabled: true, order: 15 }
+    ],
+    ops_manager: [
+      { id: 'admin', label: 'System Admin', icon: '⚙️', category: 'admin', enabled: true, order: 16 },
+      { id: 'analytics', label: 'Analytics', icon: '📈', category: 'admin', enabled: true, order: 17 }
+    ]
+  };
+
+  const getRoleTabs = () => {
+    const roleKey = selectedRole === 'attendant' ? 'attendant_tabs' : 
+                    selectedRole === 'assistant_manager' ? 'assistant_manager_tabs' : 'ops_manager_tabs';
+    
+    // If no tabs in config, use defaults
+    if (!config[roleKey] || config[roleKey].length === 0) {
+      return defaultTabs[selectedRole];
+    }
+    return config[roleKey];
+  };
+
+  const updateTabs = (tabs) => {
+    const roleKey = selectedRole === 'attendant' ? 'attendant_tabs' : 
+                    selectedRole === 'assistant_manager' ? 'assistant_manager_tabs' : 'ops_manager_tabs';
+    updateConfig(roleKey, tabs);
+  };
+
+  const toggleTab = (tabId) => {
+    const tabs = getRoleTabs().map(tab => 
+      tab.id === tabId ? {...tab, enabled: !tab.enabled} : tab
+    );
+    updateTabs(tabs);
+  };
+
+  const updateTabLabel = (tabId, label) => {
+    const tabs = getRoleTabs().map(tab => 
+      tab.id === tabId ? {...tab, label} : tab
+    );
+    updateTabs(tabs);
+  };
+
+  const updateTabIcon = (tabId, icon) => {
+    const tabs = getRoleTabs().map(tab => 
+      tab.id === tabId ? {...tab, icon} : tab
+    );
+    updateTabs(tabs);
+  };
+
+  const moveTab = (tabId, direction) => {
+    const tabs = [...getRoleTabs()];
+    const index = tabs.findIndex(t => t.id === tabId);
+    
+    if (direction === 'up' && index > 0) {
+      [tabs[index], tabs[index - 1]] = [tabs[index - 1], tabs[index]];
+    } else if (direction === 'down' && index < tabs.length - 1) {
+      [tabs[index], tabs[index + 1]] = [tabs[index + 1], tabs[index]];
+    }
+    
+    // Update order
+    tabs.forEach((tab, idx) => tab.order = idx + 1);
+    updateTabs(tabs);
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Tab Configuration by Role</CardTitle>
+          <p className="text-sm text-gray-600">Customize tabs for each user role</p>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-4">
+            <Label>Select Role</Label>
+            <Select value={selectedRole} onValueChange={setSelectedRole}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="attendant">Attendant</SelectItem>
+                <SelectItem value="assistant_manager">Assistant Manager</SelectItem>
+                <SelectItem value="ops_manager">OPS Manager (Additional Tabs)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            {getRoleTabs().map((tab, index) => (
+              <div key={tab.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => moveTab(tab.id, 'up')}
+                    disabled={index === 0}
+                    className="p-1 hover:bg-gray-200 rounded disabled:opacity-30"
+                  >
+                    ⬆️
+                  </button>
+                  <button
+                    onClick={() => moveTab(tab.id, 'down')}
+                    disabled={index === getRoleTabs().length - 1}
+                    className="p-1 hover:bg-gray-200 rounded disabled:opacity-30"
+                  >
+                    ⬇️
+                  </button>
+                </div>
+                
+                <Input
+                  type="text"
+                  value={tab.icon}
+                  onChange={(e) => updateTabIcon(tab.id, e.target.value)}
+                  className="w-16 text-center"
+                  placeholder="📋"
+                />
+                
+                <Input
+                  type="text"
+                  value={tab.label}
+                  onChange={(e) => updateTabLabel(tab.id, e.target.value)}
+                  className="flex-1"
+                />
+                
+                <Badge variant={tab.enabled ? 'default' : 'secondary'}>
+                  {tab.category}
+                </Badge>
+                
+                <button
+                  onClick={() => toggleTab(tab.id)}
+                  className={`px-4 py-2 rounded ${tab.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}
+                >
+                  {tab.enabled ? 'Enabled' : 'Disabled'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// App Settings Section Component
+const AppSettingsSection = ({ config, updateConfig }) => {
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Company Branding</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>Company Name</Label>
+            <Input
+              value={config.company_name || ''}
+              onChange={(e) => updateConfig('company_name', e.target.value)}
+              placeholder="RSBC Workflow Pro"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Theme Colors</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Primary Color</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="color"
+                  value={config.theme_primary_color || '#3b82f6'}
+                  onChange={(e) => updateConfig('theme_primary_color', e.target.value)}
+                  className="w-20"
+                />
+                <Input
+                  value={config.theme_primary_color || '#3b82f6'}
+                  onChange={(e) => updateConfig('theme_primary_color', e.target.value)}
+                  className="flex-1"
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Accent Color</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="color"
+                  value={config.theme_accent_color || '#10b981'}
+                  onChange={(e) => updateConfig('theme_accent_color', e.target.value)}
+                  className="w-20"
+                />
+                <Input
+                  value={config.theme_accent_color || '#10b981'}
+                  onChange={(e) => updateConfig('theme_accent_color', e.target.value)}
+                  className="flex-1"
+                />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Workflow Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Default Shift Hours</Label>
+              <Input
+                type="number"
+                value={config.default_shift_hours || 8}
+                onChange={(e) => updateConfig('default_shift_hours', parseInt(e.target.value))}
+              />
+            </div>
+            <div>
+              <Label>Break Duration (minutes)</Label>
+              <Input
+                type="number"
+                value={config.break_duration_minutes || 30}
+                onChange={(e) => updateConfig('break_duration_minutes', parseInt(e.target.value))}
+              />
+            </div>
+            <div>
+              <Label>Overtime Threshold (hours/week)</Label>
+              <Input
+                type="number"
+                value={config.overtime_threshold_hours || 40}
+                onChange={(e) => updateConfig('overtime_threshold_hours', parseInt(e.target.value))}
+              />
+            </div>
+            <div>
+              <Label>Late Threshold (minutes)</Label>
+              <Input
+                type="number"
+                value={config.late_threshold_minutes || 15}
+                onChange={(e) => updateConfig('late_threshold_minutes', parseInt(e.target.value))}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// Features Section Component
+const FeaturesSection = ({ config, updateConfig }) => {
+  const features = [
+    { key: 'enable_room_management', label: 'Room Management', description: 'Enable room status tracking and management' },
+    { key: 'enable_time_off', label: 'Time Off System', description: 'Enable time off requests and approvals' },
+    { key: 'enable_messages', label: 'Messaging System', description: 'Enable team communication and messages' },
+    { key: 'enable_organization', label: 'Organization Chart', description: 'Enable organization hierarchy view' },
+    { key: 'enable_analytics', label: 'Analytics Dashboard', description: 'Enable advanced analytics for managers' }
+  ];
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Feature Toggles</CardTitle>
+          <p className="text-sm text-gray-600">Enable or disable features across the entire app</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {features.map(feature => (
+            <div key={feature.key} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div>
+                <div className="font-semibold">{feature.label}</div>
+                <div className="text-sm text-gray-600">{feature.description}</div>
+              </div>
+              <button
+                onClick={() => updateConfig(feature.key, !config[feature.key])}
+                className={`px-6 py-2 rounded-full font-medium transition-colors ${
+                  config[feature.key]
+                    ? 'bg-green-500 text-white'
+                    : 'bg-gray-300 text-gray-700'
+                }`}
+              >
+                {config[feature.key] ? 'Enabled' : 'Disabled'}
+              </button>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
     setActivityLogs([
       { id: 1, user: 'John Attendant', action: 'Punched In', timestamp: new Date().toISOString(), type: 'time_tracking' },
       { id: 2, user: 'OPS Manager', action: 'Created new user', timestamp: new Date(Date.now() - 3600000).toISOString(), type: 'user_management' },

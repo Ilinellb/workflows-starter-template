@@ -49,9 +49,9 @@ api_router = APIRouter(prefix="/api")
 
 # Models
 class UserRole(str):
-    SUPER_ADMIN = "super_admin"
-    MANAGER = "manager"
-    EMPLOYEE = "employee"
+    OPS_MANAGER = "ops_manager"
+    ASSISTANT_MANAGER = "assistant_manager"
+    ATTENDANT = "attendant"
 
 class User(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))

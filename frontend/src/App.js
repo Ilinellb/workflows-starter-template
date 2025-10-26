@@ -133,7 +133,7 @@ const AuthProvider = ({ children }) => {
   );
 };
 
-// Tab Configuration - Employee Success Focused
+// Tab Configuration - Attendant Success Focused
 const getTabsForRole = (role) => {
   if (role === 'attendant') {
     return [
@@ -155,7 +155,7 @@ const getTabsForRole = (role) => {
       { id: 'timeoff-approvals', label: 'Time Off Approvals', icon: '✅', category: 'approvals' },
       { id: 'scheduling', label: 'Scheduling', icon: '📅', category: 'planning' },
       { id: 'team-reports', label: 'Team Reports', icon: '📊', category: 'reports' },
-      { id: 'employee-mgmt', label: 'Employee Management', icon: '👥', category: 'management' },
+      { id: 'employee-mgmt', label: 'Attendant Management', icon: '👥', category: 'management' },
       { id: 'communication', label: 'Team Messages', icon: '💬', category: 'communication' },
       ...(role === 'ops_manager' ? [
         { id: 'admin', label: 'System Admin', icon: '⚙️', category: 'admin' },
@@ -603,7 +603,7 @@ const TimeCardTab = () => {
 
 // ============ ROOM MANAGEMENT SYSTEM WITH TIMING ============
 
-// Room Management Tab - Employee workload management with customer timing
+// Room Management Tab - Attendant workload management with customer timing
 const RoomManagementTab = () => {
   const [rooms, setRooms] = useState([]);
   const [showLaundryReminder, setShowLaundryReminder] = useState(false);
@@ -1193,7 +1193,7 @@ const TimeOffRequestsTab = () => {
         reason: 'Holiday vacation with family',
         status: 'approved',
         submittedDate: '2024-11-15',
-        approvedBy: 'Manager Smith',
+        approvedBy: 'Assistant Manager Smith',
         daysRequested: 5,
         emergencyContact: 'John Doe - 555-0123',
         workCoverage: 'Jane Smith will cover room assignments'
@@ -1667,7 +1667,7 @@ const TimeOffRequestsTab = () => {
   );
 };
 
-// My Schedule Tab - Employee Calendar and Shift Management
+// My Schedule Tab - Attendant Calendar and Shift Management
 const MyScheduleTab = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [schedules, setSchedules] = useState([]);
@@ -2838,7 +2838,7 @@ const TeamOverviewTab = () => {
       const completedToday = todayEntries.filter(entry => entry.status === 'complete').length;
 
       setStats({
-        totalEmployees: employees.length,
+        totalAttendants: employees.length,
         activeToday,
         completedToday,
         totalEntries: entries.length
@@ -2859,10 +2859,10 @@ const TeamOverviewTab = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Attendants</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalEmployees}</div>
+            <div className="text-2xl font-bold">{stats.totalAttendants}</div>
           </CardContent>
         </Card>
         
@@ -2899,19 +2899,19 @@ const TeamOverviewTab = () => {
 
 // Team Time Cards Tab
 const TeamTimeCardsTab = () => {
-  const [employees, setEmployees] = useState([]);
+  const [employees, setAttendants] = useState([]);
   const [timeEntries, setTimeEntries] = useState([]);
-  const [showAddEmployee, setShowAddEmployee] = useState(false);
+  const [showAddAttendant, setShowAddAttendant] = useState(false);
 
   useEffect(() => {
-    fetchEmployees();
+    fetchAttendants();
     fetchTimeEntries();
   }, []);
 
-  const fetchEmployees = async () => {
+  const fetchAttendants = async () => {
     try {
       const response = await axios.get(`${API}/users`);
-      setEmployees(response.data.filter(u => u.role === 'attendant'));
+      setAttendants(response.data.filter(u => u.role === 'attendant'));
     } catch (error) {
       toast.error('Failed to fetch employees');
     }
@@ -2930,14 +2930,14 @@ const TeamTimeCardsTab = () => {
     <div className="space-y-6" data-testid="team-timecards-tab">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">🕒 Team Time Cards</h2>
-        <Button onClick={() => setShowAddEmployee(true)} data-testid="add-employee-button">
-          ➕ Add Employee
+        <Button onClick={() => setShowAddAttendant(true)} data-testid="add-employee-button">
+          ➕ Add Attendant
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Active Employees ({employees.length})</CardTitle>
+          <CardTitle>Active Attendants ({employees.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
@@ -2956,22 +2956,22 @@ const TeamTimeCardsTab = () => {
         </CardContent>
       </Card>
 
-      <AddEmployeeModal 
-        isOpen={showAddEmployee} 
-        onClose={() => setShowAddEmployee(false)}
+      <AddAttendantModal 
+        isOpen={showAddAttendant} 
+        onClose={() => setShowAddAttendant(false)}
         onSuccess={() => {
-          setShowAddEmployee(false);
-          fetchEmployees();
+          setShowAddAttendant(false);
+          fetchAttendants();
         }}
       />
     </div>
   );
 };
 
-// Room Reports Tab - Manager oversight of room operations
+// Room Reports Tab - Assistant Manager oversight of room operations
 const RoomReportsTab = () => {
   const [roomData, setRoomData] = useState([]);
-  const [employeeLaundryStats, setEmployeeLaundryStats] = useState([]);
+  const [employeeLaundryStats, setAttendantLaundryStats] = useState([]);
   const [shiftReports, setShiftReports] = useState([]);
 
   useEffect(() => {
@@ -2997,7 +2997,7 @@ const RoomReportsTab = () => {
       { employee: 'John Doe', laundryCount: 3, lastLaundry: '2:30 PM' },
       { employee: 'Jane Smith', laundryCount: 2, lastLaundry: '1:15 PM' }
     ];
-    setEmployeeLaundryStats(mockLaundryStats);
+    setAttendantLaundryStats(mockLaundryStats);
   };
 
   const fetchShiftReports = async () => {
@@ -3093,10 +3093,10 @@ const RoomReportsTab = () => {
         </Card>
       </div>
 
-      {/* Employee Performance Today */}
+      {/* Attendant Performance Today */}
       <Card>
         <CardHeader>
-          <CardTitle>👥 Employee Performance - Current Shift</CardTitle>
+          <CardTitle>👥 Attendant Performance - Current Shift</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -3220,7 +3220,7 @@ const TimeOffApprovalsTab = () => {
       {
         id: 'req-1',
         employeeId: 'emp-1',
-        employeeName: 'John Employee',
+        employeeName: 'John Attendant',
         employeeDepartment: 'Operations',
         startDate: '2024-12-23',
         endDate: '2024-12-27',
@@ -3263,7 +3263,7 @@ const TimeOffApprovalsTab = () => {
         status: 'approved',
         submittedDate: '2024-11-18',
         approvedDate: '2024-11-19',
-        approvedBy: 'Manager Smith',
+        approvedBy: 'Assistant Manager Smith',
         daysRequested: 3,
         emergencyContact: 'Emergency Contact - 555-0789',
         workCoverage: 'Sarah Wilson will cover maintenance duties',
@@ -3283,7 +3283,7 @@ const TimeOffApprovalsTab = () => {
         submittedDate: '2024-11-16',
         daysRequested: 3,
         emergencyContact: 'Wilson Family - 555-0321',
-        workCoverage: 'John Employee will handle room assignments',
+        workCoverage: 'John Attendant will handle room assignments',
         priority: 'high',
         conflictsWith: ['req-1'] // Conflicts with John's vacation
       }
@@ -3306,7 +3306,7 @@ const TimeOffApprovalsTab = () => {
       const updateData = {
         status: approvalAction === 'approve' ? 'approved' : 'rejected',
         approvalComments,
-        approvedBy: 'Current Manager', // Would be current user's name
+        approvedBy: 'Current Assistant Manager', // Would be current user's name
         approvedDate: new Date().toISOString().split('T')[0]
       };
 
@@ -3606,7 +3606,7 @@ const TimeOffApprovalsTab = () => {
             <div className="py-4 space-y-4">
               <div className="p-3 bg-gray-50 rounded-lg">
                 <h4 className="font-medium mb-2">Request Summary</h4>
-                <p className="text-sm"><strong>Employee:</strong> {selectedRequest.employeeName}</p>
+                <p className="text-sm"><strong>Attendant:</strong> {selectedRequest.employeeName}</p>
                 <p className="text-sm"><strong>Type:</strong> {selectedRequest.requestType}</p>
                 <p className="text-sm"><strong>Dates:</strong> {formatDate(selectedRequest.startDate)} - {formatDate(selectedRequest.endDate)}</p>
                 <p className="text-sm"><strong>Days:</strong> {selectedRequest.daysRequested}</p>
@@ -3651,14 +3651,14 @@ const TimeOffApprovalsTab = () => {
   );
 };
 
-// Team Scheduling Tab - Manager Team Calendar and Shift Management
+// Team Scheduling Tab - Assistant Manager Team Calendar and Shift Management
 const TeamSchedulingTab = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [teamSchedules, setTeamSchedules] = useState([]);
-  const [employees, setEmployees] = useState([]);
+  const [employees, setAttendants] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState('');
+  const [selectedAttendant, setSelectedAttendant] = useState('');
   const [viewMode, setViewMode] = useState('week'); // 'week' or 'month'
   
   // Form state for shift assignment
@@ -3673,16 +3673,16 @@ const TeamSchedulingTab = () => {
 
   // Fetch real employees and team schedules from backend
   useEffect(() => {
-    fetchEmployeesAndSchedules();
+    fetchAttendantsAndSchedules();
   }, []);
 
-  const fetchEmployeesAndSchedules = async () => {
+  const fetchAttendantsAndSchedules = async () => {
     setLoading(true);
     try {
       // Fetch actual employees from the system
       const employeesResponse = await axios.get(`${API}/users`);
-      const activeEmployees = employeesResponse.data.filter(user => user.is_active && user.role === 'attendant');
-      setEmployees(activeEmployees.map(emp => ({
+      const activeAttendants = employeesResponse.data.filter(user => user.is_active && user.role === 'attendant');
+      setAttendants(activeAttendants.map(emp => ({
         id: emp.id,
         name: emp.name,
         email: emp.email,
@@ -3695,27 +3695,27 @@ const TeamSchedulingTab = () => {
         setTeamSchedules(schedulesResponse.data || []);
       } catch (scheduleError) {
         // If schedules API doesn't exist yet, generate demo data for existing employees
-        generateDemoSchedulesForRealEmployees(activeEmployees);
+        generateDemoSchedulesForRealAttendants(activeAttendants);
       }
     } catch (error) {
       console.error('Error fetching employees:', error);
       toast.error('Failed to load employees. Using demo data.');
       // Fallback to original demo data if API fails
-      const sampleEmployees = [
-        { id: 'emp-1', name: 'John Employee', email: 'john@company.com', department: 'Operations' },
+      const sampleAttendants = [
+        { id: 'emp-1', name: 'John Attendant', email: 'john@company.com', department: 'Operations' },
         { id: 'emp-2', name: 'Jane Smith', email: 'jane@company.com', department: 'Operations' },
         { id: 'emp-3', name: 'Mike Johnson', email: 'mike@company.com', department: 'Maintenance' }
       ];
-      setEmployees(sampleEmployees);
-      generateDemoSchedulesForSampleEmployees();
+      setAttendants(sampleAttendants);
+      generateDemoSchedulesForSampleAttendants();
     } finally {
       setLoading(false);
     }
   };
 
-  const generateDemoSchedulesForRealEmployees = (realEmployees) => {
+  const generateDemoSchedulesForRealAttendants = (realAttendants) => {
     const schedules = [];
-    realEmployees.forEach((employee, index) => {
+    realAttendants.forEach((employee, index) => {
       // Generate a few sample shifts for each real employee
       const shifts = ['09:00-17:00', '14:00-22:00', '06:00-14:00'];
       const shiftTypes = ['Regular', 'Evening', 'Early'];
@@ -3740,12 +3740,12 @@ const TeamSchedulingTab = () => {
     setTeamSchedules(schedules);
   };
 
-  const generateDemoSchedulesForSampleEmployees = () => {
+  const generateDemoSchedulesForSampleAttendants = () => {
     const sampleTeamSchedules = [
       {
         id: 'team-shift-1',
         employeeId: 'emp-1',
-        employeeName: 'John Employee',
+        employeeName: 'John Attendant',
         date: new Date().toISOString().split('T')[0],
         startTime: '09:00',
         endTime: '17:00',
@@ -4012,12 +4012,12 @@ const TeamSchedulingTab = () => {
             {/* Weekly Grid */}
             <div className="grid grid-cols-8 gap-2">
               {/* Header */}
-              <div className="font-medium text-center py-2">Employee</div>
+              <div className="font-medium text-center py-2">Attendant</div>
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                 <div key={day} className="font-medium text-center py-2">{day}</div>
               ))}
 
-              {/* Employee Rows */}
+              {/* Attendant Rows */}
               {employees.map(employee => (
                 <React.Fragment key={employee.id}>
                   <div className="p-2 text-sm font-medium border-r">
@@ -4122,13 +4122,13 @@ const TeamSchedulingTab = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <label className="text-sm font-medium">Employee</label>
+              <label className="text-sm font-medium">Attendant</label>
               <select 
                 className="w-full mt-1 p-2 border rounded"
                 value={shiftForm.employeeId}
                 onChange={(e) => setShiftForm({...shiftForm, employeeId: e.target.value})}
               >
-                <option value="">Select Employee...</option>
+                <option value="">Select Attendant...</option>
                 {employees.map(emp => (
                   <option key={emp.id} value={emp.id}>{emp.name} - {emp.department}</option>
                 ))}
@@ -4244,7 +4244,7 @@ const TeamReportsTab = () => {
     const employees = [
       { 
         id: 'emp-1', 
-        name: 'John Employee', 
+        name: 'John Attendant', 
         role: 'attendant',
         totalHours: 168.5, 
         daysWorked: 21, 
@@ -4309,7 +4309,7 @@ const TeamReportsTab = () => {
     const totalRoomsManaged = employees.reduce((sum, emp) => sum + emp.roomsManaged, 0);
 
     setTeamSummary({
-      totalEmployees: employees.length,
+      totalAttendants: employees.length,
       totalHours: totalTeamHours.toFixed(1),
       avgEfficiency: avgTeamEfficiency.toFixed(1),
       avgPunctuality: avgPunctuality.toFixed(1),
@@ -4330,7 +4330,7 @@ const TeamReportsTab = () => {
   };
 
   const exportTeamReport = () => {
-    const headers = ['Employee', 'Role', 'Total Hours', 'Days Worked', 'Avg Hours/Day', 'Efficiency %', 'Punctuality %', 'Rooms Managed', 'Late Arrivals', 'Early Departures', 'Overtime Hours'];
+    const headers = ['Attendant', 'Role', 'Total Hours', 'Days Worked', 'Avg Hours/Day', 'Efficiency %', 'Punctuality %', 'Rooms Managed', 'Late Arrivals', 'Early Departures', 'Overtime Hours'];
     const csvData = teamData.map(emp => [
       emp.name,
       emp.role,
@@ -4407,7 +4407,7 @@ const TeamReportsTab = () => {
               <Card>
                 <CardContent className="p-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{teamSummary.totalEmployees}</div>
+                    <div className="text-2xl font-bold text-blue-600">{teamSummary.totalAttendants}</div>
                     <div className="text-sm text-gray-600">Team Members</div>
                   </div>
                 </CardContent>
@@ -4505,7 +4505,7 @@ const TeamReportsTab = () => {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b bg-gray-50">
-                        <th className="text-left p-3">Employee</th>
+                        <th className="text-left p-3">Attendant</th>
                         <th className="text-center p-3">Total Hours</th>
                         <th className="text-center p-3">Days Worked</th>
                         <th className="text-center p-3">Avg/Day</th>
@@ -4643,12 +4643,12 @@ const TeamReportsTab = () => {
   );
 };
 
-const EmployeeManagementTab = () => {
-  const [employees, setEmployees] = useState([]);
+const AttendantManagementTab = () => {
+  const [employees, setAttendants] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [selectedAttendant, setSelectedAttendant] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
 
@@ -4663,17 +4663,17 @@ const EmployeeManagementTab = () => {
   });
 
   useEffect(() => {
-    fetchEmployees();
+    fetchAttendants();
   }, []);
 
-  const fetchEmployees = async () => {
+  const fetchAttendants = async () => {
     setLoading(true);
     try {
       const response = await axios.get(`${API}/users`);
       const employeesData = response.data;
       
       // Fetch integrated data for each employee
-      const enrichedEmployees = await Promise.all(
+      const enrichedAttendants = await Promise.all(
         employeesData.map(async (employee) => {
           try {
             // Get time tracking data
@@ -4703,11 +4703,11 @@ const EmployeeManagementTab = () => {
         })
       );
       
-      setEmployees(enrichedEmployees);
+      setAttendants(enrichedAttendants);
     } catch (error) {
       // Fallback to demo data if main API fails
-      const demoEmployees = generateDemoEmployeesWithIntegration();
-      setEmployees(demoEmployees);
+      const demoAttendants = generateDemoAttendantsWithIntegration();
+      setAttendants(demoAttendants);
     } finally {
       setLoading(false);
     }
@@ -4746,11 +4746,11 @@ const EmployeeManagementTab = () => {
     };
   };
 
-  const generateDemoEmployeesWithIntegration = () => {
+  const generateDemoAttendantsWithIntegration = () => {
     return [
       {
         id: 'emp-1',
-        name: 'John Employee',
+        name: 'John Attendant',
         email: 'john@company.com',
         role: 'attendant',
         is_active: true,
@@ -4762,7 +4762,7 @@ const EmployeeManagementTab = () => {
     ];
   };
 
-  const handleAddEmployee = async () => {
+  const handleAddAttendant = async () => {
     if (!formData.name || !formData.email || !formData.password) {
       toast.error('Please fill in all required fields');
       return;
@@ -4770,8 +4770,8 @@ const EmployeeManagementTab = () => {
 
     try {
       const response = await axios.post(`${API}/users`, formData);
-      toast.success('Employee added successfully');
-      fetchEmployees();
+      toast.success('Attendant added successfully');
+      fetchAttendants();
       setShowAddModal(false);
       resetForm();
     } catch (error) {
@@ -4779,16 +4779,16 @@ const EmployeeManagementTab = () => {
     }
   };
 
-  const handleEditEmployee = async () => {
+  const handleEditAttendant = async () => {
     try {
       const updateData = { ...formData };
       if (!updateData.password) {
         delete updateData.password; // Don't update password if not provided
       }
       
-      const response = await axios.put(`${API}/users/${selectedEmployee.id}`, updateData);
-      toast.success('Employee updated successfully');
-      fetchEmployees();
+      const response = await axios.put(`${API}/users/${selectedAttendant.id}`, updateData);
+      toast.success('Attendant updated successfully');
+      fetchAttendants();
       setShowEditModal(false);
       resetForm();
     } catch (error) {
@@ -4796,15 +4796,15 @@ const EmployeeManagementTab = () => {
     }
   };
 
-  const handleDeleteEmployee = async (employeeId, employeeName) => {
+  const handleDeleteAttendant = async (employeeId, employeeName) => {
     if (!confirm(`Are you sure you want to delete ${employeeName}? This action cannot be undone.`)) {
       return;
     }
 
     try {
       await axios.delete(`${API}/users/${employeeId}`);
-      toast.success('Employee deleted successfully');
-      fetchEmployees();
+      toast.success('Attendant deleted successfully');
+      fetchAttendants();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to delete employee');
     }
@@ -4819,11 +4819,11 @@ const EmployeeManagementTab = () => {
       start_time: '09:00',
       manager_id: ''
     });
-    setSelectedEmployee(null);
+    setSelectedAttendant(null);
   };
 
   const openEditModal = (employee) => {
-    setSelectedEmployee(employee);
+    setSelectedAttendant(employee);
     setFormData({
       name: employee.name,
       email: employee.email,
@@ -4835,7 +4835,7 @@ const EmployeeManagementTab = () => {
     setShowEditModal(true);
   };
 
-  const filteredEmployees = employees.filter(employee => {
+  const filteredAttendants = employees.filter(employee => {
     const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          employee.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = filterRole === 'all' || employee.role === filterRole;
@@ -4853,9 +4853,9 @@ const EmployeeManagementTab = () => {
 
   const getRoleDisplay = (role) => {
     switch (role) {
-      case 'ops_manager': return 'Super Admin';
-      case 'assistant_manager': return 'Manager';
-      case 'attendant': return 'Employee';
+      case 'ops_manager': return 'OPS Assistant Manager';
+      case 'assistant_manager': return 'Assistant Manager';
+      case 'attendant': return 'Attendant';
       default: return role;
     }
   };
@@ -4863,9 +4863,9 @@ const EmployeeManagementTab = () => {
   return (
     <div className="space-y-6" data-testid="employee-management-tab">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">👥 Employee Management</h2>
+        <h2 className="text-2xl font-bold">👥 Attendant Management</h2>
         <Button onClick={() => setShowAddModal(true)} className="bg-blue-500 hover:bg-blue-600">
-          ➕ Add Employee
+          ➕ Add Attendant
         </Button>
       </div>
 
@@ -4875,7 +4875,7 @@ const EmployeeManagementTab = () => {
           <CardContent className="p-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">{employees.length}</div>
-              <div className="text-sm text-gray-600">Total Employees</div>
+              <div className="text-sm text-gray-600">Total Attendants</div>
             </div>
           </CardContent>
         </Card>
@@ -4953,19 +4953,19 @@ const EmployeeManagementTab = () => {
                 onChange={(e) => setFilterRole(e.target.value)}
               >
                 <option value="all">All Roles</option>
-                <option value="attendant">Employee</option>
-                <option value="assistant_manager">Manager</option>
-                <option value="ops_manager">Super Admin</option>
+                <option value="attendant">Attendant</option>
+                <option value="assistant_manager">Assistant Manager</option>
+                <option value="ops_manager">OPS Assistant Manager</option>
               </select>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Employee List */}
+      {/* Attendant List */}
       <Card>
         <CardHeader>
-          <CardTitle>Employee Directory ({filteredEmployees.length} employees)</CardTitle>
+          <CardTitle>Attendant Directory ({filteredAttendants.length} employees)</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -4973,12 +4973,12 @@ const EmployeeManagementTab = () => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
               <p className="text-gray-600">Loading employees...</p>
             </div>
-          ) : filteredEmployees.length > 0 ? (
+          ) : filteredAttendants.length > 0 ? (
             <div className="space-y-3">
-              {filteredEmployees.map((employee) => (
+              {filteredAttendants.map((employee) => (
                 <div key={employee.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                   <div className="flex items-start justify-between">
-                    {/* Employee Basic Info */}
+                    {/* Attendant Basic Info */}
                     <div className="flex items-start space-x-4 flex-1">
                       <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                         <span className="text-blue-600 font-medium text-lg">
@@ -5100,7 +5100,7 @@ const EmployeeManagementTab = () => {
                         size="sm"
                         variant="outline"
                         className="text-red-600 hover:text-red-700"
-                        onClick={() => handleDeleteEmployee(employee.id, employee.name)}
+                        onClick={() => handleDeleteAttendant(employee.id, employee.name)}
                       >
                         🗑️ Delete
                       </Button>
@@ -5129,11 +5129,11 @@ const EmployeeManagementTab = () => {
         </CardContent>
       </Card>
 
-      {/* Add Employee Modal */}
+      {/* Add Attendant Modal */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>➕ Add New Employee</DialogTitle>
+            <DialogTitle>➕ Add New Attendant</DialogTitle>
             <DialogDescription>
               Create a new employee account in the system
             </DialogDescription>
@@ -5172,9 +5172,9 @@ const EmployeeManagementTab = () => {
                 value={formData.role}
                 onChange={(e) => setFormData({...formData, role: e.target.value})}
               >
-                <option value="attendant">Employee</option>
-                <option value="assistant_manager">Manager</option>
-                <option value="ops_manager">Super Admin</option>
+                <option value="attendant">Attendant</option>
+                <option value="assistant_manager">Assistant Manager</option>
+                <option value="ops_manager">OPS Assistant Manager</option>
               </select>
             </div>
             <div>
@@ -5190,18 +5190,18 @@ const EmployeeManagementTab = () => {
             <Button variant="outline" onClick={() => {setShowAddModal(false); resetForm();}}>
               Cancel
             </Button>
-            <Button onClick={handleAddEmployee}>
-              Add Employee
+            <Button onClick={handleAddAttendant}>
+              Add Attendant
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Employee Modal */}
+      {/* Edit Attendant Modal */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>✏️ Edit Employee</DialogTitle>
+            <DialogTitle>✏️ Edit Attendant</DialogTitle>
             <DialogDescription>
               Update employee information
             </DialogDescription>
@@ -5240,9 +5240,9 @@ const EmployeeManagementTab = () => {
                 value={formData.role}
                 onChange={(e) => setFormData({...formData, role: e.target.value})}
               >
-                <option value="attendant">Employee</option>
-                <option value="assistant_manager">Manager</option>
-                <option value="ops_manager">Super Admin</option>
+                <option value="attendant">Attendant</option>
+                <option value="assistant_manager">Assistant Manager</option>
+                <option value="ops_manager">OPS Assistant Manager</option>
               </select>
             </div>
             <div>
@@ -5258,8 +5258,8 @@ const EmployeeManagementTab = () => {
             <Button variant="outline" onClick={() => {setShowEditModal(false); resetForm();}}>
               Cancel
             </Button>
-            <Button onClick={handleEditEmployee}>
-              Update Employee
+            <Button onClick={handleEditAttendant}>
+              Update Attendant
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -5313,10 +5313,10 @@ const SystemAdminTab = () => {
   const fetchActivityLogs = async () => {
     // Mock activity logs
     setActivityLogs([
-      { id: 1, user: 'John Employee', action: 'Punched In', timestamp: new Date().toISOString(), type: 'time_tracking' },
-      { id: 2, user: 'Super Admin', action: 'Created new user', timestamp: new Date(Date.now() - 3600000).toISOString(), type: 'user_management' },
-      { id: 3, user: 'Manager', action: 'Approved time off', timestamp: new Date(Date.now() - 7200000).toISOString(), type: 'time_off' },
-      { id: 4, user: 'John Employee', action: 'Sent message', timestamp: new Date(Date.now() - 10800000).toISOString(), type: 'messaging' }
+      { id: 1, user: 'John Attendant', action: 'Punched In', timestamp: new Date().toISOString(), type: 'time_tracking' },
+      { id: 2, user: 'OPS Assistant Manager', action: 'Created new user', timestamp: new Date(Date.now() - 3600000).toISOString(), type: 'user_management' },
+      { id: 3, user: 'Assistant Manager', action: 'Approved time off', timestamp: new Date(Date.now() - 7200000).toISOString(), type: 'time_off' },
+      { id: 4, user: 'John Attendant', action: 'Sent message', timestamp: new Date(Date.now() - 10800000).toISOString(), type: 'messaging' }
     ]);
   };
 
@@ -5490,9 +5490,9 @@ const AnalyticsTab = () => {
   const [analytics, setAnalytics] = useState({
     timeTracking: {
       totalHours: 0,
-      averageHoursPerEmployee: 0,
+      averageHoursPerAttendant: 0,
       attendanceRate: 0,
-      totalEmployees: 0
+      totalAttendants: 0
     },
     roomManagement: {
       roomsCleaned: 0,
@@ -5519,10 +5519,10 @@ const AnalyticsTab = () => {
       // Calculate time tracking metrics
       const entries = timeResponse.data || [];
       const totalHours = entries.reduce((sum, entry) => sum + (entry.total_hours || 0), 0);
-      const uniqueEmployees = new Set(entries.map(e => e.employee_id)).size;
-      const averageHours = uniqueEmployees > 0 ? totalHours / uniqueEmployees : 0;
+      const uniqueAttendants = new Set(entries.map(e => e.employee_id)).size;
+      const averageHours = uniqueAttendants > 0 ? totalHours / uniqueAttendants : 0;
       const workingDays = Math.ceil((new Date(dateRange.end) - new Date(dateRange.start)) / (1000 * 60 * 60 * 24));
-      const expectedHours = uniqueEmployees * workingDays * 8;
+      const expectedHours = uniqueAttendants * workingDays * 8;
       const attendanceRate = expectedHours > 0 ? (totalHours / expectedHours) * 100 : 0;
 
       // Fetch room management analytics
@@ -5539,9 +5539,9 @@ const AnalyticsTab = () => {
       setAnalytics({
         timeTracking: {
           totalHours: totalHours.toFixed(1),
-          averageHoursPerEmployee: averageHours.toFixed(1),
+          averageHoursPerAttendant: averageHours.toFixed(1),
           attendanceRate: attendanceRate.toFixed(1),
-          totalEmployees: uniqueEmployees
+          totalAttendants: uniqueAttendants
         },
         roomManagement: {
           roomsCleaned: cleanedRooms,
@@ -5556,9 +5556,9 @@ const AnalyticsTab = () => {
       setAnalytics({
         timeTracking: {
           totalHours: '320',
-          averageHoursPerEmployee: '40',
+          averageHoursPerAttendant: '40',
           attendanceRate: '95',
-          totalEmployees: 8
+          totalAttendants: 8
         },
         roomManagement: {
           roomsCleaned: 35,
@@ -5603,16 +5603,16 @@ const AnalyticsTab = () => {
               <div className="text-sm text-gray-600 mt-2">Total Hours Worked</div>
             </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-4xl font-bold text-green-600">{analytics.timeTracking.averageHoursPerEmployee}</div>
-              <div className="text-sm text-gray-600 mt-2">Avg Hours/Employee</div>
+              <div className="text-4xl font-bold text-green-600">{analytics.timeTracking.averageHoursPerAttendant}</div>
+              <div className="text-sm text-gray-600 mt-2">Avg Hours/Attendant</div>
             </div>
             <div className="text-center p-4 bg-purple-50 rounded-lg">
               <div className="text-4xl font-bold text-purple-600">{analytics.timeTracking.attendanceRate}%</div>
               <div className="text-sm text-gray-600 mt-2">Attendance Rate</div>
             </div>
             <div className="text-center p-4 bg-orange-50 rounded-lg">
-              <div className="text-4xl font-bold text-orange-600">{analytics.timeTracking.totalEmployees}</div>
-              <div className="text-sm text-gray-600 mt-2">Active Employees</div>
+              <div className="text-4xl font-bold text-orange-600">{analytics.timeTracking.totalAttendants}</div>
+              <div className="text-sm text-gray-600 mt-2">Active Attendants</div>
             </div>
           </div>
 
@@ -5674,7 +5674,7 @@ const AnalyticsTab = () => {
             </div>
             <div>
               <div className="flex justify-between text-sm mb-2">
-                <span>Employee Performance</span>
+                <span>Attendant Performance</span>
                 <span className="font-semibold">87%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-4">
@@ -5697,7 +5697,7 @@ const AnalyticsTab = () => {
           <CardContent>
             <div className="space-y-3">
               {[
-                { name: 'John Employee', hours: '45.5h', rooms: '28' },
+                { name: 'John Attendant', hours: '45.5h', rooms: '28' },
                 { name: 'Jane Worker', hours: '43.2h', rooms: '26' },
                 { name: 'Bob Smith', hours: '41.8h', rooms: '24' }
               ].map((performer, i) => (
@@ -5774,8 +5774,8 @@ const ProfileTab = ({ user }) => (
   </div>
 );
 
-// Add Employee Modal (keeping existing component)
-const AddEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
+// Add Attendant Modal (keeping existing component)
+const AddAttendantModal = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -5800,7 +5800,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
         geofence_radius: parseInt(formData.geofence_radius)
       });
 
-      toast.success('Employee added successfully!');
+      toast.success('Attendant added successfully!');
       onSuccess();
       setFormData({
         name: '',
@@ -5826,7 +5826,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add New Employee</DialogTitle>
+          <DialogTitle>Add New Attendant</DialogTitle>
           <DialogDescription>
             Create a new employee account with time tracking settings.
           </DialogDescription>
@@ -5912,7 +5912,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
               Cancel
             </Button>
             <Button type="submit" disabled={loading} data-testid="create-employee-button">
-              {loading ? 'Creating...' : 'Create Employee'}
+              {loading ? 'Creating...' : 'Create Attendant'}
             </Button>
           </DialogFooter>
         </form>
@@ -5963,7 +5963,7 @@ const AppContent = () => {
 
   const renderTabContent = () => {
     switch (activeTab) {
-      // Employee Tabs
+      // Attendant Tabs
       case 'timecard':
         return <TimeCardTab />;
       case 'rooms':
@@ -5977,7 +5977,7 @@ const AppContent = () => {
       case 'communication':
         return <CommunicationTab />;
       
-      // Manager Tabs  
+      // Assistant Manager Tabs  
       case 'overview':
         return <TeamOverviewTab />;
       case 'timecards':
@@ -5991,7 +5991,7 @@ const AppContent = () => {
       case 'team-reports':
         return <TeamReportsTab />;
       case 'employee-mgmt':
-        return <EmployeeManagementTab />;
+        return <AttendantManagementTab />;
       
       // Admin Tabs
       case 'admin':

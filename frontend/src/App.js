@@ -152,7 +152,7 @@ const getTabsForRole = (role) => {
   }
 
   if (role === 'assistant_manager' || role === 'ops_manager') {
-    // Assistant Managers and OPS Assistant Managers see ALL attendant tabs + their management tabs
+    // Assistant Managers and OPS Managers see ALL attendant tabs + their management tabs
     const managerTabs = [
       { id: 'overview', label: 'Team Overview', icon: '📈', category: 'management' },
       { id: 'timecards', label: 'Team Time Cards', icon: '🕒', category: 'time' },
@@ -163,13 +163,13 @@ const getTabsForRole = (role) => {
       { id: 'employee-mgmt', label: 'Attendant Management', icon: '👥', category: 'management' }
     ];
 
-    // OPS Assistant Manager gets additional admin tabs
+    // OPS Manager gets additional admin tabs
     const adminTabs = role === 'ops_manager' ? [
       { id: 'admin', label: 'System Admin', icon: '⚙️', category: 'admin' },
       { id: 'analytics', label: 'Analytics', icon: '📈', category: 'admin' }
     ] : [];
 
-    // Combine all tabs: attendant tabs + manager tabs + admin tabs (if OPS Assistant Manager)
+    // Combine all tabs: attendant tabs + manager tabs + admin tabs (if OPS Manager)
     return [...attendantTabs, ...managerTabs, ...adminTabs];
   }
 
@@ -4859,7 +4859,7 @@ const AttendantManagementTab = () => {
 
   const getRoleDisplay = (role) => {
     switch (role) {
-      case 'ops_manager': return 'OPS Assistant Manager';
+      case 'ops_manager': return 'OPS Manager';
       case 'assistant_manager': return 'Assistant Manager';
       case 'attendant': return 'Attendant';
       default: return role;
@@ -4961,7 +4961,7 @@ const AttendantManagementTab = () => {
                 <option value="all">All Roles</option>
                 <option value="attendant">Attendant</option>
                 <option value="assistant_manager">Assistant Manager</option>
-                <option value="ops_manager">OPS Assistant Manager</option>
+                <option value="ops_manager">OPS Manager</option>
               </select>
             </div>
           </div>
@@ -5180,7 +5180,7 @@ const AttendantManagementTab = () => {
               >
                 <option value="attendant">Attendant</option>
                 <option value="assistant_manager">Assistant Manager</option>
-                <option value="ops_manager">OPS Assistant Manager</option>
+                <option value="ops_manager">OPS Manager</option>
               </select>
             </div>
             <div>
@@ -5248,7 +5248,7 @@ const AttendantManagementTab = () => {
               >
                 <option value="attendant">Attendant</option>
                 <option value="assistant_manager">Assistant Manager</option>
-                <option value="ops_manager">OPS Assistant Manager</option>
+                <option value="ops_manager">OPS Manager</option>
               </select>
             </div>
             <div>
@@ -5320,7 +5320,7 @@ const SystemAdminTab = () => {
     // Mock activity logs
     setActivityLogs([
       { id: 1, user: 'John Attendant', action: 'Punched In', timestamp: new Date().toISOString(), type: 'time_tracking' },
-      { id: 2, user: 'OPS Assistant Manager', action: 'Created new user', timestamp: new Date(Date.now() - 3600000).toISOString(), type: 'user_management' },
+      { id: 2, user: 'OPS Manager', action: 'Created new user', timestamp: new Date(Date.now() - 3600000).toISOString(), type: 'user_management' },
       { id: 3, user: 'Assistant Manager', action: 'Approved time off', timestamp: new Date(Date.now() - 7200000).toISOString(), type: 'time_off' },
       { id: 4, user: 'John Attendant', action: 'Sent message', timestamp: new Date(Date.now() - 10800000).toISOString(), type: 'messaging' }
     ]);

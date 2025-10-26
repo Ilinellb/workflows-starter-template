@@ -200,6 +200,42 @@ class MessageCreate(BaseModel):
     thread_id: Optional[str] = None
     parent_message_id: Optional[str] = None
 
+# App Configuration Models
+class TabConfig(BaseModel):
+    id: str
+    label: str
+    icon: str
+    category: str
+    enabled: bool = True
+    order: int
+
+class AppConfig(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    # Tab configurations for each role
+    ops_manager_tabs: List[TabConfig] = []
+    assistant_manager_tabs: List[TabConfig] = []
+    attendant_tabs: List[TabConfig] = []
+    # App settings
+    company_name: str = "RSBC Workflow Pro"
+    theme_primary_color: str = "#3b82f6"  # blue
+    theme_accent_color: str = "#10b981"   # green
+    # Workflow settings
+    default_shift_hours: int = 8
+    break_duration_minutes: int = 30
+    overtime_threshold_hours: int = 40
+    late_threshold_minutes: int = 15
+    # Feature toggles
+    enable_room_management: bool = True
+    enable_time_off: bool = True
+    enable_messages: bool = True
+    enable_organization: bool = True
+    enable_analytics: bool = True
+    # Metadata
+    published: bool = False
+    draft_version: Optional[dict] = None
+    published_at: Optional[datetime] = None
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # Utility Functions
 def verify_password(plain_password, hashed_password):
     # Simplified password verification using hashlib (demo only)

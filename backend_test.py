@@ -3996,8 +3996,12 @@ if __name__ == "__main__":
             # Run email notifications tests
             success = main_email_notifications()
             exit(0 if success else 1)
+        elif sys.argv[1] == "delete" or sys.argv[1] == "deletion":
+            # Run user deletion tests
+            success = main_user_deletion()
+            exit(0 if success else 1)
         else:
-            print("Usage: python backend_test.py [time|registration|employee|superadmin|messages|email]")
+            print("Usage: python backend_test.py [time|registration|employee|superadmin|messages|email|delete]")
             print("Default: room management tests")
     
     # Run room management tests (default)

@@ -3559,6 +3559,415 @@ def main_email_notifications():
         print("❌ Email Notifications Backend Testing: FAILED")
         return False
 
+class UserDeletionTester:
+    def __init__(self):
+        self.session = requests.Session()
+        self.auth_token = None
+        self.user_data = None
+        
+    def authenticate(self, email="lbj1288@gmail.com", password="admin123"):
+        """Authenticate user and get access token"""
+        print(f"\n🔐 Authenticating user: {email}")
+        
+        login_data = {
+            "email": email,
+            "password": password
+        }
+        
+        try:
+            response = self.session.post(f"{API_BASE}/auth/login", json=login_data)
+            print(f"Login response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.auth_token = data.get('access_token')
+                self.user_data = data.get('user')
+                
+                # Set authorization header for future requests
+                self.session.headers.update({
+                    'Authorization': f'Bearer {self.auth_token}',
+                    'Content-Type': 'application/json'
+                })
+                
+                print(f"✅ Authentication successful")
+                print(f"   User: {self.user_data.get('name')} ({self.user_data.get('role')})")
+                return True
+            else:
+                print(f"❌ Authentication failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Authentication error: {str(e)}")
+            return False
+    
+    def create_test_user(self):
+        """Create a test user for deletion testing"""
+        print(f"\n➕ Creating test user for deletion testing")
+        
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        user_data = {
+            "email": f"deletetest{timestamp}@company.com",
+            "name": f"Delete Test User {timestamp}",
+            "password": "deletetest123",
+            "role": "attendant",
+            "start_time": "09:00"
+        }
+        
+        try:
+            response = self.session.post(f"{API_BASE}/users", json=user_data)
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                user_id = result.get('user_id')
+                print(f"   ✅ Success: Test user created")
+                print(f"   User ID: {user_id}")
+                print(f"   Email: {user_data['email']}")
+                return True, user_id, user_data
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False, None, None
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False, None, None
+    
+    def verify_user_exists(self, user_id):
+        """Verify that a user exists in the system"""
+        print(f"\n🔍 Verifying user exists: {user_id}")
+        
+        try:
+            response = self.session.get(f"{API_BASE}/users")
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                users = response.json()
+                user_found = any(user.get('id') == user_id for user in users)
+                
+                if user_found:
+                    print(f"   ✅ User found in system")
+                    return True
+                else:
+                    print(f"   ❌ User not found in system")
+                    return False
+            else:
+                print(f"   ❌ Failed to get users: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_delete_user_success(self, user_id):
+        """Test successful user deletion"""
+        print(f"\n🗑️ Testing DELETE /api/users/{user_id} (should succeed)")
+        
+        try:
+            response = self.session.delete(f"{API_BASE}/users/{user_id}")
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"   ✅ Success: {result.get('message')}")
+                return True
+            else:
+                print(f"   ❌ Failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_delete_nonexistent_user(self):
+        """Test deletion of non-existent user (should return 404)"""
+        print(f"\n🚫 Testing DELETE /api/users/nonexistent-id (should return 404)")
+        
+        fake_user_id = "nonexistent-user-id-12345"
+        
+        try:
+            response = self.session.delete(f"{API_BASE}/users/{fake_user_id}")
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 404:
+                print(f"   ✅ Success: Non-existent user correctly returns 404")
+                return True
+            else:
+                print(f"   ❌ Failed: Should return 404 for non-existent user")
+                print(f"   Response: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_delete_own_account(self):
+        """Test self-deletion prevention (should return 400)"""
+        print(f"\n🚫 Testing DELETE own account (should return 400)")
+        
+        current_user_id = self.user_data.get('id')
+        print(f"   Attempting to delete own account: {current_user_id}")
+        
+        try:
+            response = self.session.delete(f"{API_BASE}/users/{current_user_id}")
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 400:
+                print(f"   ✅ Success: Self-deletion correctly prevented (400)")
+                print(f"   Response: {response.text}")
+                return True
+            else:
+                print(f"   ❌ Failed: Should prevent self-deletion with 400 error")
+                print(f"   Response: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def test_delete_as_attendant(self):
+        """Test deletion as attendant (should return 403)"""
+        print(f"\n🚫 Testing DELETE as attendant (should return 403)")
+        
+        # First create an attendant user
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        attendant_data = {
+            "email": f"attendant{timestamp}@company.com",
+            "name": f"Attendant User {timestamp}",
+            "password": "attendant123",
+            "role": "attendant",
+            "start_time": "09:00"
+        }
+        
+        # Create attendant as admin
+        create_response = self.session.post(f"{API_BASE}/users", json=attendant_data)
+        if create_response.status_code != 200:
+            print(f"   ❌ Failed to create test attendant: {create_response.text}")
+            return False
+        
+        attendant_id = create_response.json().get('user_id')
+        
+        # Create another user to try to delete
+        target_data = {
+            "email": f"target{timestamp}@company.com",
+            "name": f"Target User {timestamp}",
+            "password": "target123",
+            "role": "attendant",
+            "start_time": "09:00"
+        }
+        
+        target_response = self.session.post(f"{API_BASE}/users", json=target_data)
+        if target_response.status_code != 200:
+            print(f"   ❌ Failed to create target user: {target_response.text}")
+            return False
+        
+        target_id = target_response.json().get('user_id')
+        
+        # Now authenticate as attendant
+        attendant_session = requests.Session()
+        attendant_session.headers.update({'Content-Type': 'application/json'})
+        
+        login_data = {
+            "email": attendant_data["email"],
+            "password": attendant_data["password"]
+        }
+        
+        login_response = attendant_session.post(f"{API_BASE}/auth/login", json=login_data)
+        if login_response.status_code != 200:
+            print(f"   ❌ Failed to authenticate as attendant: {login_response.text}")
+            return False
+        
+        attendant_token = login_response.json().get('access_token')
+        attendant_session.headers.update({
+            'Authorization': f'Bearer {attendant_token}'
+        })
+        
+        # Try to delete target user as attendant
+        try:
+            response = attendant_session.delete(f"{API_BASE}/users/{target_id}")
+            print(f"   Response status: {response.status_code}")
+            
+            if response.status_code == 403:
+                print(f"   ✅ Success: Attendant correctly denied deletion access (403)")
+                return True
+            else:
+                print(f"   ❌ Failed: Attendant should not have deletion permissions")
+                print(f"   Response: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            return False
+    
+    def run_comprehensive_deletion_tests(self):
+        """Run all user deletion tests in sequence"""
+        print("=" * 60)
+        print("🗑️ USER DELETION SYSTEM - BACKEND TESTING")
+        print("=" * 60)
+        
+        # Test authentication with OPS Manager account
+        if not self.authenticate():
+            print("❌ Cannot proceed without authentication")
+            return False
+        
+        test_results = {
+            "authentication": True,
+            "user_creation": False,
+            "user_verification": False,
+            "successful_deletion": False,
+            "deletion_verification": False,
+            "nonexistent_user_404": False,
+            "self_deletion_prevention": False,
+            "attendant_permission_denial": False
+        }
+        
+        # Test 1: Create test user
+        print("\n" + "=" * 40)
+        print("➕ TESTING USER CREATION FOR DELETION")
+        print("=" * 40)
+        
+        success, user_id, user_data = self.create_test_user()
+        test_results["user_creation"] = success
+        
+        if not success:
+            print("❌ Cannot proceed without test user creation")
+            return False
+        
+        # Test 2: Verify user exists
+        print("\n" + "=" * 40)
+        print("🔍 TESTING USER VERIFICATION")
+        print("=" * 40)
+        
+        test_results["user_verification"] = self.verify_user_exists(user_id)
+        
+        # Test 3: Test successful deletion
+        print("\n" + "=" * 40)
+        print("🗑️ TESTING SUCCESSFUL USER DELETION")
+        print("=" * 40)
+        
+        test_results["successful_deletion"] = self.test_delete_user_success(user_id)
+        
+        # Test 4: Verify user was deleted
+        print("\n" + "=" * 40)
+        print("✅ TESTING DELETION VERIFICATION")
+        print("=" * 40)
+        
+        user_still_exists = self.verify_user_exists(user_id)
+        test_results["deletion_verification"] = not user_still_exists  # Should be False (user should not exist)
+        
+        if not user_still_exists:
+            print("   ✅ User successfully removed from system")
+        else:
+            print("   ❌ User still exists in system after deletion")
+        
+        # Test 5: Test 404 for non-existent user
+        print("\n" + "=" * 40)
+        print("🚫 TESTING 404 FOR NON-EXISTENT USER")
+        print("=" * 40)
+        
+        test_results["nonexistent_user_404"] = self.test_delete_nonexistent_user()
+        
+        # Test 6: Test self-deletion prevention
+        print("\n" + "=" * 40)
+        print("🚫 TESTING SELF-DELETION PREVENTION")
+        print("=" * 40)
+        
+        test_results["self_deletion_prevention"] = self.test_delete_own_account()
+        
+        # Test 7: Test attendant permission denial
+        print("\n" + "=" * 40)
+        print("🚫 TESTING ATTENDANT PERMISSION DENIAL")
+        print("=" * 40)
+        
+        test_results["attendant_permission_denial"] = self.test_delete_as_attendant()
+        
+        # Summary
+        print("\n" + "=" * 60)
+        print("📋 USER DELETION TEST RESULTS SUMMARY")
+        print("=" * 60)
+        
+        total_tests = 0
+        passed_tests = 0
+        
+        for test_name, result in test_results.items():
+            status = 'PASS' if result else 'FAIL'
+            display_name = test_name.replace('_', ' ').title()
+            print(f"{'✅' if result else '❌'} {display_name}: {status}")
+            total_tests += 1
+            if result:
+                passed_tests += 1
+        
+        print(f"\n🎯 OVERALL RESULT: {passed_tests}/{total_tests} tests passed")
+        
+        # Key requirements verification
+        print("\n" + "=" * 60)
+        print("🎯 KEY REQUIREMENTS VERIFICATION")
+        print("=" * 60)
+        
+        requirements_met = []
+        
+        # Core deletion functionality
+        if test_results["successful_deletion"] and test_results["deletion_verification"]:
+            requirements_met.append("✅ User deletion works for OPS Managers")
+        else:
+            requirements_met.append("❌ User deletion failed")
+        
+        # Error handling
+        if test_results["nonexistent_user_404"]:
+            requirements_met.append("✅ Returns 404 for non-existent users")
+        else:
+            requirements_met.append("❌ 404 error handling failed")
+        
+        # Self-deletion prevention
+        if test_results["self_deletion_prevention"]:
+            requirements_met.append("✅ Prevents self-deletion (400 error)")
+        else:
+            requirements_met.append("❌ Self-deletion prevention failed")
+        
+        # Permission control
+        if test_results["attendant_permission_denial"]:
+            requirements_met.append("✅ Denies attendant deletion access (403 error)")
+        else:
+            requirements_met.append("❌ Permission control failed")
+        
+        for req in requirements_met:
+            print(f"   {req}")
+        
+        # Success criteria: All core functionality working
+        core_tests_passed = (
+            test_results["authentication"] and
+            test_results["successful_deletion"] and
+            test_results["deletion_verification"] and
+            test_results["nonexistent_user_404"] and
+            test_results["self_deletion_prevention"] and
+            test_results["attendant_permission_denial"]
+        )
+        
+        if core_tests_passed:
+            print("\n🎉 USER DELETION FUNCTIONALITY WORKING!")
+            print("   ✅ All deletion scenarios tested successfully")
+            return True
+        else:
+            print("\n⚠️  USER DELETION FUNCTIONALITY ISSUES FOUND")
+            return False
+
+def main_user_deletion():
+    """Main user deletion test execution"""
+    tester = UserDeletionTester()
+    
+    print(f"🌐 Backend URL: {API_BASE}")
+    print(f"🕐 Test started at: {datetime.now()}")
+    
+    success = tester.run_comprehensive_deletion_tests()
+    
+    print(f"\n🕐 Test completed at: {datetime.now()}")
+    
+    if success:
+        print("✅ User Deletion Backend Testing: SUCCESS")
+        return True
+    else:
+        print("❌ User Deletion Backend Testing: FAILED")
+        return False
+
 if __name__ == "__main__":
     import sys
     

@@ -4808,7 +4808,9 @@ const AttendantManagementTab = () => {
     }
 
     try {
-      await axios.delete(`${API}/users/${employeeId}`);
+      await axios.delete(`${API}/users/${employeeId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success('Attendant deleted successfully');
       fetchAttendants();
     } catch (error) {

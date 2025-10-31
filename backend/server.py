@@ -1273,10 +1273,15 @@ async def get_team_schedules(
         
         schedules = await db.schedules.find(query).sort([("date", 1)]).to_list(1000)
         
+        # Remove MongoDB ObjectId and parse dates
+        result = []
         for schedule in schedules:
+            if '_id' in schedule:
+                del schedule['_id']
             schedule = parse_from_mongo(schedule)
+            result.append(schedule)
         
-        return {"schedules": schedules}
+        return {"schedules": result}
     except Exception as e:
         logger.error(f"Error fetching schedules: {e}")
         raise HTTPException(status_code=500, detail=str(e))

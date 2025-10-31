@@ -1346,9 +1346,9 @@ async def get_team_reports(
             "date": {"$gte": start_date.isoformat()[:10], "$lte": end_date.isoformat()[:10]}
         }).to_list(10000)
         
-        # Calculate summary
-        total_hours = sum(entry.get("total_hours", 0) for entry in time_entries)
-        unique_employees = len(set(entry.get("employee_id") for entry in time_entries))
+        # Calculate summary (handle None values)
+        total_hours = sum(entry.get("total_hours") or 0 for entry in time_entries)
+        unique_employees = len(set(entry.get("employee_id") for entry in time_entries if entry.get("employee_id")))
         
         return {
             "period": period,

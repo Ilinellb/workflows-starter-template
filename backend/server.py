@@ -236,6 +236,47 @@ class AppConfig(BaseModel):
     published_at: Optional[datetime] = None
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# Time Off Models
+class TimeOffRequest(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_name: str
+    start_date: str  # ISO date string
+    end_date: str  # ISO date string
+    reason: str
+    status: str = "pending"  # pending, approved, rejected
+    notes: Optional[str] = None
+    reviewed_by: Optional[str] = None
+    reviewed_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class TimeOffRequestCreate(BaseModel):
+    start_date: str
+    end_date: str
+    reason: str
+    notes: Optional[str] = None
+
+# Scheduling Models
+class ScheduleShift(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_name: str
+    date: str  # ISO date string
+    shift_start: str  # HH:MM format
+    shift_end: str  # HH:MM format
+    break_duration: int = 30  # minutes
+    notes: Optional[str] = None
+    created_by: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ScheduleShiftCreate(BaseModel):
+    user_id: str
+    date: str
+    shift_start: str
+    shift_end: str
+    break_duration: int = 30
+    notes: Optional[str] = None
+
 # Utility Functions
 def verify_password(plain_password, hashed_password):
     # Simplified password verification using hashlib (demo only)

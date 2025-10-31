@@ -216,6 +216,42 @@
         - agent: "testing"
         - comment: "User Deletion System testing completed successfully. COMPREHENSIVE TESTING: All 8 test categories passed (100% success rate). AUTHENTICATION: OPS Manager authentication (lbj1288@gmail.com / admin123) working correctly. USER CREATION & VERIFICATION: Successfully created test user for deletion testing, verified user exists in system via GET /api/users. SUCCESSFUL DELETION: DELETE /api/users/{user_id} working correctly for OPS Managers, returns 200 status with success message 'User deleted successfully'. DELETION VERIFICATION: Confirmed user successfully removed from system after deletion - user no longer appears in GET /api/users response. ERROR HANDLING: DELETE returns proper 404 for non-existent users, returns 400 for self-deletion attempts with message 'Cannot delete your own account'. PERMISSION CONTROL: Attendants correctly denied deletion access with 403 status code. ROLE-BASED ACCESS: Only OPS Managers and Assistant Managers can delete users, attendants properly restricted. SAFETY MEASURES: Self-deletion prevention working correctly, prevents accidental admin account deletion. All user deletion scenarios tested successfully - the DELETE endpoint is fully operational with proper security controls, error handling, and permission validation."
 
+  - task: "Time Off System Backend APIs"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+        - agent: "testing"
+        - comment: "Time Off System Backend APIs testing completed successfully. COMPREHENSIVE TESTING: All 4 endpoints passed (100% success rate). AUTHENTICATION: Employee (john@company.com) and manager (admin@company.com) authentication working correctly. EMPLOYEE ENDPOINTS: GET /api/time-off/my-requests working correctly - returns user's time off requests with proper data structure, POST /api/time-off/request working correctly - creates new time off requests with validation. MANAGER ENDPOINTS: GET /api/time-off/requests/all working correctly - returns all time off requests for manager review, PUT /api/time-off/requests/{id}/approve working correctly - approves/rejects requests with proper status updates. WORKFLOW TESTING: Complete time off workflow tested - employee creates request → manager views all requests → manager approves request → employee sees approved status. DATA PERSISTENCE: All requests properly stored in database with correct user associations and timestamps. PERMISSION VALIDATION: Role-based access controls working properly (employees can only see own requests, managers can see all). FIXES APPLIED: Fixed ObjectId serialization issues in GET endpoints by removing _id field and properly parsing MongoDB documents. All time off system backend APIs operational with proper authentication, permissions, data handling, and workflow functionality."
+
+  - task: "Scheduling System Backend APIs"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+        - agent: "testing"
+        - comment: "Scheduling System Backend APIs testing completed successfully. COMPREHENSIVE TESTING: All 2 endpoints passed (100% success rate). AUTHENTICATION: Manager (admin@company.com / admin123) authentication working correctly. TEAM SCHEDULES: GET /api/schedules/team working correctly - returns team schedules with proper data structure including user details, shift times, and metadata. SCHEDULE ASSIGNMENT: POST /api/schedules/assign working correctly - creates new schedule assignments for employees with validation and user lookup. WORKFLOW TESTING: Complete scheduling workflow tested - manager views team schedules → manager assigns new schedule to employee → schedule appears in team schedules list. DATA PERSISTENCE: All schedules properly stored in database with correct user associations, shift details, and creator tracking. PERMISSION VALIDATION: Role-based access controls working properly (only managers/super_admin can access scheduling endpoints). USER INTEGRATION: Successfully integrates with user management system to assign schedules to real employees by user ID. FIXES APPLIED: Fixed ObjectId serialization issues in GET endpoint by removing _id field and properly parsing MongoDB documents. All scheduling system backend APIs operational with proper authentication, permissions, data handling, and user integration."
+
+  - task: "Reports System Backend APIs"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+        - agent: "testing"
+        - comment: "Reports System Backend APIs testing completed successfully. COMPREHENSIVE TESTING: All 3 endpoints passed (100% success rate). AUTHENTICATION: Employee (john@company.com) and manager (admin@company.com) authentication working correctly. TEAM REPORTS: GET /api/reports/team working correctly - generates team-wide reports with period filtering, total hours calculation, employee counts, and summary statistics. EMPLOYEE TIME SUMMARY: GET /api/reports/employee/{employee_id}/time-summary working correctly - generates individual employee time summaries with period filtering and detailed metrics. PERSONAL REPORTS: GET /api/time/my-reports working correctly - allows employees to view their own time reports with detailed entries and calculations. DATA PROCESSING: All endpoints properly handle time entry data, calculate totals, and generate meaningful statistics. NULL VALUE HANDLING: Fixed issues with None/null total_hours values by using proper null coalescing in sum calculations. PERMISSION VALIDATION: Role-based access controls working properly (employees can only see own reports, managers can see team and individual reports). FIXES APPLIED: Fixed ObjectId serialization issues in time entries by removing _id field, Fixed NoneType addition errors by using 'or 0' for null total_hours values. All reports system backend APIs operational with proper authentication, permissions, data processing, and statistical calculations."
+
 ## frontend:
   - task: "Messages/Communication Tab (Employee & Manager)"
     implemented: true

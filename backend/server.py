@@ -1389,7 +1389,7 @@ async def get_employee_time_summary(
             "date": {"$gte": start_date.isoformat()[:10], "$lte": end_date.isoformat()[:10]}
         }).to_list(1000)
         
-        total_hours = sum(entry.get("total_hours", 0) for entry in time_entries)
+        total_hours = sum(entry.get("total_hours") or 0 for entry in time_entries)
         
         return {
             "employee_id": employee_id,

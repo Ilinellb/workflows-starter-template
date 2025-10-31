@@ -347,6 +347,8 @@ const LoginPage = () => {
 
 // Time Card Tab - Primary employee interface with offline support
 const TimeCardTab = () => {
+  const { user } = React.useContext(AuthContext);
+  const token = localStorage.getItem('token');
   const [timeStatus, setTimeStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [recentEntries, setRecentEntries] = useState([]);
@@ -380,7 +382,9 @@ const TimeCardTab = () => {
 
   const fetchTimeStatus = async () => {
     try {
-      const response = await axios.get(`${API}/time/status`);
+      const response = await axios.get(`${API}/time/status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setTimeStatus(response.data);
     } catch (error) {
       if (!isOnline) {
@@ -405,7 +409,8 @@ const TimeCardTab = () => {
         params: {
           start_date: startDate.toISOString().split('T')[0],
           end_date: endDate.toISOString().split('T')[0]
-        }
+        },
+        headers: { Authorization: `Bearer ${token}` }
       });
       
       setRecentEntries(response.data.slice(0, 5));
@@ -465,6 +470,8 @@ const TimeCardTab = () => {
     try {
       const response = await axios.post(`${API}/time/punch`, {
         action
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       toast.success(response.data.message);
       fetchTimeStatus();

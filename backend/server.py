@@ -1440,7 +1440,7 @@ async def get_my_reports(
             "total_hours": total_hours,
             "entries_count": len(time_entries),
             "average_daily_hours": total_hours / len(time_entries) if time_entries else 0,
-            "entries": [parse_from_mongo(entry) for entry in time_entries]
+            "entries": [parse_from_mongo({k: v for k, v in entry.items() if k != '_id'}) for entry in time_entries]
         }
     except Exception as e:
         logger.error(f"Error fetching user reports: {e}")

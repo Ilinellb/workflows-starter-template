@@ -301,7 +301,7 @@ class NewEndpointsTester:
     
     def test_get_employee_time_summary(self):
         """Test GET /api/reports/employee/{employee_id}/time-summary (as manager)"""
-        print(f"\n👤 Testing GET /api/reports/employee/{employee_id}/time-summary (as manager)")
+        print(f"\n👤 Testing GET /api/reports/employee/{{employee_id}}/time-summary (as manager)")
         
         # First get john@company.com user ID
         users_response = self.manager_session.get(f"{API_BASE}/users")

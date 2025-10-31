@@ -1204,10 +1204,15 @@ async def get_all_time_off_requests(
         
         requests_list = await db.time_off_requests.find(query).sort([("created_at", -1)]).to_list(1000)
         
+        # Remove MongoDB ObjectId and parse dates
+        result = []
         for req in requests_list:
+            if '_id' in req:
+                del req['_id']
             req = parse_from_mongo(req)
+            result.append(req)
         
-        return {"requests": requests_list}
+        return {"requests": result}
     except Exception as e:
         logger.error(f"Error fetching time off requests: {e}")
         raise HTTPException(status_code=500, detail=str(e))

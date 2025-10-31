@@ -1426,7 +1426,7 @@ async def get_my_reports(
             "date": {"$gte": start_date.isoformat()[:10], "$lte": end_date.isoformat()[:10]}
         }).to_list(1000)
         
-        total_hours = sum(entry.get("total_hours", 0) for entry in time_entries)
+        total_hours = sum(entry.get("total_hours") or 0 for entry in time_entries)
         
         return {
             "period": period,

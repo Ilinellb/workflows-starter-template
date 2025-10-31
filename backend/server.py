@@ -1142,6 +1142,295 @@ async def export_timesheet(
     
     return {"message": "Timesheet exported successfully", "filename": filename}
 
+# ============ TIME OFF API ============
+
+@api_router.get("/time-off/my-requests")
+async def get_my_time_off_requests(current_user: User = Depends(get_current_user)):
+    """Get time off requests for current user"""
+    try:
+        requests_list = await db.time_off_requests.find({"user_id": current_user.id}).sort([("created_at", -1)]).to_list(100)
+        
+        for req in requests_list:
+            req = parse_from_mongo(req)
+        
+        return {"requests": requests_list}
+    except Exception as e:
+        logger.error(f"Error fetching time off requests: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/time-off/request")
+async def create_time_off_request(
+    request_data: TimeOffRequestCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new time off request"""
+    try:
+        new_request = TimeOffRequest(
+            user_id=current_user.id,
+            user_name=current_user.name,
+            start_date=request_data.start_date,
+            end_date=request_data.end_date,
+            reason=request_data.reason,
+            notes=request_data.notes,
+            status="pending"
+        )
+        
+        request_dict = new_request.dict()
+        await db.time_off_requests.insert_one(prepare_for_mongo(request_dict))
+        
+        return {"message": "Time off request submitted successfully", "request_id": new_request.id}
+    except Exception as e:
+        logger.error(f"Error creating time off request: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/time-off/requests/all")
+async def get_all_time_off_requests(
+    status: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get all time off requests (managers only)"""
+    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    try:
+        query = {}
+        if status:
+            query["status"] = status
+        
+        requests_list = await db.time_off_requests.find(query).sort([("created_at", -1)]).to_list(1000)
+        
+        for req in requests_list:
+            req = parse_from_mongo(req)
+        
+        return {"requests": requests_list}
+    except Exception as e:
+        logger.error(f"Error fetching time off requests: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/time-off/requests/{request_id}/approve")
+async def approve_time_off_request(
+    request_id: str,
+    approval_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Approve or reject time off request (managers only)"""
+    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    try:
+        status = approval_data.get("status")  # "approved" or "rejected"
+        notes = approval_data.get("notes", "")
+        
+        if status not in ["approved", "rejected"]:
+            raise HTTPException(status_code=400, detail="Status must be 'approved' or 'rejected'")
+        
+        result = await db.time_off_requests.update_one(
+            {"id": request_id},
+            {"$set": {
+                "status": status,
+                "notes": notes,
+                "reviewed_by": current_user.id,
+                "reviewed_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Time off request not found")
+        
+        return {"message": f"Time off request {status} successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating time off request: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============ SCHEDULING API ============
+
+@api_router.get("/schedules/team")
+async def get_team_schedules(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get team schedules (managers only)"""
+    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    try:
+        query = {}
+        if start_date and end_date:
+            query["date"] = {"$gte": start_date, "$lte": end_date}
+        
+        schedules = await db.schedules.find(query).sort([("date", 1)]).to_list(1000)
+        
+        for schedule in schedules:
+            schedule = parse_from_mongo(schedule)
+        
+        return {"schedules": schedules}
+    except Exception as e:
+        logger.error(f"Error fetching schedules: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/schedules/assign")
+async def assign_schedule(
+    schedule_data: ScheduleShiftCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Assign schedule to user (managers only)"""
+    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    try:
+        # Get user name
+        user = await db.users.find_one({"id": schedule_data.user_id})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        new_schedule = ScheduleShift(
+            user_id=schedule_data.user_id,
+            user_name=user["name"],
+            date=schedule_data.date,
+            shift_start=schedule_data.shift_start,
+            shift_end=schedule_data.shift_end,
+            break_duration=schedule_data.break_duration,
+            notes=schedule_data.notes,
+            created_by=current_user.id
+        )
+        
+        schedule_dict = new_schedule.dict()
+        await db.schedules.insert_one(prepare_for_mongo(schedule_dict))
+        
+        return {"message": "Schedule assigned successfully", "schedule_id": new_schedule.id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error assigning schedule: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============ REPORTS API ============
+
+@api_router.get("/reports/team")
+async def get_team_reports(
+    period: str = "week",  # week, month, quarter
+    type: str = "all",  # all, time, rooms
+    current_user: User = Depends(get_current_user)
+):
+    """Get team reports (managers only)"""
+    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    try:
+        # Calculate date range based on period
+        end_date = datetime.now(timezone.utc)
+        if period == "week":
+            start_date = end_date - timedelta(days=7)
+        elif period == "month":
+            start_date = end_date - timedelta(days=30)
+        elif period == "quarter":
+            start_date = end_date - timedelta(days=90)
+        else:
+            start_date = end_date - timedelta(days=7)
+        
+        # Get time entries
+        time_entries = await db.time_entries.find({
+            "date": {"$gte": start_date.isoformat()[:10], "$lte": end_date.isoformat()[:10]}
+        }).to_list(10000)
+        
+        # Calculate summary
+        total_hours = sum(entry.get("total_hours", 0) for entry in time_entries)
+        unique_employees = len(set(entry.get("employee_id") for entry in time_entries))
+        
+        return {
+            "period": period,
+            "start_date": start_date.isoformat()[:10],
+            "end_date": end_date.isoformat()[:10],
+            "total_hours": total_hours,
+            "total_employees": unique_employees,
+            "average_hours": total_hours / unique_employees if unique_employees > 0 else 0,
+            "entries_count": len(time_entries)
+        }
+    except Exception as e:
+        logger.error(f"Error generating team report: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/reports/employee/{employee_id}/time-summary")
+async def get_employee_time_summary(
+    employee_id: str,
+    period: str = "month",
+    current_user: User = Depends(get_current_user)
+):
+    """Get employee time summary (managers only or own data)"""
+    if current_user.role == UserRole.ATTENDANT and employee_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Can only view own data")
+    
+    try:
+        # Calculate date range
+        end_date = datetime.now(timezone.utc)
+        if period == "week":
+            start_date = end_date - timedelta(days=7)
+        elif period == "month":
+            start_date = end_date - timedelta(days=30)
+        else:
+            start_date = end_date - timedelta(days=30)
+        
+        # Get time entries
+        time_entries = await db.time_entries.find({
+            "employee_id": employee_id,
+            "date": {"$gte": start_date.isoformat()[:10], "$lte": end_date.isoformat()[:10]}
+        }).to_list(1000)
+        
+        total_hours = sum(entry.get("total_hours", 0) for entry in time_entries)
+        
+        return {
+            "employee_id": employee_id,
+            "period": period,
+            "total_hours": total_hours,
+            "entries_count": len(time_entries),
+            "average_daily_hours": total_hours / len(time_entries) if time_entries else 0
+        }
+    except Exception as e:
+        logger.error(f"Error fetching employee time summary: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/time/my-reports")
+async def get_my_reports(
+    period: str = "month",
+    current_user: User = Depends(get_current_user)
+):
+    """Get current user's time reports"""
+    try:
+        # Calculate date range
+        end_date = datetime.now(timezone.utc)
+        if period == "week":
+            start_date = end_date - timedelta(days=7)
+        elif period == "month":
+            start_date = end_date - timedelta(days=30)
+        elif period == "quarter":
+            start_date = end_date - timedelta(days=90)
+        else:
+            start_date = end_date - timedelta(days=30)
+        
+        # Get time entries
+        time_entries = await db.time_entries.find({
+            "employee_id": current_user.id,
+            "date": {"$gte": start_date.isoformat()[:10], "$lte": end_date.isoformat()[:10]}
+        }).to_list(1000)
+        
+        total_hours = sum(entry.get("total_hours", 0) for entry in time_entries)
+        
+        return {
+            "period": period,
+            "start_date": start_date.isoformat()[:10],
+            "end_date": end_date.isoformat()[:10],
+            "total_hours": total_hours,
+            "entries_count": len(time_entries),
+            "average_daily_hours": total_hours / len(time_entries) if time_entries else 0,
+            "entries": [parse_from_mongo(entry) for entry in time_entries]
+        }
+    except Exception as e:
+        logger.error(f"Error fetching user reports: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ============ MESSAGES API ============
 
 @api_router.post("/messages/upload")

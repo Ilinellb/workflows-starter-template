@@ -1274,7 +1274,14 @@ const TimeOffRequestsTab = () => {
 
       // Try backend API first
       try {
-        await axios.post(`${API}/time-off/request`, newRequest);
+        await axios.post(`${API}/time-off/request`, {
+          start_date: requestForm.startDate,
+          end_date: requestForm.endDate,
+          reason: requestForm.reason,
+          notes: `Type: ${requestForm.requestType}. Emergency Contact: ${requestForm.emergencyContact}. Work Coverage: ${requestForm.workCoverage}`
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         toast.success('Time off request submitted successfully!');
       } catch (apiError) {
         // Fallback to local state

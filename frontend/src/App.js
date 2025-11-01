@@ -4714,6 +4714,8 @@ const TeamReportsTab = () => {
 };
 
 const AttendantManagementTab = () => {
+  const { user } = React.useContext(AuthContext);
+  const token = localStorage.getItem('token');
   const [employees, setAttendants] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);

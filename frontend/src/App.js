@@ -1989,6 +1989,8 @@ const MyScheduleTab = () => {
 
 // My Reports Tab  
 const MyReportsTab = () => {
+  const { user } = React.useContext(AuthContext);
+  const token = localStorage.getItem('token');
   const [timeEntries, setTimeEntries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('current_month');

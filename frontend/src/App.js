@@ -2937,6 +2937,8 @@ const TeamOverviewTab = () => {
 
 // Team Time Cards Tab
 const TeamTimeCardsTab = () => {
+  const { user } = React.useContext(AuthContext);
+  const token = localStorage.getItem('token');
   const [employees, setAttendants] = useState([]);
   const [timeEntries, setTimeEntries] = useState([]);
   const [showAddAttendant, setShowAddAttendant] = useState(false);
@@ -2948,7 +2950,9 @@ const TeamTimeCardsTab = () => {
 
   const fetchAttendants = async () => {
     try {
-      const response = await axios.get(`${API}/users`);
+      const response = await axios.get(`${API}/users`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setAttendants(response.data.filter(u => u.role === 'attendant'));
     } catch (error) {
       toast.error('Failed to fetch employees');
@@ -2957,7 +2961,9 @@ const TeamTimeCardsTab = () => {
 
   const fetchTimeEntries = async () => {
     try {
-      const response = await axios.get(`${API}/time/entries`);
+      const response = await axios.get(`${API}/time/entries`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setTimeEntries(response.data.slice(0, 20));
     } catch (error) {
       toast.error('Failed to fetch time entries');

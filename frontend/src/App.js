@@ -4297,9 +4297,11 @@ const TeamReportsTab = () => {
   const fetchTeamReports = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API}/reports/team?period=${selectedPeriod}&type=${reportType}`);
+      const response = await axios.get(`${API}/reports/team?period=${selectedPeriod}&type=${reportType}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setTeamData(response.data.employees || []);
-      setTeamSummary(response.data.summary || null);
+      setTeamSummary(response.data || null);
     } catch (error) {
       // Generate demo data for team reports
       generateDemoTeamData();

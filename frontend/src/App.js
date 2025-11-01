@@ -3360,8 +3360,11 @@ const TimeOffApprovalsTab = () => {
 
       // Try backend API
       try {
-        await axios.put(`${API}/time-off/requests/${selectedRequest.id}/approve`, updateData);
+        await axios.put(`${API}/time-off/requests/${selectedRequest.id}/approve`, updateData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         toast.success(`Request ${approvalAction === 'approve' ? 'approved' : 'rejected'} successfully!`);
+        fetchTimeOffRequests(); // Refresh the list
       } catch (apiError) {
         // Update local state
         const updatedRequest = { ...selectedRequest, ...updateData };

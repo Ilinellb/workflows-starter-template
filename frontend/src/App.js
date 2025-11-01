@@ -3733,7 +3733,9 @@ const TeamSchedulingTab = () => {
     setLoading(true);
     try {
       // Fetch actual employees from the system
-      const employeesResponse = await axios.get(`${API}/users`);
+      const employeesResponse = await axios.get(`${API}/users`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       const activeAttendants = employeesResponse.data.filter(user => user.is_active && user.role === 'attendant');
       setAttendants(activeAttendants.map(emp => ({
         id: emp.id,
@@ -3744,8 +3746,10 @@ const TeamSchedulingTab = () => {
 
       // Fetch actual schedules (or use demo data for now)
       try {
-        const schedulesResponse = await axios.get(`${API}/schedules/team`);
-        setTeamSchedules(schedulesResponse.data || []);
+        const schedulesResponse = await axios.get(`${API}/schedules/team`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setTeamSchedules(schedulesResponse.data.schedules || []);
       } catch (scheduleError) {
         // If schedules API doesn't exist yet, generate demo data for existing employees
         generateDemoSchedulesForRealAttendants(activeAttendants);

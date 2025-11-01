@@ -3231,6 +3231,8 @@ const RoomReportsTab = () => {
   );
 };
 const TimeOffApprovalsTab = () => {
+  const { user } = React.useContext(AuthContext);
+  const token = localStorage.getItem('token');
   const [pendingRequests, setPendingRequests] = useState([]);
   const [allRequests, setAllRequests] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -3247,7 +3249,9 @@ const TimeOffApprovalsTab = () => {
   const fetchTimeOffRequests = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API}/time-off/requests/all`);
+      const response = await axios.get(`${API}/time-off/requests/all`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       const requests = response.data || [];
       setAllRequests(requests);
       setPendingRequests(requests.filter(req => req.status === 'pending'));

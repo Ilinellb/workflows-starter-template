@@ -1170,6 +1170,8 @@ const RoomManagementTab = () => {
   );
 };
 const TimeOffRequestsTab = () => {
+  const { user } = React.useContext(AuthContext);
+  const token = localStorage.getItem('token');
   const [requests, setRequests] = useState([]);
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -1190,8 +1192,10 @@ const TimeOffRequestsTab = () => {
   const fetchTimeOffRequests = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API}/time-off/my-requests`);
-      setRequests(response.data || []);
+      const response = await axios.get(`${API}/time-off/my-requests`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setRequests(response.data.requests || []);
     } catch (error) {
       // Generate demo data
       generateDemoTimeOffData();

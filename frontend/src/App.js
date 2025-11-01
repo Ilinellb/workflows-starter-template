@@ -2859,8 +2859,12 @@ const TeamOverviewTab = () => {
   const fetchStats = async () => {
     try {
       const [employeesRes, entriesRes] = await Promise.all([
-        axios.get(`${API}/users`),
-        axios.get(`${API}/time/entries`)
+        axios.get(`${API}/users`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${API}/time/entries`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
       ]);
 
       const employees = employeesRes.data.filter(u => u.role === 'attendant');

@@ -4282,6 +4282,8 @@ const TeamSchedulingTab = () => {
 };
 
 const TeamReportsTab = () => {
+  const { user } = React.useContext(AuthContext);
+  const token = localStorage.getItem('token');
   const [teamData, setTeamData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('current_month');

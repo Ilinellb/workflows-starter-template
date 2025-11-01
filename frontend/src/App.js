@@ -3909,8 +3909,17 @@ const TeamSchedulingTab = () => {
       };
 
       try {
-        await axios.post(`${API}/schedules/assign`, newShift);
+        await axios.post(`${API}/schedules/assign`, {
+          user_id: shiftForm.employeeId,
+          date: shiftForm.date,
+          shift_start: shiftForm.startTime,
+          shift_end: shiftForm.endTime,
+          notes: `${shiftForm.shiftType} - ${shiftForm.location}`
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         toast.success('Shift assigned successfully!');
+        fetchAttendantsAndSchedules(); // Refresh
       } catch (apiError) {
         // If API doesn't exist, add to local state for demo
         const employee = employees.find(emp => emp.id === shiftForm.employeeId);

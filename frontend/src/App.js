@@ -3704,6 +3704,8 @@ const TimeOffApprovalsTab = () => {
 
 // Team Scheduling Tab - Assistant Manager Team Calendar and Shift Management
 const TeamSchedulingTab = () => {
+  const { user } = React.useContext(AuthContext);
+  const token = localStorage.getItem('token');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [teamSchedules, setTeamSchedules] = useState([]);
   const [employees, setAttendants] = useState([]);

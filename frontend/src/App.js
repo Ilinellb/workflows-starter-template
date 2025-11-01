@@ -826,6 +826,8 @@ const RoomManagementTab = () => {
         status: newStatus,
         duration: duration,
         timestamp: new Date().toISOString()
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
     } catch (error) {
       console.log('Room status will sync when online');

@@ -2004,7 +2004,9 @@ const MyReportsTab = () => {
     setLoading(true);
     try {
       // Fetch time entries for the selected period
-      const response = await axios.get(`${API}/time/my-reports?period=${selectedPeriod}`);
+      const response = await axios.get(`${API}/time/my-reports?period=${selectedPeriod}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setTimeEntries(response.data.entries || []);
       setReportData(response.data.summary || null);
     } catch (error) {

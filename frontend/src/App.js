@@ -618,6 +618,8 @@ const TimeCardTab = () => {
 
 // Room Management Tab - Attendant workload management with customer timing
 const RoomManagementTab = () => {
+  const { user } = React.useContext(AuthContext);
+  const token = localStorage.getItem('token');
   const [rooms, setRooms] = useState([]);
   const [showLaundryReminder, setShowLaundryReminder] = useState(false);
   const [showDurationModal, setShowDurationModal] = useState(false);

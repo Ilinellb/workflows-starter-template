@@ -2848,6 +2848,8 @@ const CommunicationTab = () => {
 
 // Team Overview Tab
 const TeamOverviewTab = () => {
+  const { user } = React.useContext(AuthContext);
+  const token = localStorage.getItem('token');
   const [stats, setStats] = useState(null);
 
   useEffect(() => {

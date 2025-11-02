@@ -870,16 +870,24 @@ async def update_room_status(
     
     room_dict = prepare_for_mongo(room_status.dict())
     
-    # Update existing or insert new
+    # Update existing or insert new - SHARED ACROSS ALL EMPLOYEES (no employee_id filter)
     await db.room_statuses.update_one(
         {
             "room_number": room_status.room_number,
-            "shift_date": today.isoformat(),
-            "employee_id": current_user.id
+            "shift_date": today.isoformat()
         },
         {"$set": room_dict},
         upsert=True
     )
+    
+    # Broadcast room status update via WebSocket to all connected users
+    notification_data = {
+        "type": "room_status_update",
+        "room_number": room_status.room_number,
+        "status": room_data.status,
+        "updated_by": current_user.name
+    }
+    await manager.broadcast_message(notification_data)
     
     duration_msg = f" for {room_data.duration} hours" if room_data.duration else ""
     return {"message": f"Room {room_status.room_number} status updated to {room_data.status}{duration_msg}"}

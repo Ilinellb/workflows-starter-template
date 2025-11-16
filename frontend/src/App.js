@@ -5466,6 +5466,12 @@ const SystemAdminTab = () => {
         >
           🔧 Features
         </button>
+        <button
+          className={`px-4 py-2 font-medium ${activeSection === 'schedules' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600'}`}
+          onClick={() => setActiveSection('schedules')}
+        >
+          📅 Schedule Management
+        </button>
       </div>
 
       {/* Overview Section */}

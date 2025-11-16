@@ -927,17 +927,10 @@ async def extend_room_time(
 async def get_room_statuses(current_user: User = Depends(get_current_user)):
     today = date.today()
     
-    if current_user.role == UserRole.ATTENDANT:
-        # Employee sees their own room statuses
-        query = {
-            "employee_id": current_user.id,
-            "shift_date": today.isoformat()
-        }
-    else:
-        # Managers see all room statuses
-        query = {
-            "shift_date": today.isoformat()
-        }
+    # ALL users see the same global room statuses (no employee_id filtering)
+    query = {
+        "shift_date": today.isoformat()
+    }
     
     room_statuses = await db.room_statuses.find(query).to_list(100)
     
@@ -949,10 +942,9 @@ async def get_room_statuses(current_user: User = Depends(get_current_user)):
             
         room_status = parse_from_mongo(room_status)
         
-        # Get employee name for manager view
-        if current_user.role != UserRole.ATTENDANT:
-            employee = await db.users.find_one({"id": room_status["employee_id"]})
-            room_status["employee_name"] = employee.get("name", "Unknown") if employee else "Unknown"
+        # Get employee name who last updated the room
+        employee = await db.users.find_one({"id": room_status["employee_id"]})
+        room_status["employee_name"] = employee.get("name", "Unknown") if employee else "Unknown"
         
         result.append(room_status)
     

@@ -5547,6 +5547,372 @@ const SystemAdminTab = () => {
   );
 };
 
+
+// Schedule Management Section Component
+const ScheduleManagementSection = ({ token }) => {
+  const [employees, setEmployees] = useState([]);
+  const [schedules, setSchedules] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState(null);
+  const [formData, setFormData] = useState({
+    user_id: '',
+    date: new Date().toISOString().split('T')[0],
+    shift_start: '09:00',
+    shift_end: '17:00',
+    break_duration: 30,
+    notes: ''
+  });
+
+  useEffect(() => {
+    if (token) {
+      fetchEmployees();
+      fetchSchedules();
+    }
+  }, [token]);
+
+  const fetchEmployees = async () => {
+    try {
+      const response = await axios.get(`${API}/users`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setEmployees(response.data);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    }
+  };
+
+  const fetchSchedules = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${API}/schedules/team`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSchedules(response.data.schedules || []);
+    } catch (error) {
+      console.error('Error fetching schedules:', error);
+      setSchedules([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAssignSchedule = async () => {
+    if (!formData.user_id || !formData.date) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      await axios.post(`${API}/schedules/assign`, formData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Schedule assigned successfully');
+      fetchSchedules();
+      setShowAssignModal(false);
+      resetForm();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to assign schedule');
+    }
+  };
+
+  const handleUpdateSchedule = async () => {
+    try {
+      await axios.put(`${API}/schedules/${selectedSchedule.id}`, formData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Schedule updated successfully');
+      fetchSchedules();
+      setShowEditModal(false);
+      resetForm();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to update schedule');
+    }
+  };
+
+  const handleDeleteSchedule = async (scheduleId, employeeName) => {
+    if (!confirm(`Are you sure you want to delete this schedule for ${employeeName}?`)) {
+      return;
+    }
+
+    try {
+      await axios.delete(`${API}/schedules/${scheduleId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Schedule deleted successfully');
+      fetchSchedules();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to delete schedule');
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      user_id: '',
+      date: new Date().toISOString().split('T')[0],
+      shift_start: '09:00',
+      shift_end: '17:00',
+      break_duration: 30,
+      notes: ''
+    });
+    setSelectedSchedule(null);
+  };
+
+  const openEditModal = (schedule) => {
+    setSelectedSchedule(schedule);
+    setFormData({
+      user_id: schedule.user_id,
+      date: schedule.date,
+      shift_start: schedule.shift_start,
+      shift_end: schedule.shift_end,
+      break_duration: schedule.break_duration || 30,
+      notes: schedule.notes || ''
+    });
+    setShowEditModal(true);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-semibold">Schedule Management</h3>
+          <p className="text-sm text-gray-600">Assign and manage employee schedules</p>
+        </div>
+        <Button onClick={() => setShowAssignModal(true)}>
+          <span className="mr-2">➕</span> Assign Schedule
+        </Button>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Shift Time</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Break</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {schedules.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                    No schedules assigned yet
+                  </td>
+                </tr>
+              ) : (
+                schedules.map((schedule) => (
+                  <tr key={schedule.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{schedule.user_name}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{schedule.date}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{schedule.shift_start} - {schedule.shift_end}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{schedule.break_duration || 30} min</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-500">{schedule.notes || '-'}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openEditModal(schedule)}
+                        className="mr-2"
+                      >
+                        ✏️ Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDeleteSchedule(schedule.id, schedule.user_name)}
+                      >
+                        🗑️ Delete
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Assign Schedule Modal */}
+      <Dialog open={showAssignModal} onOpenChange={setShowAssignModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>➕ Assign Schedule</DialogTitle>
+            <DialogDescription>
+              Assign a new schedule to an employee
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label>Employee *</Label>
+              <select
+                className="w-full p-2 border rounded"
+                value={formData.user_id}
+                onChange={(e) => setFormData({...formData, user_id: e.target.value})}
+              >
+                <option value="">Select employee</option>
+                {employees.map(emp => (
+                  <option key={emp.id} value={emp.id}>{emp.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label>Date *</Label>
+              <Input
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({...formData, date: e.target.value})}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Shift Start *</Label>
+                <Input
+                  type="time"
+                  value={formData.shift_start}
+                  onChange={(e) => setFormData({...formData, shift_start: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label>Shift End *</Label>
+                <Input
+                  type="time"
+                  value={formData.shift_end}
+                  onChange={(e) => setFormData({...formData, shift_end: e.target.value})}
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Break Duration (minutes)</Label>
+              <Input
+                type="number"
+                value={formData.break_duration}
+                onChange={(e) => setFormData({...formData, break_duration: parseInt(e.target.value)})}
+              />
+            </div>
+            <div>
+              <Label>Notes</Label>
+              <textarea
+                className="w-full p-2 border rounded"
+                rows="3"
+                value={formData.notes}
+                onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                placeholder="Add any notes about this shift..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {setShowAssignModal(false); resetForm();}}>
+              Cancel
+            </Button>
+            <Button onClick={handleAssignSchedule}>
+              Assign Schedule
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Schedule Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>✏️ Edit Schedule</DialogTitle>
+            <DialogDescription>
+              Update schedule information
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label>Employee *</Label>
+              <select
+                className="w-full p-2 border rounded"
+                value={formData.user_id}
+                onChange={(e) => setFormData({...formData, user_id: e.target.value})}
+              >
+                <option value="">Select employee</option>
+                {employees.map(emp => (
+                  <option key={emp.id} value={emp.id}>{emp.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label>Date *</Label>
+              <Input
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({...formData, date: e.target.value})}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Shift Start *</Label>
+                <Input
+                  type="time"
+                  value={formData.shift_start}
+                  onChange={(e) => setFormData({...formData, shift_start: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label>Shift End *</Label>
+                <Input
+                  type="time"
+                  value={formData.shift_end}
+                  onChange={(e) => setFormData({...formData, shift_end: e.target.value})}
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Break Duration (minutes)</Label>
+              <Input
+                type="number"
+                value={formData.break_duration}
+                onChange={(e) => setFormData({...formData, break_duration: parseInt(e.target.value)})}
+              />
+            </div>
+            <div>
+              <Label>Notes</Label>
+              <textarea
+                className="w-full p-2 border rounded"
+                rows="3"
+                value={formData.notes}
+                onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                placeholder="Add any notes about this shift..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {setShowEditModal(false); resetForm();}}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateSchedule}>
+              Update Schedule
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+
 // Tab Management Section Component
 const TabManagementSection = ({ config, updateConfig }) => {
   const [selectedRole, setSelectedRole] = useState('attendant');

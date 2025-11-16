@@ -6839,50 +6839,21 @@ const AppContent = () => {
 
   const renderTabContent = () => {
     switch (activeTab) {
-      // Attendant Tabs
       case 'timecard':
         return <TimeCardTab />;
       case 'rooms':
         return <RoomManagementTab />;
-      case 'timeoff':
-        return <TimeOffRequestsTab />;
       case 'schedule':
         return <MyScheduleTab />;
       case 'reports':
-        return user.role === 'attendant' ? <MyReportsTab /> : <TeamReportsTab />;
-      case 'communication':
-        return <CommunicationTab />;
-      case 'organization':
-        return <OrganizationTab />;
-      
-      // Assistant Manager Tabs  
-      case 'overview':
-        return <TeamOverviewTab />;
-      case 'timecards':
-        return <TeamTimeCardsTab />;
-      case 'room-mgmt':
-        return <RoomReportsTab />;
-      case 'timeoff-approvals':
-        return <TimeOffApprovalsTab />;
-      case 'scheduling':
-        return <TeamSchedulingTab />;
-      case 'team-reports':
-        return <TeamReportsTab />;
-      case 'employee-mgmt':
-        return <AttendantManagementTab />;
-      
-      // Admin Tabs
+        return <MyReportsTab />;
       case 'admin':
         return <SystemAdminTab />;
-      case 'analytics':
-        return <AnalyticsTab />;
-      
-      // Common Tabs
       case 'profile':
         return <ProfileTab user={user} />;
       
       default:
-        return user.role === 'attendant' ? <TimeCardTab /> : <TeamOverviewTab />;
+        return <TimeCardTab />;
     }
   };
 

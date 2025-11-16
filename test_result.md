@@ -256,6 +256,19 @@
         - comment: "Reports System Backend APIs testing completed successfully. COMPREHENSIVE TESTING: All 3 endpoints passed (100% success rate). AUTHENTICATION: Employee (john@company.com) and manager (admin@company.com) authentication working correctly. TEAM REPORTS: GET /api/reports/team working correctly - generates team-wide reports with period filtering, total hours calculation, employee counts, and summary statistics. EMPLOYEE TIME SUMMARY: GET /api/reports/employee/{employee_id}/time-summary working correctly - generates individual employee time summaries with period filtering and detailed metrics. PERSONAL REPORTS: GET /api/time/my-reports working correctly - allows employees to view their own time reports with detailed entries and calculations. DATA PROCESSING: All endpoints properly handle time entry data, calculate totals, and generate meaningful statistics. NULL VALUE HANDLING: Fixed issues with None/null total_hours values by using proper null coalescing in sum calculations. PERMISSION VALIDATION: Role-based access controls working properly (employees can only see own reports, managers can see team and individual reports). FIXES APPLIED: Fixed ObjectId serialization issues in time entries by removing _id field, Fixed NoneType addition errors by using 'or 0' for null total_hours values. All reports system backend APIs operational with proper authentication, permissions, data processing, and statistical calculations."
 
 ## frontend:
+  - task: "Simplified Tab Structure (6 core tabs)"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+        - agent: "main"
+        - comment: "Simplified application to 6 core tabs as requested. REMOVED: Communication/Messages, Time-Off System, Organization Chart, Team Overview, Team Time Cards, Room Reports, Time Off Approvals, Team Scheduling, Team Reports, Attendant Management, Analytics. KEPT: Time Clock, Room Management, My Schedule, Reports (OPS Manager only), System Admin (OPS Manager only), Profile. Modified getTabsForRole function (lines 137-177) to return only base tabs (timecard, rooms, schedule, profile) plus role-specific tabs (reports and admin for OPS Manager only). Updated renderTabContent function (lines 6855-6902) to remove all deleted tab cases. Tab structure verified via screenshots: Attendants see 4 tabs, Assistant Managers see 4 tabs, OPS Managers see 6 tabs. All remaining tabs load correctly. Component code for deleted features still exists but is unreachable. Needs testing to verify all 6 tabs function properly."
+
+## frontend:
   - task: "Messages/Communication Tab (Employee & Manager)"
     implemented: true
     working: true

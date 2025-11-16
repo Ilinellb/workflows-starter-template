@@ -121,6 +121,7 @@ const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user'); // Clear any cached user data
     setToken(null);
     setUser(null);
     delete axios.defaults.headers.common['Authorization'];

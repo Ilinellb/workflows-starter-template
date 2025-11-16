@@ -4875,7 +4875,6 @@ const AttendantManagementTab = () => {
       email: '',
       password: '',
       role: 'attendant',
-      start_time: '09:00',
       manager_id: ''
     });
     setSelectedAttendant(null);

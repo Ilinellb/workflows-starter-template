@@ -5234,14 +5234,6 @@ const AttendantManagementTab = () => {
                 <option value="ops_manager">OPS Manager</option>
               </select>
             </div>
-            <div>
-              <Label>Start Time</Label>
-              <Input
-                type="time"
-                value={formData.start_time}
-                onChange={(e) => setFormData({...formData, start_time: e.target.value})}
-              />
-            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => {setShowAddModal(false); resetForm();}}>

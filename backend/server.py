@@ -954,8 +954,7 @@ async def record_laundry(
     laundry_data: LaundryUpdateRequest,
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != UserRole.ATTENDANT:
-        raise HTTPException(status_code=403, detail="Only employees can record laundry")
+    # All roles can record laundry (attendants, assistant managers, ops managers)
     
     today = date.today()
     

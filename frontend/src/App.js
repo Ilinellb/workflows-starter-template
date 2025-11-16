@@ -5537,6 +5537,12 @@ const SystemAdminTab = () => {
           updateConfig={updateConfig}
         />
       )}
+
+
+      {/* Schedule Management Section */}
+      {activeSection === 'schedules' && (
+        <ScheduleManagementSection token={token} />
+      )}
     </div>
   );
 };

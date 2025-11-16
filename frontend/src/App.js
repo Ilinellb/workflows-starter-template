@@ -5312,7 +5312,7 @@ const AttendantManagementTab = () => {
 const SystemAdminTab = () => {
   const { user } = React.useContext(AuthContext);
   const token = localStorage.getItem('token');
-  const [activeSection, setActiveSection] = useState('tabs'); // 'tabs', 'settings', 'features', 'overview'
+  const [activeSection, setActiveSection] = useState('tabs'); // 'tabs', 'settings', 'features', 'overview', 'schedules'
   
   // Draft configuration state
   const [draftConfig, setDraftConfig] = useState(null);

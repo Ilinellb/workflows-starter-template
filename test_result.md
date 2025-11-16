@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-## user_problem_statement: Employee time tracking and room management application with scheduling system implementation and user registration system
+## user_problem_statement: Simplify RSBC Workflow Pro to 6 core tabs and make Room Management state global for all users
 
 ## backend:
   - task: "Messages/Communication System Backend APIs"

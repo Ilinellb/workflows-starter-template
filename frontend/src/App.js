@@ -6742,16 +6742,7 @@ const AddAttendantModal = ({ isOpen, onClose, onSuccess }) => {
                 data-testid="employee-password-input"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="start_time">Start Time</Label>
-              <Input
-                id="start_time"
-                type="time"
-                value={formData.start_time}
-                onChange={(e) => handleChange('start_time', e.target.value)}
-                data-testid="employee-start-time-input"
-              />
-            </div>
+ 
           </div>
 
           <Separator />

@@ -895,8 +895,7 @@ async def extend_room_time(
     extend_hours: int = 1,
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != UserRole.ATTENDANT:
-        raise HTTPException(status_code=403, detail="Only employees can extend room time")
+    # All roles can extend room time (attendants, assistant managers, ops managers)
     
     today = date.today()
     room_number = room_id.replace('room-', '')

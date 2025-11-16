@@ -1320,6 +1320,79 @@ async def assign_schedule(
         logger.error(f"Error assigning schedule: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@api_router.put("/schedules/{schedule_id}")
+async def update_schedule(
+    schedule_id: str,
+    schedule_data: ScheduleShiftCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Update an existing schedule (managers only)"""
+    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    try:
+        # Check if schedule exists
+        existing_schedule = await db.schedules.find_one({"id": schedule_id})
+        if not existing_schedule:
+            raise HTTPException(status_code=404, detail="Schedule not found")
+        
+        # Get user name
+        user = await db.users.find_one({"id": schedule_data.user_id})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Update schedule
+        update_data = {
+            "user_id": schedule_data.user_id,
+            "user_name": user["name"],
+            "date": schedule_data.date.isoformat() if isinstance(schedule_data.date, date) else schedule_data.date,
+            "shift_start": schedule_data.shift_start.strftime('%H:%M:%S') if isinstance(schedule_data.shift_start, time) else schedule_data.shift_start,
+            "shift_end": schedule_data.shift_end.strftime('%H:%M:%S') if isinstance(schedule_data.shift_end, time) else schedule_data.shift_end,
+            "break_duration": schedule_data.break_duration,
+            "notes": schedule_data.notes
+        }
+        
+        await db.schedules.update_one(
+            {"id": schedule_id},
+            {"$set": update_data}
+        )
+        
+        return {"message": "Schedule updated successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating schedule: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/schedules/{schedule_id}")
+async def delete_schedule(
+    schedule_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a schedule (managers only)"""
+    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    try:
+        # Check if schedule exists
+        existing_schedule = await db.schedules.find_one({"id": schedule_id})
+        if not existing_schedule:
+            raise HTTPException(status_code=404, detail="Schedule not found")
+        
+        # Delete schedule
+        result = await db.schedules.delete_one({"id": schedule_id})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Schedule not found")
+        
+        return {"message": "Schedule deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting schedule: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ============ REPORTS API ============
 
 @api_router.get("/reports/team")

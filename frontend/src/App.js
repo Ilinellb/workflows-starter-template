@@ -4887,7 +4887,6 @@ const AttendantManagementTab = () => {
       email: employee.email,
       password: '', // Leave empty for security
       role: employee.role,
-      start_time: employee.start_time || '09:00',
       manager_id: employee.manager_id || ''
     });
     setShowEditModal(true);

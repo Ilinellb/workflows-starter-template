@@ -846,8 +846,7 @@ async def update_room_status(
     room_data: RoomUpdateRequest, 
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != UserRole.ATTENDANT:
-        raise HTTPException(status_code=403, detail="Only employees can update room status")
+    # All roles can update room status (attendants, assistant managers, ops managers)
     
     today = date.today()
     

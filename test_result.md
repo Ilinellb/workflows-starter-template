@@ -411,7 +411,9 @@
   run_ui: false
 
 ## test_plan:
-  current_focus: []
+  current_focus:
+    - "Room Management API endpoints - Global State"
+    - "Simplified Tab Structure (6 core tabs)"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"

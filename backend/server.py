@@ -672,8 +672,7 @@ async def delete_user(user_id: str, current_user: User = Depends(get_current_use
 # Time Tracking Routes
 @api_router.post("/time/punch")
 async def punch_time(punch_data: PunchRequest, current_user: User = Depends(get_current_user)):
-    if current_user.role != UserRole.ATTENDANT:
-        raise HTTPException(status_code=403, detail="Only employees can punch in/out")
+    # All roles can punch in/out (attendants, assistant managers, ops managers)
     
     today = date.today()
     

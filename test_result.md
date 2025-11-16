@@ -135,13 +135,13 @@
         - agent: "testing"
         - comment: "Comprehensive Email Notifications System testing completed successfully. All 6 test categories passed (100% success rate). AUTHENTICATION: Manager/super admin authentication (admin@company.com / admin123) working correctly. ENDPOINT ACCESS CONTROL: POST /api/notifications/check-missed-punches accessible to managers/super_admin, employees correctly denied access (403). RESPONSE STRUCTURE: Endpoint returns proper response with 'message' and 'notifications_sent' fields. NOTIFICATION CREATION: System successfully checks employees with configured start times, identifies employees 15+ minutes late, creates in-app notifications for missed punches. IN-APP NOTIFICATIONS: Verified notifications created with type 'missed_punch', proper title 'Missed Punch In', and detailed message including scheduled start time. PLACEHOLDER EMAIL LOGGING: Confirmed placeholder emails logged to backend error logs with format '[PLACEHOLDER EMAIL] To: {email}, Subject: Missed Punch In Reminder, Content: {html_content}'. WORKFLOW TESTING: Complete workflow tested - endpoint triggered → employees checked → notifications created → emails logged. PERMISSION VALIDATION: Role-based access controls working properly (managers/super_admin only). All email notification system functionality operational with proper placeholder implementation as expected."
   
-  - task: "Room Management API endpoints"
+  - task: "Room Management API endpoints - Global State"
     implemented: true
-    working: true
+    working: "NA"
     file: "backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
         - working: true
         - agent: "main"
@@ -149,6 +149,9 @@
         - working: true
         - agent: "testing"
         - comment: "Comprehensive backend testing completed successfully. All room management endpoints working: POST /api/rooms/update-status (room status updates), POST /api/rooms/extend (room time extension), GET /api/rooms/status (room status retrieval), GET /api/rooms/report (room reports). Fixed ObjectId serialization issue in room status endpoint. All test scenarios passed: room status transitions (open_clean→occupied→occupied_out→occupied→needs_cleaning), room timing data handling, data persistence verification, proper permission controls for reports. Authentication working with employee (john@company.com) and manager (admin@company.com) accounts."
+        - working: "NA"
+        - agent: "main"
+        - comment: "CRITICAL FIX: Made room management state GLOBAL for all users. Previously, GET /api/rooms/status filtered by employee_id for attendants (lines 930-935), causing each user to see only their own room updates. Fixed by removing employee_id filter from query - now ALL users see the same unified room state regardless of role. Also fixed POST /api/rooms/extend (line 912) to remove employee_id filter, allowing any attendant to extend any occupied room. POST /api/rooms/update-status was already correct (no employee_id filter). All room status changes are now shared across all users as intended. Needs retesting to verify multi-user global state functionality."
 
   - task: "Time Tracking System Without Geofencing"
     implemented: true

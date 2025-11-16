@@ -415,7 +415,6 @@
 
 ## test_plan:
   current_focus:
-    - "Room Management API endpoints - Global State"
     - "Simplified Tab Structure (6 core tabs)"
   stuck_tasks: []
   test_all: false

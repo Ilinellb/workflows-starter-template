@@ -736,8 +736,7 @@ async def punch_time(punch_data: PunchRequest, current_user: User = Depends(get_
 
 @api_router.get("/time/status")
 async def get_time_status(current_user: User = Depends(get_current_user)):
-    if current_user.role != UserRole.ATTENDANT:
-        return {"status": "not_employee"}
+    # All roles can check time status (attendants, assistant managers, ops managers)
     
     today = date.today()
     time_entry = await db.time_entries.find_one({

@@ -904,17 +904,20 @@ async def extend_room_time(
     today = date.today()
     room_number = room_id.replace('room-', '')
     
-    # Find and update the room (works for both occupied and occupied_out status)
+    # Find and update the room - GLOBAL (no employee_id filter)
+    # Any attendant can extend any occupied room
     result = await db.room_statuses.update_one(
         {
             "room_number": room_number,
             "shift_date": today.isoformat(),
-            "employee_id": current_user.id,
             "status": {"$in": ["occupied", "occupied_out"]}  # Allow extension for both statuses
         },
         {
             "$inc": {"extended_hours": extend_hours},
-            "$set": {"last_updated": datetime.now(timezone.utc).isoformat()}
+            "$set": {
+                "last_updated": datetime.now(timezone.utc).isoformat(),
+                "employee_id": current_user.id  # Update to track who extended it
+            }
         }
     )
     

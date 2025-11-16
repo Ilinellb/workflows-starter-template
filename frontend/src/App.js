@@ -207,7 +207,7 @@ const LoginPage = () => {
       
       // Auto-login after successful registration
       localStorage.setItem('token', response.data.access_token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      // Don't cache user data in localStorage - always fetch fresh from API
       
       // Small delay to show success message before redirect
       setTimeout(() => {

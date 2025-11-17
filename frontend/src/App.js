@@ -5610,11 +5610,33 @@ const ScheduleManagementSection = ({ token }) => {
       return;
     }
 
+    // Validate recurring fields
+    if (formData.is_recurring) {
+      if (!formData.end_date) {
+        toast.error('Please specify an end date for recurring shift');
+        return;
+      }
+      if (formData.recurrence_type === 'weekly' && formData.days_of_week.length === 0) {
+        toast.error('Please select at least one day for weekly recurrence');
+        return;
+      }
+    }
+
     try {
-      await axios.post(`${API}/schedules/assign`, formData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      toast.success('Schedule assigned successfully');
+      if (formData.is_recurring) {
+        // Use recurring schedule endpoint
+        const response = await axios.post(`${API}/schedules/assign-recurring`, formData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success(`${response.data.created_count} recurring schedules created successfully!`);
+      } else {
+        // Use single schedule endpoint
+        await axios.post(`${API}/schedules/assign`, formData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success('Schedule assigned successfully');
+      }
+      
       fetchSchedules();
       setShowAssignModal(false);
       resetForm();

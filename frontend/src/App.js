@@ -5674,6 +5674,159 @@ const ScheduleManagementSection = ({ token }) => {
     setShowEditModal(true);
   };
 
+  const downloadTemplate = () => {
+    // Create CSV content with proper format
+    const headers = ['Employee Email*', 'Date (YYYY-MM-DD)*', 'Start Time (HH:MM)*', 'End Time (HH:MM)*', 'Break Duration (minutes)', 'Notes'];
+    const exampleRows = [
+      ['john@company.com', '2025-01-15', '09:00', '17:00', '30', 'Morning shift'],
+      ['jane@company.com', '2025-01-15', '14:00', '22:00', '30', 'Evening shift'],
+      ['', '', '', '', '', '']
+    ];
+    
+    // Add instructions
+    const instructions = [
+      ['INSTRUCTIONS:'],
+      ['1. Fill in employee email addresses (must match registered emails in the system)'],
+      ['2. Use date format: YYYY-MM-DD (e.g., 2025-01-15)'],
+      ['3. Use 24-hour time format: HH:MM (e.g., 09:00, 17:00)'],
+      ['4. Break duration is in minutes (default: 30)'],
+      ['5. Fields marked with * are required'],
+      ['6. Delete these instruction rows before uploading'],
+      [''],
+      ['TEMPLATE:']
+    ];
+    
+    const csvContent = [
+      ...instructions,
+      headers,
+      ...exampleRows
+    ].map(row => row.join(',')).join('\n');
+    
+    // Create downloadable file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `schedule_template_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success('Template downloaded! Fill it out and upload to create schedules.');
+  };
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const text = e.target.result;
+        const lines = text.split('\n').filter(line => line.trim());
+        
+        // Find the header row (starts with "Employee Email")
+        const headerIndex = lines.findIndex(line => line.toLowerCase().includes('employee email'));
+        if (headerIndex === -1) {
+          toast.error('Invalid template format. Please use the downloaded template.');
+          return;
+        }
+        
+        // Parse data rows (skip header and instructions)
+        const dataRows = lines.slice(headerIndex + 1).filter(line => {
+          const cols = line.split(',');
+          return cols[0] && cols[0].includes('@'); // Has email
+        });
+        
+        if (dataRows.length === 0) {
+          toast.error('No valid data found in the file.');
+          return;
+        }
+        
+        // Parse schedules
+        const schedulesToCreate = [];
+        const errors = [];
+        
+        dataRows.forEach((line, idx) => {
+          const cols = line.split(',').map(col => col.trim());
+          const [email, date, startTime, endTime, breakDuration, notes] = cols;
+          
+          // Validate required fields
+          if (!email || !date || !startTime || !endTime) {
+            errors.push(`Row ${idx + 2}: Missing required fields`);
+            return;
+          }
+          
+          // Validate email format
+          if (!email.includes('@')) {
+            errors.push(`Row ${idx + 2}: Invalid email format`);
+            return;
+          }
+          
+          // Validate date format (YYYY-MM-DD)
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            errors.push(`Row ${idx + 2}: Invalid date format. Use YYYY-MM-DD`);
+            return;
+          }
+          
+          // Validate time format (HH:MM)
+          if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) {
+            errors.push(`Row ${idx + 2}: Invalid time format. Use HH:MM (24-hour)`);
+            return;
+          }
+          
+          schedulesToCreate.push({
+            user_id: email, // Backend will convert email to user_id
+            date: date,
+            shift_start: startTime,
+            shift_end: endTime,
+            break_duration: parseInt(breakDuration) || 30,
+            notes: notes || ''
+          });
+        });
+        
+        if (errors.length > 0) {
+          toast.error(`Found ${errors.length} errors. Check console for details.`);
+          console.error('Upload errors:', errors);
+          return;
+        }
+        
+        if (schedulesToCreate.length === 0) {
+          toast.error('No valid schedules to upload.');
+          return;
+        }
+        
+        // Send to backend
+        setLoading(true);
+        const response = await axios.post(`${API}/schedules/bulk-upload`, schedulesToCreate, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        toast.success(`${response.data.created_count} schedules uploaded successfully!`);
+        
+        if (response.data.errors && response.data.errors.length > 0) {
+          console.warn('Upload warnings:', response.data.errors);
+          toast.warning(`${response.data.errors.length} rows had issues. Check console for details.`);
+        }
+        
+        // Refresh schedules
+        fetchSchedules();
+        
+        // Reset file input
+        event.target.value = '';
+        
+      } catch (error) {
+        console.error('Upload error:', error);
+        toast.error(error.response?.data?.detail || 'Failed to upload schedules');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    reader.readAsText(file);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">

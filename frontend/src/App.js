@@ -1733,6 +1733,7 @@ const MyScheduleTab = () => {
   };
 
   const getSchedulesForWeek = () => {
+    if (!selectedDate) return [];
     const startOfWeek = new Date(selectedDate);
     startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay());
     

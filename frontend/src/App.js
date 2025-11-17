@@ -6020,13 +6020,97 @@ const ScheduleManagementSection = ({ token }) => {
                 placeholder="Add any notes about this shift..."
               />
             </div>
+
+            {/* Recurring Shift Options */}
+            <div className="border-t pt-4">
+              <div className="flex items-center gap-2 mb-3">
+                <input
+                  type="checkbox"
+                  id="is_recurring"
+                  checked={formData.is_recurring}
+                  onChange={(e) => setFormData({...formData, is_recurring: e.target.checked})}
+                  className="w-4 h-4"
+                />
+                <Label htmlFor="is_recurring" className="font-semibold">🔄 Make this a recurring shift</Label>
+              </div>
+
+              {formData.is_recurring && (
+                <div className="space-y-4 bg-blue-50 p-4 rounded-lg">
+                  <div>
+                    <Label>Recurrence Pattern *</Label>
+                    <select
+                      className="w-full p-2 border rounded"
+                      value={formData.recurrence_type}
+                      onChange={(e) => setFormData({...formData, recurrence_type: e.target.value})}
+                    >
+                      <option value="daily">Daily (Every day)</option>
+                      <option value="weekly">Weekly (Specific days)</option>
+                      <option value="monthly">Monthly (Same day each month)</option>
+                    </select>
+                  </div>
+
+                  {formData.recurrence_type === 'weekly' && (
+                    <div>
+                      <Label>Select Days of Week *</Label>
+                      <div className="grid grid-cols-4 gap-2 mt-2">
+                        {[
+                          { value: 0, label: 'Sun' },
+                          { value: 1, label: 'Mon' },
+                          { value: 2, label: 'Tue' },
+                          { value: 3, label: 'Wed' },
+                          { value: 4, label: 'Thu' },
+                          { value: 5, label: 'Fri' },
+                          { value: 6, label: 'Sat' }
+                        ].map(day => (
+                          <label key={day.value} className="flex items-center gap-1 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={formData.days_of_week.includes(day.value)}
+                              onChange={(e) => {
+                                const newDays = e.target.checked
+                                  ? [...formData.days_of_week, day.value]
+                                  : formData.days_of_week.filter(d => d !== day.value);
+                                setFormData({...formData, days_of_week: newDays.sort()});
+                              }}
+                              className="w-4 h-4"
+                            />
+                            <span className="text-sm">{day.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <Label>End Date *</Label>
+                    <Input
+                      type="date"
+                      value={formData.end_date}
+                      onChange={(e) => setFormData({...formData, end_date: e.target.value})}
+                      min={formData.date}
+                    />
+                    <p className="text-xs text-gray-600 mt-1">
+                      Shifts will be created from {formData.date} to this date
+                    </p>
+                  </div>
+
+                  <div className="bg-blue-100 p-3 rounded text-sm">
+                    <strong>Preview:</strong> This will create {
+                      formData.recurrence_type === 'daily' ? 'daily shifts' :
+                      formData.recurrence_type === 'weekly' ? `shifts on ${formData.days_of_week.length} selected day(s) per week` :
+                      'monthly shifts'
+                    } from {formData.date} to {formData.end_date || '(select end date)'}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => {setShowAssignModal(false); resetForm();}}>
               Cancel
             </Button>
             <Button onClick={handleAssignSchedule}>
-              Assign Schedule
+              {formData.is_recurring ? '🔄 Create Recurring Schedules' : 'Assign Schedule'}
             </Button>
           </DialogFooter>
         </DialogContent>

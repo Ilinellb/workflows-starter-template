@@ -1321,6 +1321,78 @@ async def assign_schedule(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.post("/schedules/bulk-upload")
+async def bulk_upload_schedules(
+    schedules: List[ScheduleShiftCreate],
+    current_user: User = Depends(get_current_user)
+):
+    """Bulk upload schedules from template (managers only)"""
+    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    try:
+        created_count = 0
+        errors = []
+        
+        for idx, schedule_data in enumerate(schedules):
+            try:
+                # Validate user exists
+                user = await db.users.find_one({"email": schedule_data.user_id})  # user_id will contain email from CSV
+                if not user:
+                    errors.append(f"Row {idx + 2}: User with email '{schedule_data.user_id}' not found")
+                    continue
+                
+                # Check if schedule already exists for this user and date
+                existing = await db.schedules.find_one({
+                    "user_id": user["id"],
+                    "date": schedule_data.date.isoformat() if isinstance(schedule_data.date, date) else schedule_data.date
+                })
+                
+                if existing:
+                    # Update existing schedule
+                    update_data = {
+                        "shift_start": schedule_data.shift_start.strftime('%H:%M:%S') if isinstance(schedule_data.shift_start, time) else schedule_data.shift_start,
+                        "shift_end": schedule_data.shift_end.strftime('%H:%M:%S') if isinstance(schedule_data.shift_end, time) else schedule_data.shift_end,
+                        "break_duration": schedule_data.break_duration,
+                        "notes": schedule_data.notes
+                    }
+                    await db.schedules.update_one(
+                        {"id": existing["id"]},
+                        {"$set": update_data}
+                    )
+                else:
+                    # Create new schedule
+                    schedule_id = str(uuid.uuid4())
+                    schedule_dict = {
+                        "id": schedule_id,
+                        "user_id": user["id"],
+                        "user_name": user["name"],
+                        "date": schedule_data.date.isoformat() if isinstance(schedule_data.date, date) else schedule_data.date,
+                        "shift_start": schedule_data.shift_start.strftime('%H:%M:%S') if isinstance(schedule_data.shift_start, time) else schedule_data.shift_start,
+                        "shift_end": schedule_data.shift_end.strftime('%H:%M:%S') if isinstance(schedule_data.shift_end, time) else schedule_data.shift_end,
+                        "break_duration": schedule_data.break_duration,
+                        "notes": schedule_data.notes or ""
+                    }
+                    await db.schedules.insert_one(schedule_dict)
+                
+                created_count += 1
+                
+            except Exception as row_error:
+                errors.append(f"Row {idx + 2}: {str(row_error)}")
+                continue
+        
+        return {
+            "message": f"Successfully processed {created_count} schedules",
+            "created_count": created_count,
+            "total_rows": len(schedules),
+            "errors": errors
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in bulk upload: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.put("/schedules/{schedule_id}")
 async def update_schedule(
     schedule_id: str,

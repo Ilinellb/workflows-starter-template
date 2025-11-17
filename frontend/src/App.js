@@ -5834,9 +5834,26 @@ const ScheduleManagementSection = ({ token }) => {
           <h3 className="text-lg font-semibold">Schedule Management</h3>
           <p className="text-sm text-gray-600">Assign and manage employee schedules</p>
         </div>
-        <Button onClick={() => setShowAssignModal(true)}>
-          <span className="mr-2">➕</span> Assign Schedule
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={downloadTemplate}>
+            <span className="mr-2">📥</span> Download Template
+          </Button>
+          <label htmlFor="schedule-upload" className="cursor-pointer">
+            <Button variant="outline" onClick={() => document.getElementById('schedule-upload').click()}>
+              <span className="mr-2">📤</span> Upload Template
+            </Button>
+          </label>
+          <input
+            id="schedule-upload"
+            type="file"
+            accept=".csv,.xlsx,.xls"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+          <Button onClick={() => setShowAssignModal(true)}>
+            <span className="mr-2">➕</span> Assign Schedule
+          </Button>
+        </div>
       </div>
 
       {loading ? (

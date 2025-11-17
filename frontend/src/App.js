@@ -1727,6 +1727,7 @@ const MyScheduleTab = () => {
   }, []);
 
   const getSchedulesForDate = (date) => {
+    if (!date) return [];
     const dateStr = date.toISOString().split('T')[0];
     return schedules.filter(schedule => schedule.date === dateStr);
   };

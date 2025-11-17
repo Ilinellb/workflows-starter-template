@@ -1396,7 +1396,7 @@ const TimeOffRequestsTab = () => {
             <Calendar
               mode="single"
               selected={selectedDate}
-              onSelect={setSelectedDate}
+              onSelect={(date) => date && setSelectedDate(date)}
               className="rounded-md border w-full"
               modifiers={{
                 approved: requests.filter(req => req.status === 'approved').flatMap(req => {
@@ -1803,7 +1803,7 @@ const MyScheduleTab = () => {
             <Calendar
               mode="single"
               selected={selectedDate}
-              onSelect={setSelectedDate}
+              onSelect={(date) => date && setSelectedDate(date)}
               className="rounded-md border w-full"
               modifiers={{
                 hasSchedule: schedules.map(s => new Date(s.date))
@@ -4110,7 +4110,7 @@ const TeamSchedulingTab = () => {
               <Calendar
                 mode="single"
                 selected={selectedDate}
-                onSelect={setSelectedDate}
+                onSelect={(date) => date && setSelectedDate(date)}
                 className="rounded-md border w-full"
                 modifiers={{
                   hasSchedule: teamSchedules.map(s => new Date(s.date))

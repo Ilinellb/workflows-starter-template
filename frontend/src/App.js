@@ -1829,12 +1829,12 @@ const MyScheduleTab = () => {
         <Card>
           <CardHeader>
             <CardTitle>
-              📋 Schedule for {selectedDate.toLocaleDateString()}
+              📋 Schedule for {selectedDate ? selectedDate.toLocaleDateString() : 'Today'}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {getSchedulesForDate(selectedDate).length > 0 ? (
+              {selectedDate && getSchedulesForDate(selectedDate).length > 0 ? (
                 getSchedulesForDate(selectedDate).map((schedule) => (
                   <div key={schedule.id} className="p-3 border rounded-lg">
                     <div className="flex justify-between items-start mb-2">

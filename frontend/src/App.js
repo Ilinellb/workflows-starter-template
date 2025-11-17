@@ -5660,7 +5660,11 @@ const ScheduleManagementSection = ({ token }) => {
       shift_start: '09:00',
       shift_end: '17:00',
       break_duration: 30,
-      notes: ''
+      notes: '',
+      is_recurring: false,
+      recurrence_type: 'daily',
+      end_date: '',
+      days_of_week: []
     });
     setSelectedSchedule(null);
   };

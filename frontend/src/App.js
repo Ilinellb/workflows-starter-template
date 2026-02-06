@@ -5128,11 +5128,35 @@ const AttendantManagementTab = () => {
             </div>
           ) : filteredAttendants.length > 0 ? (
             <div className="space-y-3">
+              {/* Select All Checkbox */}
+              <div className="flex items-center gap-2 p-3 bg-gray-100 rounded">
+                <input
+                  type="checkbox"
+                  checked={selectAll}
+                  onChange={handleSelectAll}
+                  className="w-4 h-4 cursor-pointer"
+                />
+                <label className="text-sm font-medium cursor-pointer" onClick={handleSelectAll}>
+                  Select All ({employees.length} employees)
+                </label>
+                {selectedEmployees.length > 0 && (
+                  <span className="text-sm text-blue-600 ml-2">
+                    ({selectedEmployees.length} selected)
+                  </span>
+                )}
+              </div>
+
               {filteredAttendants.map((employee) => (
                 <div key={employee.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                   <div className="flex items-start justify-between">
-                    {/* Attendant Basic Info */}
+                    {/* Checkbox for selection */}
                     <div className="flex items-start space-x-4 flex-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedEmployees.includes(employee.id)}
+                        onChange={() => handleSelectEmployee(employee.id)}
+                        className="mt-4 w-4 h-4 cursor-pointer"
+                      />
                       <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                         <span className="text-blue-600 font-medium text-lg">
                           {employee.name.charAt(0).toUpperCase()}

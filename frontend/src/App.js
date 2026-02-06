@@ -4880,10 +4880,77 @@ const AttendantManagementTab = () => {
       await axios.delete(`${API}/users/${employeeId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success('Attendant deleted successfully');
+      toast.success('Employee deleted successfully');
       fetchAttendants();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to delete employee');
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedEmployees.length === 0) {
+      toast.error('Please select at least one employee to delete');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete ${selectedEmployees.length} employee(s)? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const employeeId of selectedEmployees) {
+        try {
+          await axios.delete(`${API}/users/${employeeId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          successCount++;
+        } catch (error) {
+          errorCount++;
+          console.error(`Failed to delete employee ${employeeId}:`, error);
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`Successfully deleted ${successCount} employee(s)`);
+      }
+      if (errorCount > 0) {
+        toast.error(`Failed to delete ${errorCount} employee(s)`);
+      }
+
+      setSelectedEmployees([]);
+      setSelectAll(false);
+      fetchAttendants();
+    } catch (error) {
+      toast.error('Failed to delete employees');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedEmployees([]);
+      setSelectAll(false);
+    } else {
+      setSelectedEmployees(employees.map(emp => emp.id));
+      setSelectAll(true);
+    }
+  };
+
+  const handleSelectEmployee = (employeeId) => {
+    if (selectedEmployees.includes(employeeId)) {
+      setSelectedEmployees(selectedEmployees.filter(id => id !== employeeId));
+      setSelectAll(false);
+    } else {
+      const newSelected = [...selectedEmployees, employeeId];
+      setSelectedEmployees(newSelected);
+      if (newSelected.length === employees.length) {
+        setSelectAll(true);
+      }
     }
   };
 

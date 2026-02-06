@@ -134,7 +134,7 @@ const AuthProvider = ({ children }) => {
   );
 };
 
-// Tab Configuration - Attendant Success Focused
+// Tab Configuration - Role-Based Access
 const getTabsForRole = (role) => {
   // Base tabs for all users
   const baseTabs = [
@@ -143,23 +143,37 @@ const getTabsForRole = (role) => {
     { id: 'schedule', label: 'My Schedule', icon: '📅', category: 'planning' }
   ];
 
-  // Reports tab - only for OPS Manager
-  const reportsTabs = role === 'ops_manager' ? [
-    { id: 'reports', label: 'Reports', icon: '📊', category: 'reports' }
-  ] : [];
-
-  // System Admin tab - only for OPS Manager
-  const adminTabs = role === 'ops_manager' ? [
-    { id: 'admin', label: 'System Admin', icon: '⚙️', category: 'admin' }
-  ] : [];
-
   // Profile tab - for all users
   const profileTabs = [
     { id: 'profile', label: 'Profile', icon: '👤', category: 'personal' }
   ];
 
-  // Combine all tabs based on role
-  return [...baseTabs, ...reportsTabs, ...adminTabs, ...profileTabs];
+  // For Attendants and Assistant Managers - only basic tabs
+  if (role === 'attendant' || role === 'assistant_manager') {
+    return [...baseTabs, ...profileTabs];
+  }
+
+  // For OPS Manager - ALL management tabs
+  if (role === 'ops_manager') {
+    const managerTabs = [
+      { id: 'overview', label: 'Team Overview', icon: '📈', category: 'management' },
+      { id: 'timecards', label: 'Team Time Cards', icon: '🕒', category: 'time' },
+      { id: 'room-mgmt', label: 'Room Reports', icon: '🏨', category: 'operations' },
+      { id: 'scheduling', label: 'Team Scheduling', icon: '📅', category: 'planning' },
+      { id: 'team-reports', label: 'Team Reports', icon: '📊', category: 'reports' },
+      { id: 'employee-mgmt', label: 'Employee Management', icon: '👥', category: 'management' }
+    ];
+
+    const adminTabs = [
+      { id: 'admin', label: 'System Admin', icon: '⚙️', category: 'admin' }
+    ];
+
+    // OPS Manager sees: base tabs + manager tabs + admin tabs + profile
+    return [...baseTabs, ...managerTabs, ...adminTabs, ...profileTabs];
+  }
+
+  // Default fallback
+  return [...baseTabs, ...profileTabs];
 };
 
 // Login Component

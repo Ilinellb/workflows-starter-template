@@ -480,8 +480,13 @@
 
 ## test_plan:
   current_focus:
-    - "Simplified Tab Structure (6 core tabs)"
-  stuck_tasks: []
+    - "Assistant Manager User Account (lbj1288@outlook.com)"
+    - "Role-Based Access Control (Permission System)"
+    - "App Configuration API (/api/config endpoints)"
+  stuck_tasks:
+    - "Assistant Manager User Account (lbj1288@outlook.com)"
+    - "Role-Based Access Control (Permission System)"
+    - "App Configuration API (/api/config endpoints)"
   test_all: false
   test_priority: "high_first"
 

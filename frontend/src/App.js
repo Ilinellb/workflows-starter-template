@@ -5005,10 +5005,21 @@ const AttendantManagementTab = () => {
   return (
     <div className="space-y-6" data-testid="employee-management-tab">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">👥 Attendant Management</h2>
-        <Button onClick={() => setShowAddModal(true)} className="bg-blue-500 hover:bg-blue-600">
-          ➕ Add Attendant
-        </Button>
+        <h2 className="text-2xl font-bold">👥 Employee Management</h2>
+        <div className="flex gap-2">
+          {selectedEmployees.length > 0 && (
+            <Button 
+              onClick={handleBulkDelete} 
+              variant="destructive"
+              disabled={loading}
+            >
+              🗑️ Delete Selected ({selectedEmployees.length})
+            </Button>
+          )}
+          <Button onClick={() => setShowAddModal(true)} className="bg-blue-500 hover:bg-blue-600">
+            ➕ Add Employee
+          </Button>
+        </div>
       </div>
 
       {/* Enhanced Statistics Cards with Integration Data */}

@@ -7490,18 +7490,33 @@ const AppContent = () => {
 
   const renderTabContent = () => {
     switch (activeTab) {
+      // Base Tabs (All Users)
       case 'timecard':
         return <TimeCardTab />;
       case 'rooms':
         return <RoomManagementTab />;
       case 'schedule':
         return <MyScheduleTab />;
-      case 'reports':
-        return <MyReportsTab />;
-      case 'admin':
-        return <SystemAdminTab />;
       case 'profile':
         return <ProfileTab user={user} />;
+      
+      // Manager Tabs (OPS Manager Only)
+      case 'overview':
+        return <TeamOverviewTab />;
+      case 'timecards':
+        return <TeamTimeCardsTab />;
+      case 'room-mgmt':
+        return <RoomReportsTab />;
+      case 'scheduling':
+        return <TeamSchedulingTab />;
+      case 'team-reports':
+        return <TeamReportsTab />;
+      case 'employee-mgmt':
+        return <AttendantManagementTab />;
+      
+      // Admin Tabs (OPS Manager Only)
+      case 'admin':
+        return <SystemAdminTab />;
       
       default:
         return <TimeCardTab />;

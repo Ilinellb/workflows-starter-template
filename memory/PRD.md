@@ -45,11 +45,14 @@ Progressive Web App for hotel/rooming-house operations. Supports time tracking, 
 
 ## Backlog / Next
 - P1: Wire real email sending (SendGrid integration is imported but not fully configured) — currently MOCKED.
-- P1: Re-verify Assistant Manager login (`lbj1288@outlook.com`) — reported broken in last full audit.
-- P2: Implement `GET/PUT /api/config` — reported 404 in last audit; verify if now fixed.
-- P2: Enforce role-based permission checks on all manager-only endpoints (earlier audit found leaks).
 - P3: Refactor monolithic `App.js` (7.7k LOC) into feature modules.
 - P3: Refactor monolithic `server.py` into `/app/backend/routes` and `/app/backend/models`.
+
+## Resolved (2026-04-23 audit sweep)
+- ✅ Assistant Manager login (`lbj1288@outlook.com / admin123`) — working; prior 401 was stale.
+- ✅ `/api/config` endpoints — actual paths are `/api/config/app` and `/api/config/app/draft`; both return 200. Prior "404" was a wrong test URL.
+- ✅ Role-based auth on `/api/users`, `/api/rooms/report`, `/api/reports/team`, `/api/users/bulk-delete` — all correctly return 403 for attendants. Prior "leak" report was a false alarm.
+- ✅ `john@company.com / password123` — recreated; was missing from DB.
 
 ## Known Mocks
 - `send_notification_email` — logs placeholder instead of sending (SendGrid not wired to real key).

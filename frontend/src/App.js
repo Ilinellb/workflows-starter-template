@@ -4899,33 +4899,29 @@ const AttendantManagementTab = () => {
 
     try {
       setLoading(true);
-      let successCount = 0;
-      let errorCount = 0;
+      const response = await axios.post(
+        `${API}/users/bulk-delete`,
+        { user_ids: selectedEmployees },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-      for (const employeeId of selectedEmployees) {
-        try {
-          await axios.delete(`${API}/users/${employeeId}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          successCount++;
-        } catch (error) {
-          errorCount++;
-          console.error(`Failed to delete employee ${employeeId}:`, error);
-        }
-      }
+      const { deleted_count = 0, not_found_count = 0, skipped_self = 0 } = response.data || {};
 
-      if (successCount > 0) {
-        toast.success(`Successfully deleted ${successCount} employee(s)`);
+      if (deleted_count > 0) {
+        toast.success(`Successfully deleted ${deleted_count} employee(s)`);
       }
-      if (errorCount > 0) {
-        toast.error(`Failed to delete ${errorCount} employee(s)`);
+      if (not_found_count > 0) {
+        toast.error(`${not_found_count} employee(s) not found`);
+      }
+      if (skipped_self > 0) {
+        toast.error('Your own account was skipped (cannot self-delete)');
       }
 
       setSelectedEmployees([]);
       setSelectAll(false);
       fetchAttendants();
     } catch (error) {
-      toast.error('Failed to delete employees');
+      toast.error(error.response?.data?.detail || 'Failed to delete employees');
     } finally {
       setLoading(false);
     }

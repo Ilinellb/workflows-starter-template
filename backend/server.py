@@ -669,6 +669,40 @@ async def delete_user(user_id: str, current_user: User = Depends(get_current_use
     
     return {"message": "User deleted successfully"}
 
+class BulkDeleteRequest(BaseModel):
+    user_ids: List[str]
+
+@api_router.post("/users/bulk-delete")
+async def bulk_delete_users(
+    payload: BulkDeleteRequest,
+    current_user: User = Depends(get_current_user)
+):
+    # Check permissions
+    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+
+    if not payload.user_ids:
+        raise HTTPException(status_code=400, detail="No user IDs provided")
+
+    # Exclude the current user from the deletion list to prevent self-deletion
+    target_ids = [uid for uid in payload.user_ids if uid != current_user.id]
+    skipped_self = len(payload.user_ids) - len(target_ids)
+
+    if not target_ids:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
+
+    result = await db.users.delete_many({"id": {"$in": target_ids}})
+    deleted_count = result.deleted_count
+    not_found_count = len(target_ids) - deleted_count
+
+    return {
+        "message": f"Deleted {deleted_count} user(s)",
+        "deleted_count": deleted_count,
+        "not_found_count": not_found_count,
+        "skipped_self": skipped_self,
+        "requested_count": len(payload.user_ids),
+    }
+
 # Time Tracking Routes
 @api_router.post("/time/punch")
 async def punch_time(punch_data: PunchRequest, current_user: User = Depends(get_current_user)):

@@ -589,7 +589,7 @@ const TimeCardTab = () => {
           {recentEntries.length > 0 ? (
             <div className="space-y-2">
               {recentEntries.map((entry, index) => (
-                <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded border">
+                <div key={entry.id ?? `${entry.date}-${index}`} className="flex justify-between items-center p-2 bg-gray-50 rounded border">
                   <div>
                     <p className="font-medium text-sm">{entry.date}</p>
                     <p className="text-xs text-gray-600">
@@ -1891,11 +1891,11 @@ const MyScheduleTab = () => {
                 {day}
               </div>
             ))}
-            {getSchedulesForWeek().map(({ date, schedules: daySchedules }, index) => (
-              <div key={index} className="border rounded-lg p-2 min-h-[100px]">
+            {getSchedulesForWeek().map(({ date, schedules: daySchedules }) => (
+              <div key={date.toISOString()} className="border rounded-lg p-2 min-h-[100px]">
                 <div className="text-xs text-gray-600 mb-1">{date.getDate()}</div>
                 {daySchedules.map((schedule, idx) => (
-                  <div key={idx} className={`text-xs p-1 rounded mb-1 ${getShiftTypeColor(schedule.type)}`}>
+                  <div key={schedule.id ?? `${date.toISOString()}-${idx}`} className={`text-xs p-1 rounded mb-1 ${getShiftTypeColor(schedule.type)}`}>
                     <div className="font-medium">{formatTime(schedule.startTime)}</div>
                     <div className="truncate">{schedule.type}</div>
                   </div>
@@ -2673,7 +2673,7 @@ const CommunicationTab = () => {
                         {msg.attachments && msg.attachments.length > 0 && (
                           <div className="mt-2 space-y-1">
                             {msg.attachments.map((att, idx) => (
-                              <div key={idx} className="flex items-center gap-2 text-xs">
+                              <div key={att.file_url ?? att.filename ?? `${msg.id}-${idx}`} className="flex items-center gap-2 text-xs">
                                 <Badge variant="outline">📎</Badge>
                                 <a
                                   href={`${API}${att.file_url}`}
@@ -3147,7 +3147,7 @@ const RoomReportsTab = () => {
         <CardContent>
           <div className="space-y-4">
             {shiftReports.map((report, index) => (
-              <div key={index} className="p-4 bg-gray-50 rounded-lg">
+              <div key={report.id ?? report.employee ?? index} className="p-4 bg-gray-50 rounded-lg">
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <h3 className="font-semibold">{report.employee}</h3>
@@ -3186,7 +3186,7 @@ const RoomReportsTab = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {employeeLaundryStats.map((stat, index) => (
-              <div key={index} className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+              <div key={stat.id ?? stat.employee ?? index} className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
                 <div>
                   <p className="font-medium">{stat.employee}</p>
                   <p className="text-sm text-gray-600">Last: {stat.lastLaundry}</p>
@@ -3209,7 +3209,7 @@ const RoomReportsTab = () => {
         <CardContent>
           <div className="space-y-2">
             {roomData.map((room, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-white rounded border">
+              <div key={room.id ?? room.number ?? index} className="flex items-center justify-between p-3 bg-white rounded border">
                 <div className="flex items-center gap-3">
                   <div className="font-bold text-lg min-w-[2rem] text-center">
                     {room.room}
@@ -4092,12 +4092,13 @@ const TeamSchedulingTab = () => {
                     <div className="truncate">{employee.name}</div>
                     <div className="text-xs text-gray-500">{employee.department}</div>
                   </div>
-                  {getWeeklySchedules().map(({ date, schedules }, dayIndex) => {
+                  {getWeeklySchedules().map(({ date, schedules }) => {
                     const employeeSchedules = schedules.filter(s => s.employeeId === employee.id);
+                    const dayKey = date.toISOString();
                     return (
-                      <div key={dayIndex} className="border rounded p-1 min-h-[80px] bg-gray-50">
+                      <div key={`${employee.id}-${dayKey}`} className="border rounded p-1 min-h-[80px] bg-gray-50">
                         {employeeSchedules.map((schedule, idx) => (
-                          <div key={idx} className={`text-xs p-1 rounded mb-1 ${getShiftTypeColor(schedule.type)}`}>
+                          <div key={schedule.id ?? `${employee.id}-${dayKey}-${idx}`} className={`text-xs p-1 rounded mb-1 ${getShiftTypeColor(schedule.type)}`}>
                             <div className="flex items-center gap-1">
                               <div className={`w-2 h-2 rounded-full ${getStatusColor(schedule.status)}`}></div>
                               <span className="font-medium">{formatTime(schedule.startTime)}</span>
@@ -6759,7 +6760,7 @@ const AnalyticsTab = () => {
             <div className="font-semibold mb-3">Daily Hours Trend</div>
             <div className="flex items-end justify-between gap-2 h-40">
               {[65, 72, 68, 80, 75, 82, 78].map((height, i) => (
-                <div key={i} className="flex-1 bg-blue-500 rounded-t" style={{height: `${height}%`}}>
+                <div key={`bar-${i}-${height}`} className="flex-1 bg-blue-500 rounded-t" style={{height: `${height}%`}}>
                   <div className="text-xs text-white text-center mt-1">{height}</div>
                 </div>
               ))}
@@ -6839,7 +6840,7 @@ const AnalyticsTab = () => {
                 { name: 'Jane Worker', hours: '43.2h', rooms: '26' },
                 { name: 'Bob Smith', hours: '41.8h', rooms: '24' }
               ].map((performer, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div key={performer.name ?? i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
                       {i + 1}

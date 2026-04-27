@@ -839,22 +839,28 @@ async def get_time_entries(
         query["date"] = {"$gte": start_date, "$lte": end_date}
     
     entries = await db.time_entries.find(query).sort("date", -1).to_list(1000)
-    
+
+    # Bulk-fetch employee names to avoid N+1
+    employee_ids = list({entry["employee_id"] for entry in entries if entry.get("employee_id")})
+    employee_map = {}
+    if employee_ids:
+        employees_docs = await db.users.find({"id": {"$in": employee_ids}}).to_list(len(employee_ids))
+        employee_map = {emp["id"]: emp for emp in employees_docs}
+
     # Parse and enhance entries
     result = []
     for entry in entries:
         # Remove MongoDB ObjectId field
         if '_id' in entry:
             del entry['_id']
-            
+
         entry = parse_from_mongo(entry)
-        
-        # Get employee name
-        employee = await db.users.find_one({"id": entry["employee_id"]})
+
+        employee = employee_map.get(entry["employee_id"])
         entry["employee_name"] = employee.get("name", "Unknown") if employee else "Unknown"
-        
+
         result.append(entry)
-    
+
     return result
 
 # Notification Routes
@@ -966,21 +972,27 @@ async def get_room_statuses(current_user: User = Depends(get_current_user)):
     }
     
     room_statuses = await db.room_statuses.find(query).to_list(100)
-    
+
+    # Bulk-fetch employee names to avoid N+1
+    employee_ids = list({rs["employee_id"] for rs in room_statuses if rs.get("employee_id")})
+    employee_map = {}
+    if employee_ids:
+        employees_docs = await db.users.find({"id": {"$in": employee_ids}}).to_list(len(employee_ids))
+        employee_map = {emp["id"]: emp for emp in employees_docs}
+
     result = []
     for room_status in room_statuses:
         # Remove MongoDB ObjectId field
         if '_id' in room_status:
             del room_status['_id']
-            
+
         room_status = parse_from_mongo(room_status)
-        
-        # Get employee name who last updated the room
-        employee = await db.users.find_one({"id": room_status["employee_id"]})
+
+        employee = employee_map.get(room_status["employee_id"])
         room_status["employee_name"] = employee.get("name", "Unknown") if employee else "Unknown"
-        
+
         result.append(room_status)
-    
+
     return result
 
 @api_router.post("/laundry/record")
@@ -1034,17 +1046,23 @@ async def get_laundry_stats(
         query["employee_id"] = {"$in": employee_ids}
     
     laundry_records = await db.laundry_records.find(query).to_list(100)
-    
+
+    # Bulk-fetch employee names to avoid N+1
+    employee_ids = list({r["employee_id"] for r in laundry_records if r.get("employee_id")})
+    employee_map = {}
+    if employee_ids:
+        employees_docs = await db.users.find({"id": {"$in": employee_ids}}).to_list(len(employee_ids))
+        employee_map = {emp["id"]: emp for emp in employees_docs}
+
     result = []
     for record in laundry_records:
         record = parse_from_mongo(record)
-        
-        # Get employee name
-        employee = await db.users.find_one({"id": record["employee_id"]})
+
+        employee = employee_map.get(record["employee_id"])
         record["employee_name"] = employee.get("name", "Unknown") if employee else "Unknown"
-        
+
         result.append(record)
-    
+
     return result
 
 @api_router.get("/rooms/report")
@@ -1068,20 +1086,31 @@ async def get_room_report(
         query["employee_id"] = {"$in": employee_ids}
     
     room_statuses = await db.room_statuses.find(query).to_list(1000)
-    
+
     # Get laundry stats
     laundry_stats = await db.laundry_records.find(query).to_list(100)
-    
+
+    # Bulk-fetch employee names for all employees appearing in either list
+    emp_ids_in_report = list({
+        rs["employee_id"] for rs in room_statuses if rs.get("employee_id")
+    } | {
+        lr["employee_id"] for lr in laundry_stats if lr.get("employee_id")
+    })
+    employee_map = {}
+    if emp_ids_in_report:
+        employees_docs = await db.users.find({"id": {"$in": emp_ids_in_report}}).to_list(len(emp_ids_in_report))
+        employee_map = {emp["id"]: emp for emp in employees_docs}
+
     # Prepare report data
     employee_performance = {}
-    
+
     # Process room data
     for room_status in room_statuses:
         room_status = parse_from_mongo(room_status)
         emp_id = room_status["employee_id"]
-        
+
         if emp_id not in employee_performance:
-            employee = await db.users.find_one({"id": emp_id})
+            employee = employee_map.get(emp_id)
             employee_performance[emp_id] = {
                 "employee_name": employee.get("name", "Unknown") if employee else "Unknown",
                 "rooms_completed": 0,

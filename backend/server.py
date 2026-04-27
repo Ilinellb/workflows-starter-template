@@ -47,6 +47,18 @@ security = HTTPBearer()
 app = FastAPI(title="Employee Time Tracking System")
 api_router = APIRouter(prefix="/api")
 
+
+# Kubernetes liveness/readiness probe — must NOT be behind the /api prefix.
+# Also expose at /api/health for symmetry with the rest of the API.
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
+
+
+@api_router.get("/health")
+async def api_health_check():
+    return {"status": "ok"}
+
 # Models
 class UserRole(str):
     OPS_MANAGER = "ops_manager"

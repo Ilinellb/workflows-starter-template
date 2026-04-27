@@ -1363,7 +1363,7 @@ async def assign_recurring_schedule(
     """Assign recurring schedule (daily, weekly, monthly) to user (managers only)"""
     if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
-    
+
     try:
         user_id = schedule_data.get("user_id")
         start_date = schedule_data.get("date")
@@ -1373,86 +1373,101 @@ async def assign_recurring_schedule(
         break_duration = schedule_data.get("break_duration", 30)
         notes = schedule_data.get("notes", "")
         recurrence_type = schedule_data.get("recurrence_type")  # "daily", "weekly", "monthly"
-        days_of_week = schedule_data.get("days_of_week", [])  # For weekly: [0-6] where 0=Sunday
-        
-        # Validate user
+        days_of_week = schedule_data.get("days_of_week", [])  # weekly: [0-6] Sunday=0
+
         user = await db.users.find_one({"id": user_id})
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        
-        # Parse dates
-        current_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+
+        anchor_date = datetime.strptime(start_date, "%Y-%m-%d").date()
         final_date = datetime.strptime(end_date, "%Y-%m-%d").date()
-        
-        if current_date > final_date:
+        if anchor_date > final_date:
             raise HTTPException(status_code=400, detail="End date must be after start date")
-        
-        created_count = 0
+
         schedules_to_create = []
-        
-        # Generate schedules based on recurrence pattern
+        current_date = anchor_date
         while current_date <= final_date:
-            should_create = False
-            
-            if recurrence_type == "daily":
-                should_create = True
-            elif recurrence_type == "weekly":
-                # Check if current day of week is in selected days
-                day_of_week = current_date.weekday()
-                # Convert Monday=0 to Sunday=0 format
-                day_index = (day_of_week + 1) % 7
-                should_create = day_index in days_of_week
-            elif recurrence_type == "monthly":
-                # Same day of each month
-                should_create = current_date.day == datetime.strptime(start_date, "%Y-%m-%d").date().day
-            
-            if should_create:
-                schedule_id = str(uuid.uuid4())
-                schedule_dict = {
-                    "id": schedule_id,
-                    "user_id": user_id,
-                    "user_name": user["name"],
-                    "date": current_date.isoformat(),
-                    "shift_start": shift_start,
-                    "shift_end": shift_end,
-                    "break_duration": break_duration,
-                    "notes": f"{notes} (Recurring: {recurrence_type})" if notes else f"Recurring: {recurrence_type}"
-                }
-                schedules_to_create.append(schedule_dict)
-                created_count += 1
-            
-            # Increment date
-            if recurrence_type == "daily" or recurrence_type == "weekly":
-                current_date += timedelta(days=1)
-            elif recurrence_type == "monthly":
-                # Move to next month, same day
-                if current_date.month == 12:
-                    current_date = current_date.replace(year=current_date.year + 1, month=1)
-                else:
-                    try:
-                        current_date = current_date.replace(month=current_date.month + 1)
-                    except ValueError:
-                        # Handle case where day doesn't exist in next month (e.g., Jan 31 -> Feb 31)
-                        current_date = current_date.replace(month=current_date.month + 1, day=1)
-                        current_date = current_date.replace(day=min(datetime.strptime(start_date, "%Y-%m-%d").date().day, 
-                                                                     (current_date.replace(month=current_date.month + 1) - timedelta(days=1)).day))
-        
-        # Bulk insert schedules
+            if _should_create_schedule(recurrence_type, current_date, days_of_week, anchor_date):
+                schedules_to_create.append(_build_recurring_schedule_dict(
+                    user=user,
+                    current_date=current_date,
+                    shift_start=shift_start,
+                    shift_end=shift_end,
+                    break_duration=break_duration,
+                    notes=notes,
+                    recurrence_type=recurrence_type,
+                ))
+            current_date = _advance_recurring_date(recurrence_type, current_date, anchor_date)
+
         if schedules_to_create:
             await db.schedules.insert_many(schedules_to_create)
-        
+
+        created_count = len(schedules_to_create)
         return {
             "message": f"Successfully created {created_count} recurring schedules",
             "created_count": created_count,
             "recurrence_type": recurrence_type,
-            "date_range": f"{start_date} to {end_date}"
+            "date_range": f"{start_date} to {end_date}",
         }
-        
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error creating recurring schedule: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def _should_create_schedule(recurrence_type, current_date, days_of_week, anchor_date):
+    """Decide whether a schedule entry should be created on current_date."""
+    if recurrence_type == "daily":
+        return True
+    if recurrence_type == "weekly":
+        # Convert Python's Monday=0 to Sunday=0 format
+        day_index = (current_date.weekday() + 1) % 7
+        return day_index in days_of_week
+    if recurrence_type == "monthly":
+        return current_date.day == anchor_date.day
+    return False
+
+
+def _build_recurring_schedule_dict(*, user, current_date, shift_start, shift_end,
+                                    break_duration, notes, recurrence_type):
+    suffix = f"Recurring: {recurrence_type}"
+    return {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "user_name": user["name"],
+        "date": current_date.isoformat(),
+        "shift_start": shift_start,
+        "shift_end": shift_end,
+        "break_duration": break_duration,
+        "notes": f"{notes} ({suffix})" if notes else suffix,
+    }
+
+
+def _advance_recurring_date(recurrence_type, current_date, anchor_date):
+    """Return the next date to evaluate based on recurrence pattern."""
+    if recurrence_type in ("daily", "weekly"):
+        return current_date + timedelta(days=1)
+    if recurrence_type == "monthly":
+        return _next_monthly_anchor(current_date, anchor_date.day)
+    # Unknown recurrence — advance by one day to avoid infinite loops
+    return current_date + timedelta(days=1)
+
+
+def _next_monthly_anchor(current_date, anchor_day):
+    """Move to the same day in the next month, clamping to that month's last day."""
+    year, month = current_date.year, current_date.month
+    if month == 12:
+        year, month = year + 1, 1
+    else:
+        month += 1
+    # Compute last day of the target month
+    if month == 12:
+        next_first = date(year + 1, 1, 1)
+    else:
+        next_first = date(year, month + 1, 1)
+    last_day_of_month = (next_first - timedelta(days=1)).day
+    return date(year, month, min(anchor_day, last_day_of_month))
 
 
 @api_router.post("/schedules/bulk-upload")

@@ -90,12 +90,37 @@ const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
-  const fetchUser = async () => {
+  // Refetch user whenever the tab regains focus / becomes visible.
+  // Prevents stale-role "ghost attendant" bug if the role was changed server-side
+  // while the tab was open.
+  useEffect(() => {
+    const refetchIfAuthed = () => {
+      if (localStorage.getItem('token')) {
+        fetchUser({ silent: true });
+      }
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refetchIfAuthed();
+    };
+    window.addEventListener('focus', refetchIfAuthed);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('focus', refetchIfAuthed);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
+
+  const fetchUser = async ({ silent = false } = {}) => {
     try {
       const response = await axios.get(`${API}/auth/me`);
-      setUser(response.data);
+      setUser((prev) => {
+        if (prev && prev.role && response.data.role && prev.role !== response.data.role) {
+          toast.info(`Your role was updated to ${response.data.role.replace('_', ' ')}.`);
+        }
+        return response.data;
+      });
     } catch (error) {
-      logout();
+      if (!silent) logout();
     } finally {
       setLoading(false);
     }
@@ -104,13 +129,15 @@ const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const response = await axios.post(`${API}/auth/login`, { email, password });
-      const { access_token, user: userData } = response.data;
-      
+      const { access_token } = response.data;
+
       localStorage.setItem('token', access_token);
-      setToken(access_token);
-      setUser(userData);
       axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
-      
+      setToken(access_token);
+      // Always re-derive user from /auth/me to avoid trusting a potentially
+      // stale login payload (defense in depth).
+      await fetchUser();
+
       toast.success('Login successful!');
       return true;
     } catch (error) {

@@ -16,6 +16,39 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select';
 import { Label } from './components/ui/label';
 import { Calendar } from './components/ui/calendar';
+import {
+  Clock,
+  LayoutGrid,
+  Calendar as CalendarIcon,
+  Users,
+  Timer,
+  BarChart3,
+  CalendarDays,
+  LineChart,
+  UserCog,
+  Settings2,
+  User as UserIcon,
+  LogIn,
+  LogOut,
+  Menu,
+  Smartphone,
+  CheckCircle2,
+} from 'lucide-react';
+
+// Maps tab.icon string → Lucide icon component used by the top tab nav.
+const TAB_ICON_MAP = {
+  Clock,
+  LayoutGrid,
+  Calendar: CalendarIcon,
+  Users,
+  Timer,
+  BarChart3,
+  CalendarDays,
+  LineChart,
+  UserCog,
+  Settings2,
+  User: UserIcon,
+};
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -165,14 +198,14 @@ const AuthProvider = ({ children }) => {
 const getTabsForRole = (role) => {
   // Base tabs for all users
   const baseTabs = [
-    { id: 'timecard', label: 'Time Clock', icon: '🕒', category: 'time' },
-    { id: 'rooms', label: 'Room Management', icon: '🏠', category: 'operations' },
-    { id: 'schedule', label: 'My Schedule', icon: '📅', category: 'planning' }
+    { id: 'timecard', label: 'Time Clock', icon: 'Clock', category: 'time' },
+    { id: 'rooms', label: 'Room Management', icon: 'LayoutGrid', category: 'operations' },
+    { id: 'schedule', label: 'My Schedule', icon: 'Calendar', category: 'planning' }
   ];
 
   // Profile tab - for all users
   const profileTabs = [
-    { id: 'profile', label: 'Profile', icon: '👤', category: 'personal' }
+    { id: 'profile', label: 'Profile', icon: 'User', category: 'personal' }
   ];
 
   // For Attendants and Assistant Managers - only basic tabs
@@ -183,16 +216,16 @@ const getTabsForRole = (role) => {
   // For OPS Manager - ALL management tabs
   if (role === 'ops_manager') {
     const managerTabs = [
-      { id: 'overview', label: 'Team Overview', icon: '📈', category: 'management' },
-      { id: 'timecards', label: 'Team Time Cards', icon: '🕒', category: 'time' },
-      { id: 'room-mgmt', label: 'Room Reports', icon: '🏨', category: 'operations' },
-      { id: 'scheduling', label: 'Team Scheduling', icon: '📅', category: 'planning' },
-      { id: 'team-reports', label: 'Team Reports', icon: '📊', category: 'reports' },
-      { id: 'employee-mgmt', label: 'Employee Management', icon: '👥', category: 'management' }
+      { id: 'overview', label: 'Team Overview', icon: 'Users', category: 'management' },
+      { id: 'timecards', label: 'Team Time Cards', icon: 'Timer', category: 'time' },
+      { id: 'room-mgmt', label: 'Room Reports', icon: 'BarChart3', category: 'operations' },
+      { id: 'scheduling', label: 'Team Scheduling', icon: 'CalendarDays', category: 'planning' },
+      { id: 'team-reports', label: 'Team Reports', icon: 'LineChart', category: 'reports' },
+      { id: 'employee-mgmt', label: 'Employee Management', icon: 'UserCog', category: 'management' }
     ];
 
     const adminTabs = [
-      { id: 'admin', label: 'System Admin', icon: '⚙️', category: 'admin' }
+      { id: 'admin', label: 'System Admin', icon: 'Settings2', category: 'admin' }
     ];
 
     // OPS Manager sees: base tabs + manager tabs + admin tabs + profile
@@ -273,99 +306,123 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md" data-testid="login-card">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">RSBC Workflow Pro</CardTitle>
-          <CardDescription className="text-center">
-            {isLogin ? 'Sign in to track your work hours' : 'Create your account to get started'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <div className="min-h-screen flex bg-zinc-50">
+      {/* Left: Form panel */}
+      <div className="flex flex-1 items-center justify-center px-6 py-12">
+        <div className="w-full max-w-sm" data-testid="login-card">
+          <div className="mb-10">
+            <div className="text-xs font-semibold tracking-[0.18em] uppercase text-muted-foreground mb-2">
+              RSBC Workflow Pro
+            </div>
+            <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground mb-2">
+              {isLogin ? 'Welcome back' : 'Create your account'}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {isLogin ? 'Sign in to track your work hours.' : 'Get started in under a minute.'}
+            </p>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="name" className="text-xs font-medium">Full Name</Label>
                 <Input
                   id="name"
                   type="text"
-                  placeholder="Enter your full name"
+                  placeholder="Jane Doe"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
                   data-testid="name-input"
+                  className="h-10"
                 />
               </div>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs font-medium">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder="you@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 data-testid="email-input"
+                className="h-10"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-xs font-medium">Password</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder={isLogin ? "Enter your password" : "Create a password (min 6 characters)"}
+                placeholder={isLogin ? "Enter your password" : "At least 6 characters"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 data-testid="password-input"
+                className="h-10"
               />
             </div>
             {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="confirmPassword" className="text-xs font-medium">Confirm Password</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
-                  placeholder="Confirm your password"
+                  placeholder="Re-enter password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   data-testid="confirm-password-input"
+                  className="h-10"
                 />
               </div>
             )}
-            <Button 
-              type="submit" 
-              className="w-full" 
+            <Button
+              type="submit"
+              className="w-full h-10 mt-2"
               disabled={loading}
               data-testid={isLogin ? "login-button" : "register-button"}
             >
-              {loading ? (isLogin ? 'Signing in...' : 'Creating Account...') : (isLogin ? 'Sign In' : 'Create Account')}
+              {loading ? (isLogin ? 'Signing in…' : 'Creating account…') : (isLogin ? 'Sign in' : 'Create account')}
             </Button>
           </form>
 
-          {/* Toggle between login and register */}
-          <div className="mt-4 text-center">
-            <Button
-              variant="link" 
+          <div className="mt-6 text-center">
+            <button
+              type="button"
               onClick={toggleMode}
-              className="text-sm text-blue-600 hover:text-blue-800"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
             >
               {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-            </Button>
+            </button>
           </div>
 
           {!isLogin && (
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-700 font-medium mb-2">✨ Registration Info:</p>
-              <p className="text-xs text-blue-600">• New accounts are automatically assigned employee role</p>
-              <p className="text-xs text-blue-600">• You'll have immediate access to time tracking and scheduling</p>
-              <p className="text-xs text-blue-600">• Allowed email domains: @company.com, @gmail.com, @outlook.com, @yahoo.com</p>
+            <div className="mt-6 text-xs text-muted-foreground leading-relaxed border-t border-border pt-4">
+              <p className="font-medium text-foreground mb-1">Registration info</p>
+              <p>New accounts are assigned the employee role with immediate access to time tracking and scheduling. Allowed email domains: <span className="font-mono text-[11px]">@company.com</span>, <span className="font-mono text-[11px]">@gmail.com</span>, <span className="font-mono text-[11px]">@outlook.com</span>, <span className="font-mono text-[11px]">@yahoo.com</span>.</p>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+
+      {/* Right: Visual panel (hidden on mobile) */}
+      <div className="hidden lg:block flex-1 relative bg-zinc-950">
+        <img
+          src="https://images.unsplash.com/photo-1758448755981-954afbf60ff7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNDR8MHwxfHNlYXJjaHwzfHxtb2Rlcm4lMjBtaW5pbWFsJTIwaG90ZWwlMjBsb2JieSUyMGFyY2hpdGVjdHVyZSUyMGFyY2hpdGVjdHVyZXxlbnwwfHx8fDE3Nzc0MzUxNzN8MA&ixlib=rb-4.1.0&q=85"
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover opacity-90"
+        />
+        <div className="absolute inset-0 bg-gradient-to-tr from-zinc-950/60 via-zinc-950/20 to-transparent" />
+        <div className="relative h-full flex flex-col justify-end p-12 text-white">
+          <p className="text-xs font-semibold tracking-[0.18em] uppercase opacity-80 mb-3">Operations, on shift.</p>
+          <p className="font-heading text-2xl font-medium leading-snug max-w-md">
+            Run rooms, track time, and keep the team on the same page — without the friction.
+          </p>
+        </div>
+      </div>
     </div>
   );
 };
@@ -526,81 +583,76 @@ const TimeCardTab = () => {
 
   return (
     <div className="space-y-6" data-testid="timecard-tab">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">My Time Card</h2>
+      <div className="flex flex-wrap justify-between items-center gap-3">
+        <h2 className="font-heading text-3xl font-bold tracking-tight">Time Clock</h2>
         <div className="flex items-center gap-2">
           {/* Online/Offline Indicator */}
-          <Badge 
-            variant={isOnline ? 'default' : 'secondary'}
-            className={`${isOnline ? 'bg-green-500' : 'bg-gray-500'} text-white`}
-          >
-            {isOnline ? '🌐 Online' : '📵 Offline'}
-          </Badge>
-          
-          <Badge 
-            variant={timeStatus.status === 'working' ? 'default' : 'secondary'}
-            className={timeStatus.status === 'working' ? 'bg-green-500' : ''}
-          >
-            {timeStatus.status === 'working' ? '🟢 Currently Working' : '🔴 Not Working'}
-          </Badge>
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <span className={`status-dot ${isOnline ? 'bg-emerald-500' : 'bg-zinc-400'}`}></span>
+            <span>{isOnline ? 'Online' : 'Offline'}</span>
+          </div>
+          <span className="text-zinc-300">·</span>
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <span className={`status-dot ${timeStatus.status === 'working' ? 'bg-emerald-500' : 'bg-zinc-400'}`}></span>
+            <span>{timeStatus.status === 'working' ? 'Currently working' : 'Not working'}</span>
+          </div>
         </div>
       </div>
 
       {/* Current Status Card */}
-      <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-2">
+      <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <span className="text-2xl">⏰</span>
-            Today's Time Card
-          </CardTitle>
-          <CardDescription className="text-lg">{timeStatus.message}</CardDescription>
+          <CardTitle className="font-heading text-lg font-semibold">Today</CardTitle>
+          <CardDescription>{timeStatus.message}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-              <p className="text-sm text-gray-600 font-medium">Punch In Time</p>
-              <p className="text-xl font-bold text-green-600" data-testid="punch-in-time">
-                {timeStatus.punch_in_time ? new Date(timeStatus.punch_in_time).toLocaleTimeString() : 'Not punched in'}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+            <div className="p-4 bg-zinc-50 rounded-md border border-border">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Punch In</p>
+              <p className="font-heading text-2xl font-semibold tabular-nums" data-testid="punch-in-time">
+                {timeStatus.punch_in_time ? new Date(timeStatus.punch_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
               </p>
             </div>
-            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-              <p className="text-sm text-gray-600 font-medium">Punch Out Time</p>
-              <p className="text-xl font-bold text-blue-600" data-testid="punch-out-time">
-                {timeStatus.punch_out_time ? new Date(timeStatus.punch_out_time).toLocaleTimeString() : 'Working...'}
+            <div className="p-4 bg-zinc-50 rounded-md border border-border">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Punch Out</p>
+              <p className="font-heading text-2xl font-semibold tabular-nums" data-testid="punch-out-time">
+                {timeStatus.punch_out_time ? new Date(timeStatus.punch_out_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
               </p>
             </div>
-            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-              <p className="text-sm text-gray-600 font-medium">Hours Today</p>
-              <p className="text-2xl font-bold text-purple-600" data-testid="total-hours">
+            <div className="p-4 bg-zinc-50 rounded-md border border-border">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Hours Today</p>
+              <p className="font-heading text-2xl font-semibold tabular-nums" data-testid="total-hours">
                 {timeStatus.total_hours || 0}h
               </p>
             </div>
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <Button
               onClick={() => handlePunch('punch_in')}
               disabled={loading || !timeStatus.can_punch_in}
-              className="flex-1 h-14 text-lg"
+              className="flex-1 h-12 text-base gap-2"
               data-testid="punch-in-button"
             >
-              {loading ? 'Processing...' : '🕐 Punch In'}
+              <LogIn className="h-4 w-4" />
+              {loading ? 'Processing…' : 'Punch In'}
             </Button>
             <Button
               onClick={() => handlePunch('punch_out')}
               disabled={loading || !timeStatus.can_punch_out}
               variant="outline"
-              className="flex-1 h-14 text-lg border-2"
+              className="flex-1 h-12 text-base gap-2"
               data-testid="punch-out-button"
             >
-              {loading ? 'Processing...' : '🕐 Punch Out'}
+              <LogOut className="h-4 w-4" />
+              {loading ? 'Processing…' : 'Punch Out'}
             </Button>
           </div>
 
           {!isOnline && (
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-700 font-medium">
-                ⚠️ You're working offline. Time entries will sync automatically when reconnected.
+            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
+              <p className="text-xs text-amber-800">
+                You're working offline. Time entries will sync automatically when reconnected.
               </p>
             </div>
           )}
@@ -610,22 +662,23 @@ const TimeCardTab = () => {
       {/* Recent Time Entries */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">📅 Recent Time Entries</CardTitle>
+          <CardTitle className="text-base font-medium">Recent entries</CardTitle>
         </CardHeader>
         <CardContent>
           {recentEntries.length > 0 ? (
-            <div className="space-y-2">
+            <div className="divide-y divide-border -mx-6">
               {recentEntries.map((entry, index) => (
-                <div key={entry.id ?? `${entry.date}-${index}`} className="flex justify-between items-center p-2 bg-gray-50 rounded border">
+                <div key={entry.id ?? `${entry.date}-${index}`} className="flex justify-between items-center px-6 py-3">
                   <div>
-                    <p className="font-medium text-sm">{entry.date}</p>
-                    <p className="text-xs text-gray-600">
-                      {entry.punch_in_time && new Date(entry.punch_in_time).toLocaleTimeString()} - 
-                      {entry.punch_out_time ? new Date(entry.punch_out_time).toLocaleTimeString() : ' Working'}
+                    <p className="font-medium text-sm tabular-nums">{entry.date}</p>
+                    <p className="text-xs text-muted-foreground tabular-nums">
+                      {entry.punch_in_time && new Date(entry.punch_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {' — '}
+                      {entry.punch_out_time ? new Date(entry.punch_out_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Working'}
                     </p>
                   </div>
                   <div className="text-right">
-                    <Badge variant={entry.status === 'complete' ? 'default' : 'secondary'} className="text-xs">
+                    <Badge variant={entry.status === 'complete' ? 'default' : 'secondary'} className="text-xs font-normal tabular-nums">
                       {entry.total_hours ? `${entry.total_hours}h` : entry.status}
                     </Badge>
                   </div>
@@ -633,7 +686,7 @@ const TimeCardTab = () => {
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-4">No recent entries</p>
+            <p className="text-muted-foreground text-sm text-center py-8">No recent entries.</p>
           )}
         </CardContent>
       </Card>
@@ -655,10 +708,10 @@ const RoomManagementTab = () => {
 
   // Room statuses with colors
   const roomStatuses = {
-    'open_clean': { label: 'Open & Clean', color: 'bg-green-500', textColor: 'text-green-700', bgColor: 'bg-green-50' },
-    'occupied': { label: 'Occupied', color: 'bg-yellow-500', textColor: 'text-yellow-700', bgColor: 'bg-yellow-50' },
-    'occupied_out': { label: 'Guest Out', color: 'bg-orange-500', textColor: 'text-orange-700', bgColor: 'bg-orange-50' },
-    'needs_cleaning': { label: 'Needs Cleaning', color: 'bg-red-500', textColor: 'text-red-700', bgColor: 'bg-red-50' }
+    'open_clean': { label: 'Open & Clean', color: 'bg-emerald-500', textColor: 'text-emerald-700', bgColor: 'bg-emerald-50', borderColor: 'border-l-emerald-500', dotColor: 'bg-emerald-500' },
+    'occupied': { label: 'Occupied', color: 'bg-amber-500', textColor: 'text-amber-700', bgColor: 'bg-amber-50', borderColor: 'border-l-amber-500', dotColor: 'bg-amber-500' },
+    'occupied_out': { label: 'Guest Out', color: 'bg-orange-500', textColor: 'text-orange-700', bgColor: 'bg-orange-50', borderColor: 'border-l-orange-500', dotColor: 'bg-orange-500' },
+    'needs_cleaning': { label: 'Needs Cleaning', color: 'bg-red-500', textColor: 'text-red-700', bgColor: 'bg-red-50', borderColor: 'border-l-red-500', dotColor: 'bg-red-500' }
   };
 
   // Duration options for occupied rooms
@@ -926,13 +979,15 @@ const RoomManagementTab = () => {
 
   return (
     <div className="space-y-6" data-testid="rooms-tab">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">🏠 Room Management</h2>
-        <div className="flex items-center gap-4">
-          {/* Progress Indicator */}
+      <div className="flex flex-wrap justify-between items-end gap-3">
+        <div>
+          <h2 className="font-heading text-3xl font-bold tracking-tight">Room Management</h2>
+          <p className="text-sm text-muted-foreground mt-1">Live status across {totalRooms} rooms.</p>
+        </div>
+        <div className="flex items-center gap-6">
           <div className="text-right">
-            <div className="text-sm text-gray-600">Workload Progress</div>
-            <div className="text-lg font-bold text-blue-600">{Math.round(progress)}% Complete</div>
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Progress</div>
+            <div className="font-heading text-2xl font-bold tabular-nums">{Math.round(progress)}%</div>
           </div>
         </div>
       </div>
@@ -941,7 +996,7 @@ const RoomManagementTab = () => {
       <Dialog open={showDurationModal} onOpenChange={setShowDurationModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>🕒 How long is the customer staying?</DialogTitle>
+            <DialogTitle>How long is the customer staying?</DialogTitle>
             <DialogDescription>
               Select the duration for Room {selectedRoom ? rooms.find(r => r.id === selectedRoom)?.number : ''}
             </DialogDescription>
@@ -1022,20 +1077,20 @@ const RoomManagementTab = () => {
       {/* Progress Bar */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            📊 Workload Progress
-            <Badge variant={progress === 100 ? 'default' : 'secondary'}>
+          <CardTitle className="flex items-center gap-2 text-base font-medium">
+            Workload Progress
+            <Badge variant={progress === 100 ? 'default' : 'secondary'} className="font-normal">
               {roomsNeedingCleaning} rooms need cleaning
             </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
-            <div 
-              className={`h-4 rounded-full transition-all duration-500 ${
-                progress === 100 ? 'bg-green-500' : 
-                progress >= 75 ? 'bg-blue-500' : 
-                progress >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+          <div className="w-full bg-zinc-100 rounded-full h-1.5 mb-5 overflow-hidden">
+            <div
+              className={`h-1.5 transition-all duration-500 ${
+                progress === 100 ? 'bg-emerald-500' :
+                progress >= 75 ? 'bg-zinc-900' :
+                progress >= 50 ? 'bg-amber-500' : 'bg-red-500'
               }`}
               style={{ width: `${progress}%` }}
             ></div>
@@ -1044,10 +1099,12 @@ const RoomManagementTab = () => {
           {/* Status Summary */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {Object.entries(roomStatuses).map(([status, config]) => (
-              <div key={status} className={`p-3 rounded-lg ${config.bgColor}`}>
-                <div className={`w-3 h-3 rounded-full ${config.color} mb-1`}></div>
-                <div className="font-bold text-lg">{stats[status] || 0}</div>
-                <div className={`text-xs ${config.textColor}`}>{config.label}</div>
+              <div key={status} className="p-3 rounded-md bg-card border border-border">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`w-1.5 h-1.5 rounded-full ${config.dotColor}`}></div>
+                  <div className="text-xs font-medium tracking-wide uppercase text-muted-foreground">{config.label}</div>
+                </div>
+                <div className="font-heading font-bold text-2xl text-foreground tabular-nums">{stats[status] || 0}</div>
               </div>
             ))}
           </div>
@@ -1063,68 +1120,69 @@ const RoomManagementTab = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
             {rooms.map((room) => {
               const statusConfig = roomStatuses[room.status];
               return (
                 <div key={room.id} className="relative">
-                  <div className={`p-4 rounded-lg border-2 ${statusConfig.bgColor} hover:shadow-md transition-shadow`}>
+                  <div className={`p-3 rounded-md bg-card border border-border border-l-4 ${statusConfig.borderColor} hover:shadow-sm transition-all`}>
                     {/* Room Number and Status */}
-                    <div className="text-center mb-3">
-                      <div className="text-xl font-bold mb-1">
-                        Room {room.number}
+                    <div className="mb-2">
+                      <div className="font-heading text-lg font-bold tabular-nums leading-none mb-1">
+                        {room.number}
                       </div>
-                      <div className={`text-sm font-medium ${statusConfig.textColor} mb-2`}>
-                        {statusConfig.label}
+                      <div className="flex items-center gap-1.5">
+                        <div className={`w-1.5 h-1.5 rounded-full ${statusConfig.dotColor}`}></div>
+                        <div className="text-[11px] font-medium text-muted-foreground tracking-wide">
+                          {statusConfig.label}
+                        </div>
                       </div>
-                      <div className={`w-full h-2 rounded ${statusConfig.color}`}></div>
                     </div>
-                    
+
                     {/* Countdown Timer for Occupied and Occupied Out Rooms */}
-                    {(room.status === 'occupied' || room.status === 'occupied_out') && 
+                    {(room.status === 'occupied' || room.status === 'occupied_out') &&
                      room.timeRemaining !== null && (
-                      <div className="text-center mb-3">
+                      <div className="mb-2">
                         {/* Main Room Timer */}
-                        <div className={`text-lg font-bold ${
+                        <div className={`text-sm font-semibold tabular-nums ${
                           room.timeRemaining < 60 * 60 * 1000 ? 'text-red-600' : // Less than 1 hour - red
                           room.timeRemaining < 2 * 60 * 60 * 1000 ? 'text-orange-600' : // Less than 2 hours - orange
-                          'text-yellow-700' // More than 2 hours - yellow
+                          'text-foreground' // More than 2 hours - default
                         }`}>
-                          ⏰ {formatTimeRemaining(room.timeRemaining)}
+                          {formatTimeRemaining(room.timeRemaining)}
                         </div>
-                        <div className="text-xs text-gray-600">
+                        <div className="text-[10px] text-muted-foreground">
                           {room.duration + room.extendedHours}h total
                         </div>
-                        
+
                         {/* Separate Guest Out Timer - Only show when guest is out */}
                         {room.status === 'occupied_out' && room.guestOutTimeRemaining !== null && (
-                          <div className="mt-2 p-2 bg-orange-100 rounded border border-orange-300">
-                            <div className="text-sm font-medium text-orange-700">🚶‍♂️ Guest Out Timer</div>
-                            <div className={`text-md font-bold ${
+                          <div className="mt-1.5 pt-1.5 border-t border-border">
+                            <div className="text-[10px] font-medium uppercase tracking-wide text-orange-700">Guest out</div>
+                            <div className={`text-xs font-semibold tabular-nums ${
                               room.guestOutTimeRemaining < 30 * 60 * 1000 ? 'text-red-600' : 'text-orange-600'
                             }`}>
                               {formatTimeRemaining(room.guestOutTimeRemaining)}
                             </div>
-                            <div className="text-xs text-orange-600">3h guest out limit</div>
                           </div>
                         )}
                       </div>
                     )}
-                    
+
                     {/* Status Dropdown */}
                     <Select
                       value={room.status}
                       onValueChange={(value) => handleStatusChange(room.id, value)}
                       disabled={loading}
                     >
-                      <SelectTrigger className="w-full h-8 text-xs">
+                      <SelectTrigger className="w-full h-7 text-[11px]">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {Object.entries(roomStatuses).map(([status, config]) => (
                           <SelectItem key={status} value={status}>
                             <div className="flex items-center gap-2">
-                              <div className={`w-3 h-3 rounded ${config.color}`}></div>
+                              <div className={`w-2 h-2 rounded-full ${config.dotColor}`}></div>
                               <span className="text-xs">{config.label}</span>
                             </div>
                           </SelectItem>
@@ -1146,7 +1204,7 @@ const RoomManagementTab = () => {
                     )}
                     
                     {/* Last Updated */}
-                    <div className="text-xs text-gray-500 mt-2 text-center">
+                    <div className="text-[10px] text-muted-foreground mt-2 tabular-nums">
                       {new Date(room.lastUpdated).toLocaleTimeString()}
                     </div>
                   </div>
@@ -1160,7 +1218,7 @@ const RoomManagementTab = () => {
       {/* Quick Actions */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">🚀 Quick Actions</CardTitle>
+          <CardTitle className="text-base font-medium">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
@@ -1384,7 +1442,7 @@ const TimeOffRequestsTab = () => {
   return (
     <div className="space-y-6" data-testid="timeoff-tab">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">🏖️ Time Off Requests</h2>
+        <h2 className="font-heading text-3xl font-bold tracking-tight">Time Off Requests</h2>
         <Button onClick={() => setShowRequestForm(true)}>
           ➕ New Request
         </Button>
@@ -1430,7 +1488,7 @@ const TimeOffRequestsTab = () => {
       <div className="grid md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>📅 Time Off Calendar</CardTitle>
+            <CardTitle>Time Off Calendar</CardTitle>
             <CardDescription>View your scheduled time off</CardDescription>
           </CardHeader>
           <CardContent>
@@ -1480,7 +1538,7 @@ const TimeOffRequestsTab = () => {
         {/* Quick Request Form */}
         <Card>
           <CardHeader>
-            <CardTitle>🚀 Quick Request</CardTitle>
+            <CardTitle>Quick Request</CardTitle>
             <CardDescription>Submit a time off request quickly</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -1536,7 +1594,7 @@ const TimeOffRequestsTab = () => {
       {/* Request History */}
       <Card>
         <CardHeader>
-          <CardTitle>📋 Request History</CardTitle>
+          <CardTitle>Request History</CardTitle>
           <CardDescription>All your time off requests ({requests.length} total)</CardDescription>
         </CardHeader>
         <CardContent>
@@ -1685,7 +1743,7 @@ const TimeOffRequestsTab = () => {
             {/* Request Summary */}
             {requestForm.startDate && requestForm.endDate && (
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <h4 className="font-medium text-blue-800 mb-2">📊 Request Summary</h4>
+                <h4 className="font-medium text-blue-800 mb-2">Request Summary</h4>
                 <div className="text-sm text-blue-700">
                   <p>Days requested: {requestForm.startDate && requestForm.endDate ? 
                     Math.ceil((new Date(requestForm.endDate).getTime() - new Date(requestForm.startDate).getTime()) / (1000 * 3600 * 24)) + 1 : 0}</p>
@@ -1820,7 +1878,7 @@ const MyScheduleTab = () => {
   return (
     <div className="space-y-6" data-testid="schedule-tab">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">📅 My Schedule</h2>
+        <h2 className="font-heading text-3xl font-bold tracking-tight">My Schedule</h2>
         <div className="flex gap-2">
           <Button 
             onClick={() => setShowAddShiftModal(true)}
@@ -1835,8 +1893,7 @@ const MyScheduleTab = () => {
         {/* Calendar View */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              📅 Calendar View
+            <CardTitle className="flex items-center gap-2">Calendar View
               <Badge variant="outline">{schedules.length} shifts this month</Badge>
             </CardTitle>
           </CardHeader>
@@ -1869,8 +1926,7 @@ const MyScheduleTab = () => {
         {/* Daily Schedule Details */}
         <Card>
           <CardHeader>
-            <CardTitle>
-              📋 Schedule for {selectedDate ? selectedDate.toLocaleDateString() : 'Today'}
+            <CardTitle>Schedule for {selectedDate ? selectedDate.toLocaleDateString() : 'Today'}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -1887,8 +1943,8 @@ const MyScheduleTab = () => {
                         {schedule.type}
                       </Badge>
                     </div>
-                    <p className="text-sm text-gray-600 mb-1">📍 {schedule.location}</p>
-                    <p className="text-sm text-gray-500">💬 {schedule.notes}</p>
+                    <p className="text-sm text-gray-600 mb-1">{schedule.location}</p>
+                    <p className="text-sm text-gray-500">{schedule.notes}</p>
                     <p className="text-xs mt-2">Status: <span className="capitalize font-medium">{schedule.status}</span></p>
                   </div>
                 ))
@@ -1906,7 +1962,7 @@ const MyScheduleTab = () => {
       {/* Weekly Overview */}
       <Card>
         <CardHeader>
-          <CardTitle>📊 Weekly Overview</CardTitle>
+          <CardTitle>Weekly Overview</CardTitle>
           <CardDescription>
             Your schedule for the week of {new Date(selectedDate.getTime() - selectedDate.getDay() * 24 * 60 * 60 * 1000).toLocaleDateString()}
           </CardDescription>
@@ -2143,7 +2199,7 @@ const MyReportsTab = () => {
   return (
     <div className="space-y-6" data-testid="my-reports-tab">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">📊 My Reports</h2>
+        <h2 className="font-heading text-3xl font-bold tracking-tight">My Reports</h2>
         <div className="flex gap-2">
           <select
             className="px-3 py-1 border rounded"
@@ -2220,7 +2276,7 @@ const MyReportsTab = () => {
           {/* Weekly Hours Chart */}
           <Card>
             <CardHeader>
-              <CardTitle>📈 Weekly Hours Trend</CardTitle>
+              <CardTitle>Weekly Hours Trend</CardTitle>
               <CardDescription>Your work hours pattern over time</CardDescription>
             </CardHeader>
             <CardContent>
@@ -2271,7 +2327,7 @@ const MyReportsTab = () => {
           {/* Detailed Timesheet */}
           <Card>
             <CardHeader>
-              <CardTitle>🕒 Detailed Timesheet</CardTitle>
+              <CardTitle>Detailed Timesheet</CardTitle>
               <CardDescription>
                 Complete record of your work hours for {selectedPeriod.replace('_', ' ')}
               </CardDescription>
@@ -2328,7 +2384,7 @@ const MyReportsTab = () => {
           {/* Performance Insights */}
           <Card>
             <CardHeader>
-              <CardTitle>💡 Performance Insights</CardTitle>
+              <CardTitle>Performance Insights</CardTitle>
               <CardDescription>Insights based on your work patterns</CardDescription>
             </CardHeader>
             <CardContent>
@@ -2336,7 +2392,7 @@ const MyReportsTab = () => {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                      <h4 className="font-medium text-green-800 mb-2">✅ Strengths</h4>
+                      <h4 className="font-medium text-green-800 mb-2">Strengths</h4>
                       <ul className="text-sm text-green-700 space-y-1">
                         {reportData.efficiency >= 95 && <li>• Excellent time efficiency ({reportData.efficiency}%)</li>}
                         {reportData.daysWorked >= 20 && <li>• Consistent attendance ({reportData.daysWorked} days)</li>}
@@ -2345,7 +2401,7 @@ const MyReportsTab = () => {
                       </ul>
                     </div>
                     <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <h4 className="font-medium text-blue-800 mb-2">📈 Opportunities</h4>
+                      <h4 className="font-medium text-blue-800 mb-2">Opportunities</h4>
                       <ul className="text-sm text-blue-700 space-y-1">
                         {reportData.efficiency < 85 && <li>• Consider optimizing time management</li>}
                         {reportData.averageHoursPerDay < 7.5 && <li>• Opportunity to increase daily hours</li>}
@@ -2356,7 +2412,7 @@ const MyReportsTab = () => {
                   </div>
                   
                   <div className="p-4 bg-gray-50 border rounded-lg">
-                    <h4 className="font-medium mb-2">📊 Quick Stats</h4>
+                    <h4 className="font-medium mb-2">Quick Stats</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
                         <span className="text-gray-600">Most productive day:</span>
@@ -2591,7 +2647,7 @@ const CommunicationTab = () => {
     <div className="space-y-6" data-testid="communication-tab">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">💬 Messages</h2>
+          <h2 className="font-heading text-3xl font-bold tracking-tight">Messages</h2>
           {unreadCount > 0 && (
             <Badge variant="destructive" className="ml-2">{unreadCount} Unread</Badge>
           )}
@@ -2745,8 +2801,7 @@ const CommunicationTab = () => {
                     </Button>
                   </div>
                   {selectedFile && (
-                    <div className="text-xs text-green-600">
-                      ✓ File attached: {selectedFile.original_filename}
+                    <div className="text-xs text-green-600">File attached: {selectedFile.original_filename}
                     </div>
                   )}
                 </div>
@@ -2853,8 +2908,7 @@ const CommunicationTab = () => {
                 disabled={uploading}
               />
               {selectedFile && (
-                <div className="text-xs text-green-600 mt-1">
-                  ✓ File attached: {selectedFile.original_filename}
+                <div className="text-xs text-green-600 mt-1">File attached: {selectedFile.original_filename}
                 </div>
               )}
             </div>
@@ -2921,7 +2975,7 @@ const TeamOverviewTab = () => {
 
   return (
     <div className="space-y-6" data-testid="team-overview-tab">
-      <h2 className="text-2xl font-bold">📈 Team Overview</h2>
+      <h2 className="font-heading text-3xl font-bold tracking-tight">Team Overview</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -3002,7 +3056,7 @@ const TeamTimeCardsTab = () => {
   return (
     <div className="space-y-6" data-testid="team-timecards-tab">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">🕒 Team Time Cards</h2>
+        <h2 className="font-heading text-3xl font-bold tracking-tight">Team Time Cards</h2>
         <Button onClick={() => setShowAddAttendant(true)} data-testid="add-employee-button">
           ➕ Add Attendant
         </Button>
@@ -3105,7 +3159,7 @@ const RoomReportsTab = () => {
   return (
     <div className="space-y-6" data-testid="room-reports-tab">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">🏨 Room Management Reports</h2>
+        <h2 className="font-heading text-3xl font-bold tracking-tight">Room Reports</h2>
         <Button variant="outline">
           📊 Export Report
         </Button>
@@ -3169,7 +3223,7 @@ const RoomReportsTab = () => {
       {/* Attendant Performance Today */}
       <Card>
         <CardHeader>
-          <CardTitle>👥 Attendant Performance - Current Shift</CardTitle>
+          <CardTitle>Attendant Performance - Current Shift</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -3208,7 +3262,7 @@ const RoomReportsTab = () => {
       {/* Laundry Tracking */}
       <Card>
         <CardHeader>
-          <CardTitle>🧺 Laundry Statistics</CardTitle>
+          <CardTitle>Laundry Statistics</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -3231,7 +3285,7 @@ const RoomReportsTab = () => {
       {/* Room Status Details */}
       <Card>
         <CardHeader>
-          <CardTitle>🏠 Individual Room Status</CardTitle>
+          <CardTitle>Individual Room Status</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
@@ -3470,7 +3524,7 @@ const TimeOffApprovalsTab = () => {
   return (
     <div className="space-y-6" data-testid="timeoff-approvals-tab">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">✅ Time Off Approvals</h2>
+        <h2 className="font-heading text-3xl font-bold tracking-tight">Time Off Approvals</h2>
         <div className="flex gap-2">
           <select
             className="px-3 py-1 border rounded"
@@ -3525,7 +3579,7 @@ const TimeOffApprovalsTab = () => {
       {stats.pending > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>🚨 Urgent Actions Required</CardTitle>
+            <CardTitle>Urgent Actions Required</CardTitle>
             <CardDescription>High priority requests needing immediate attention</CardDescription>
           </CardHeader>
           <CardContent>
@@ -3580,7 +3634,7 @@ const TimeOffApprovalsTab = () => {
       {/* All Requests */}
       <Card>
         <CardHeader>
-          <CardTitle>📋 All Time Off Requests</CardTitle>
+          <CardTitle>All Time Off Requests</CardTitle>
           <CardDescription>
             Complete list of time off requests ({filteredRequests.length} {filterStatus === 'all' ? 'total' : filterStatus})
           </CardDescription>
@@ -4003,7 +4057,7 @@ const TeamSchedulingTab = () => {
   return (
     <div className="space-y-6" data-testid="team-scheduling-tab">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">📅 Team Scheduling</h2>
+        <h2 className="font-heading text-3xl font-bold tracking-tight">Team Scheduling</h2>
         <div className="flex gap-2">
           <Button 
             variant={viewMode === 'week' ? 'default' : 'outline'}
@@ -4068,7 +4122,7 @@ const TeamSchedulingTab = () => {
         /* Weekly Team Schedule View */
         <Card>
           <CardHeader>
-            <CardTitle>🗓️ Weekly Team Schedule</CardTitle>
+            <CardTitle>️ Weekly Team Schedule</CardTitle>
             <CardDescription>
               Week of {new Date(selectedDate.getTime() - selectedDate.getDay() * 24 * 60 * 60 * 1000).toLocaleDateString()}
             </CardDescription>
@@ -4146,7 +4200,7 @@ const TeamSchedulingTab = () => {
         <div className="grid md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>📅 Team Calendar</CardTitle>
+              <CardTitle>Team Calendar</CardTitle>
             </CardHeader>
             <CardContent>
               <Calendar
@@ -4170,7 +4224,7 @@ const TeamSchedulingTab = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>📋 Daily Team Schedule - {selectedDate.toLocaleDateString()}</CardTitle>
+              <CardTitle>Daily Team Schedule - {selectedDate.toLocaleDateString()}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -4191,7 +4245,7 @@ const TeamSchedulingTab = () => {
                           </Badge>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-600">📍 {schedule.location}</p>
+                      <p className="text-sm text-gray-600">{schedule.location}</p>
                       <p className="text-xs mt-2">Status: <span className="capitalize font-medium">{schedule.status}</span></p>
                     </div>
                   ))
@@ -4465,7 +4519,7 @@ const TeamReportsTab = () => {
   return (
     <div className="space-y-6" data-testid="team-reports-tab">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">📊 Team Reports</h2>
+        <h2 className="font-heading text-3xl font-bold tracking-tight">Team Reports</h2>
         <div className="flex gap-2">
           <select
             className="px-3 py-1 border rounded"
@@ -4559,7 +4613,7 @@ const TeamReportsTab = () => {
           {/* Performance Comparison Chart */}
           <Card>
             <CardHeader>
-              <CardTitle>📈 Team Performance Comparison</CardTitle>
+              <CardTitle>Team Performance Comparison</CardTitle>
               <CardDescription>Individual employee performance metrics</CardDescription>
             </CardHeader>
             <CardContent>
@@ -4596,7 +4650,7 @@ const TeamReportsTab = () => {
           {/* Detailed Team Analytics */}
           <Card>
             <CardHeader>
-              <CardTitle>📋 Detailed Team Analytics</CardTitle>
+              <CardTitle>Detailed Team Analytics</CardTitle>
               <CardDescription>Comprehensive performance breakdown by employee</CardDescription>
             </CardHeader>
             <CardContent>
@@ -4671,26 +4725,26 @@ const TeamReportsTab = () => {
           <div className="grid md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>🏆 Top Performers</CardTitle>
+                <CardTitle>Top Performers</CardTitle>
                 <CardDescription>Highest performing team members this period</CardDescription>
               </CardHeader>
               <CardContent>
                 {teamSummary ? (
                   <div className="space-y-4">
                     <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <h4 className="font-medium text-green-800 mb-1">🥇 Highest Efficiency</h4>
+                      <h4 className="font-medium text-green-800 mb-1">Highest Efficiency</h4>
                       <p className="text-sm text-green-700">
                         {teamSummary.topPerformer?.name} - {teamSummary.topPerformer?.efficiency}% efficiency
                       </p>
                     </div>
                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <h4 className="font-medium text-blue-800 mb-1">⏰ Best Punctuality</h4>
+                      <h4 className="font-medium text-blue-800 mb-1">Best Punctuality</h4>
                       <p className="text-sm text-blue-700">
                         {teamSummary.mostPunctual?.name} - {teamSummary.mostPunctual?.punctuality}% punctuality
                       </p>
                     </div>
                     <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                      <h4 className="font-medium text-purple-800 mb-1">🏠 Room Management Leader</h4>
+                      <h4 className="font-medium text-purple-800 mb-1">Room Management Leader</h4>
                       <p className="text-sm text-purple-700">
                         Sarah Wilson - {teamData.find(emp => emp.name === 'Sarah Wilson')?.roomsManaged || 0} rooms managed
                       </p>
@@ -4704,13 +4758,13 @@ const TeamReportsTab = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle>💡 Management Insights</CardTitle>
+                <CardTitle>Management Insights</CardTitle>
                 <CardDescription>Actionable recommendations for team improvement</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <h4 className="font-medium text-yellow-800 mb-2">⚠️ Areas of Focus</h4>
+                    <h4 className="font-medium text-yellow-800 mb-2">️ Areas of Focus</h4>
                     <ul className="text-sm text-yellow-700 space-y-1">
                       <li>• Monitor late arrivals (6 instances this period)</li>
                       <li>• Consider punctuality improvement program</li>
@@ -4718,7 +4772,7 @@ const TeamReportsTab = () => {
                     </ul>
                   </div>
                   <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <h4 className="font-medium text-green-800 mb-2">✅ Strengths to Leverage</h4>
+                    <h4 className="font-medium text-green-800 mb-2">Strengths to Leverage</h4>
                     <ul className="text-sm text-green-700 space-y-1">
                       <li>• High overall team efficiency (96.8%)</li>
                       <li>• Strong room management performance</li>
@@ -4726,7 +4780,7 @@ const TeamReportsTab = () => {
                     </ul>
                   </div>
                   <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h4 className="font-medium text-blue-800 mb-2">📈 Growth Opportunities</h4>
+                    <h4 className="font-medium text-blue-800 mb-2">Growth Opportunities</h4>
                     <ul className="text-sm text-blue-700 space-y-1">
                       <li>• Cross-train for room management skills</li>
                       <li>• Implement peer mentoring program</li>
@@ -5029,7 +5083,7 @@ const AttendantManagementTab = () => {
   return (
     <div className="space-y-6" data-testid="employee-management-tab">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">👥 Employee Management</h2>
+        <h2 className="font-heading text-3xl font-bold tracking-tight">Employee Management</h2>
         <div className="flex gap-2">
           {selectedEmployees.length > 0 && (
             <Button 
@@ -5202,7 +5256,7 @@ const AttendantManagementTab = () => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                           {/* Time Tracking Integration */}
                           <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                            <h4 className="font-medium text-blue-800 text-sm mb-2">🕒 Time Tracking</h4>
+                            <h4 className="font-medium text-blue-800 text-sm mb-2">Time Tracking</h4>
                             <div className="space-y-1 text-xs">
                               <div className="flex justify-between">
                                 <span className="text-blue-600">Hours this month:</span>
@@ -5226,7 +5280,7 @@ const AttendantManagementTab = () => {
 
                           {/* Scheduling Integration */}
                           <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                            <h4 className="font-medium text-green-800 text-sm mb-2">📅 Scheduling</h4>
+                            <h4 className="font-medium text-green-800 text-sm mb-2">Scheduling</h4>
                             <div className="space-y-1 text-xs">
                               <div className="flex justify-between">
                                 <span className="text-green-600">Upcoming shifts:</span>
@@ -5249,7 +5303,7 @@ const AttendantManagementTab = () => {
 
                           {/* Room Management Integration */}
                           <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
-                            <h4 className="font-medium text-purple-800 text-sm mb-2">🏠 Room Management</h4>
+                            <h4 className="font-medium text-purple-800 text-sm mb-2">Room Management</h4>
                             <div className="space-y-1 text-xs">
                               <div className="flex justify-between">
                                 <span className="text-purple-600">Rooms assigned:</span>
@@ -5559,7 +5613,7 @@ const SystemAdminTab = () => {
   return (
     <div className="space-y-6" data-testid="system-admin-tab">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">⚙️ System Administration</h2>
+        <h2 className="font-heading text-3xl font-bold tracking-tight">System Administration</h2>
         <div className="flex gap-2">
           {hasChanges && (
             <Button variant="outline" onClick={saveDraft}>
@@ -6739,7 +6793,7 @@ const AnalyticsTab = () => {
   return (
     <div className="space-y-6" data-testid="analytics-tab">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">📈 Analytics Dashboard</h2>
+        <h2 className="font-heading text-3xl font-bold tracking-tight">Analytics</h2>
         <div className="flex gap-2">
           <Input
             type="date"
@@ -6760,7 +6814,7 @@ const AnalyticsTab = () => {
       {/* Time Tracking Analytics */}
       <Card>
         <CardHeader>
-          <CardTitle>⏰ Time Tracking Analytics</CardTitle>
+          <CardTitle>Time Tracking Analytics</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -6802,7 +6856,7 @@ const AnalyticsTab = () => {
       {/* Room Management Analytics */}
       <Card>
         <CardHeader>
-          <CardTitle>🏠 Room Management Analytics</CardTitle>
+          <CardTitle>Room Management Analytics</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -6898,7 +6952,7 @@ const AnalyticsTab = () => {
                 <div className="text-sm text-gray-600">Maintaining 95% rate</div>
               </div>
               <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                <div className="font-semibold text-orange-800">⚠ Peak Hours</div>
+                <div className="font-semibold text-orange-800">Peak Hours</div>
                 <div className="text-sm text-gray-600">Most active 10 AM - 2 PM</div>
               </div>
             </div>
@@ -7049,7 +7103,7 @@ const OrganizationTab = () => {
   return (
     <div className="space-y-6" data-testid="organization-tab">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">🏢 Organization Structure</h2>
+        <h2 className="font-heading text-3xl font-bold tracking-tight">Organization</h2>
         <Badge className="bg-blue-100 text-blue-800">
           {Object.values(hierarchy).flat().length} Total Members
         </Badge>
@@ -7060,7 +7114,7 @@ const OrganizationTab = () => {
         {/* Business Operations */}
         <Card>
           <CardHeader className="bg-gradient-to-r from-purple-50 to-purple-100">
-            <CardTitle className="text-purple-900">📊 Business Operations</CardTitle>
+            <CardTitle className="text-purple-900">Business Operations</CardTitle>
             <p className="text-sm text-purple-700">Strategic Leadership & Direction</p>
           </CardHeader>
           <CardContent className="p-6">
@@ -7084,7 +7138,7 @@ const OrganizationTab = () => {
         {/* Daily Operations */}
         <Card>
           <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100">
-            <CardTitle className="text-blue-900">⚙️ Daily Operations</CardTitle>
+            <CardTitle className="text-blue-900">️ Daily Operations</CardTitle>
             <p className="text-sm text-blue-700">Day-to-Day Management & Coordination</p>
           </CardHeader>
           <CardContent className="p-6">
@@ -7108,7 +7162,7 @@ const OrganizationTab = () => {
         {/* Front Desk Operations */}
         <Card>
           <CardHeader className="bg-gradient-to-r from-green-50 to-green-100">
-            <CardTitle className="text-green-900">🏨 Front Desk Operations</CardTitle>
+            <CardTitle className="text-green-900">Front Desk Operations</CardTitle>
             <p className="text-sm text-green-700">Guest Services & Room Management</p>
           </CardHeader>
           <CardContent className="p-6">
@@ -7223,7 +7277,7 @@ const ProfileTab = ({ user }) => {
   return (
     <div data-testid="profile-tab">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">Profile Settings</h2>
+        <h2 className="font-heading text-3xl font-bold tracking-tight">Profile</h2>
         {!editing ? (
           <Button onClick={() => setEditing(true)}>Edit Profile</Button>
         ) : (
@@ -7652,104 +7706,115 @@ const AppContent = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Header with Navigation Tabs */}
-      <nav className="bg-white shadow-sm border-b sticky top-0 z-50">
+    <div className="flex flex-col min-h-screen bg-zinc-50">
+      {/* Header with Navigation Tabs - Linear-style sticky glass */}
+      <nav className="bg-white/75 backdrop-blur-xl border-b border-border sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900 mr-8" data-testid="app-title">
+          <div className="flex justify-between items-center h-14">
+            <div className="flex items-center min-w-0">
+              <h1 className="font-heading text-base font-bold tracking-tight text-foreground mr-6 whitespace-nowrap" data-testid="app-title">
                 RSBC Workflow Pro
               </h1>
-              
+
               {/* Desktop Tabs */}
-              <div className="hidden md:flex space-x-1">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      activeTab === tab.id
-                        ? 'bg-blue-100 text-blue-700 border border-blue-200 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                    }`}
-                    data-testid={`tab-${tab.id}`}
-                  >
-                    <span className="mr-2">{tab.icon}</span>
-                    {tab.label}
-                  </button>
-                ))}
+              <div className="hidden md:flex items-center gap-0 -mb-px overflow-x-auto hide-scrollbar">
+                {tabs.map((tab) => {
+                  const Icon = TAB_ICON_MAP[tab.icon];
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`relative flex items-center gap-2 px-3 h-14 text-sm font-medium transition-colors whitespace-nowrap border-b-2 ${
+                        isActive
+                          ? 'border-primary text-foreground'
+                          : 'border-transparent text-muted-foreground hover:text-foreground'
+                      }`}
+                      data-testid={`tab-${tab.id}`}
+                    >
+                      {Icon && <Icon className="h-4 w-4" strokeWidth={1.75} />}
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
               </div>
-              
+
               {/* Mobile Menu Button */}
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden ml-4"
+                className="md:hidden ml-2 h-9 w-9 p-0"
                 data-testid="mobile-menu-button"
+                aria-label="Open navigation"
               >
-                ☰
+                <Menu className="h-5 w-5" />
               </Button>
             </div>
-            
-            <div className="flex items-center space-x-4">
+
+            <div className="flex items-center gap-3">
               {/* PWA Install Button */}
               {isInstallable && !isInstalled && (
-                <Button 
-                  onClick={handleInstall} 
-                  size="sm" 
+                <Button
+                  onClick={handleInstall}
+                  size="sm"
                   variant="outline"
-                  className="hidden sm:flex items-center gap-2"
+                  className="hidden sm:flex items-center gap-2 h-8"
                   data-testid="install-app-button"
                 >
-                  📱 Install App
+                  <Smartphone className="h-3.5 w-3.5" />
+                  <span>Install</span>
                 </Button>
               )}
-              
+
               {/* App Status Indicator */}
               {isInstalled && (
-                <Badge variant="secondary" className="hidden sm:flex items-center gap-1">
-                  ✅ Installed
+                <Badge variant="secondary" className="hidden sm:flex items-center gap-1 font-normal">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Installed
                 </Badge>
               )}
-              
-              <div className="text-sm text-gray-700" data-testid="user-info">
-                <span className="font-medium">{user.name}</span>
-                <Badge variant="secondary" className="ml-2">
-                  {user.role === 'ops_manager' ? 'OPS Manager' : 
-                   user.role === 'assistant_manager' ? 'Assistant Manager' : 
+
+              <div className="hidden sm:flex items-center gap-2 text-sm whitespace-nowrap" data-testid="user-info">
+                <span className="font-medium text-foreground truncate max-w-[180px]">{user.name}</span>
+                <Badge variant="outline" className="font-normal text-xs">
+                  {user.role === 'ops_manager' ? 'OPS Manager' :
+                   user.role === 'assistant_manager' ? 'Assistant Manager' :
                    'Attendant'}
                 </Badge>
               </div>
-              <Button variant="outline" size="sm" onClick={logout} data-testid="logout-button">
+              <Button variant="outline" size="sm" onClick={logout} data-testid="logout-button" className="h-8">
                 Logout
               </Button>
             </div>
           </div>
-          
+
           {/* Mobile Tabs */}
           {isMobileMenuOpen && (
-            <div className="md:hidden pb-4">
-              <div className="flex flex-wrap gap-2">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => {
-                      setActiveTab(tab.id);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                      activeTab === tab.id
-                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 border border-gray-200'
-                    }`}
-                    data-testid={`mobile-tab-${tab.id}`}
-                  >
-                    <span className="mr-2">{tab.icon}</span>
-                    {tab.label}
-                  </button>
-                ))}
+            <div className="md:hidden pb-3 border-t border-border -mx-4 px-4 pt-2">
+              <div className="flex flex-col gap-1">
+                {tabs.map((tab) => {
+                  const Icon = TAB_ICON_MAP[tab.icon];
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'bg-accent text-foreground'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                      }`}
+                      data-testid={`mobile-tab-${tab.id}`}
+                    >
+                      {Icon && <Icon className="h-4 w-4" strokeWidth={1.75} />}
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}

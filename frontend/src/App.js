@@ -77,7 +77,7 @@ const usePWAInstall = () => {
       setIsInstalled(true);
       setIsInstallable(false);
       setInstallPrompt(null);
-      toast.success('🎉 RSBC Workflow Pro installed successfully!');
+      toast.success('RSBC Workflow Pro installed successfully!');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -278,7 +278,7 @@ const LoginPage = () => {
         confirm_password: confirmPassword
       });
 
-      toast.success(`🎉 Welcome to RSBC Workflow Pro, ${response.data.user.name}! Your account has been created successfully.`);
+      toast.success(`Welcome to RSBC Workflow Pro, ${response.data.user.name}! Your account has been created successfully.`);
       
       // Auto-login after successful registration
       localStorage.setItem('token', response.data.access_token);
@@ -445,14 +445,14 @@ const TimeCardTab = () => {
     // Listen for online/offline status
     const handleOnline = () => {
       setIsOnline(true);
-      toast.success('🌐 Back online! Syncing data...');
+      toast.success('Back online! Syncing data...');
       fetchTimeStatus();
       fetchRecentEntries();
     };
 
     const handleOffline = () => {
       setIsOnline(false);
-      toast.warning('📵 You\'re offline. Actions will sync when reconnected.');
+      toast.warning('You\'re offline. Actions will sync when reconnected.');
     };
 
     window.addEventListener('online', handleOnline);
@@ -996,7 +996,7 @@ const RoomManagementTab = () => {
       <Dialog open={showDurationModal} onOpenChange={setShowDurationModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>How long is the customer staying?</DialogTitle>
+            <DialogTitle className="font-heading tracking-tight">How long is the customer staying?</DialogTitle>
             <DialogDescription>
               Select the duration for Room {selectedRoom ? rooms.find(r => r.id === selectedRoom)?.number : ''}
             </DialogDescription>
@@ -1453,7 +1453,7 @@ const TimeOffRequestsTab = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{balance.totalAllowance}</div>
+              <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{balance.totalAllowance}</div>
               <div className="text-sm text-gray-600">Annual Allowance</div>
             </div>
           </CardContent>
@@ -1461,7 +1461,7 @@ const TimeOffRequestsTab = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{balance.used}</div>
+              <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{balance.used}</div>
               <div className="text-sm text-gray-600">Days Used</div>
             </div>
           </CardContent>
@@ -1469,7 +1469,7 @@ const TimeOffRequestsTab = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">{balance.remaining}</div>
+              <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{balance.remaining}</div>
               <div className="text-sm text-gray-600">Days Remaining</div>
             </div>
           </CardContent>
@@ -1477,7 +1477,7 @@ const TimeOffRequestsTab = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">{balance.pending}</div>
+              <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{balance.pending}</div>
               <div className="text-sm text-gray-600">Days Pending</div>
             </div>
           </CardContent>
@@ -1674,7 +1674,7 @@ const TimeOffRequestsTab = () => {
       <Dialog open={showRequestForm} onOpenChange={setShowRequestForm}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>📝 New Time Off Request</DialogTitle>
+            <DialogTitle className="font-heading tracking-tight">New Time Off Request</DialogTitle>
             <DialogDescription>
               Submit a detailed time off request for manager approval
             </DialogDescription>
@@ -1990,13 +1990,13 @@ const MyScheduleTab = () => {
           {/* Week Summary */}
           <div className="grid grid-cols-3 gap-4 pt-4 border-t">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="font-heading text-2xl font-bold tabular-nums text-foreground">
                 {getSchedulesForWeek().reduce((sum, day) => sum + day.schedules.length, 0)}
               </div>
               <div className="text-sm text-gray-600">Total Shifts</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
+              <div className="font-heading text-2xl font-bold tabular-nums text-foreground">
                 {getSchedulesForWeek().reduce((sum, day) => {
                   return sum + day.schedules.reduce((daySum, schedule) => {
                     const start = new Date(`2000-01-01T${schedule.startTime}:00`);
@@ -2008,7 +2008,7 @@ const MyScheduleTab = () => {
               <div className="text-sm text-gray-600">Total Hours</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">
+              <div className="font-heading text-2xl font-bold tabular-nums text-foreground">
                 {getSchedulesForWeek().filter(day => 
                   day.schedules.some(s => s.status === 'Pending')
                 ).length}
@@ -2023,7 +2023,7 @@ const MyScheduleTab = () => {
       <Dialog open={showAddShiftModal} onOpenChange={setShowAddShiftModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>📝 Request Shift Change</DialogTitle>
+            <DialogTitle className="font-heading tracking-tight">Request Shift Change</DialogTitle>
             <DialogDescription>
               Submit a request to modify your schedule
             </DialogDescription>
@@ -2212,8 +2212,7 @@ const MyReportsTab = () => {
             <option value="last_30_days">Last 30 Days</option>
             <option value="current_year">This Year</option>
           </select>
-          <Button onClick={exportToCSV} variant="outline" size="sm">
-            📄 Export CSV
+          <Button onClick={exportToCSV} variant="outline" size="sm">Export CSV
           </Button>
         </div>
       </div>
@@ -2231,7 +2230,7 @@ const MyReportsTab = () => {
               <Card>
                 <CardContent className="p-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{reportData.totalHours}</div>
+                    <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{reportData.totalHours}</div>
                     <div className="text-sm text-gray-600">Total Hours</div>
                   </div>
                 </CardContent>
@@ -2239,7 +2238,7 @@ const MyReportsTab = () => {
               <Card>
                 <CardContent className="p-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">{reportData.daysWorked}</div>
+                    <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{reportData.daysWorked}</div>
                     <div className="text-sm text-gray-600">Days Worked</div>
                   </div>
                 </CardContent>
@@ -2247,7 +2246,7 @@ const MyReportsTab = () => {
               <Card>
                 <CardContent className="p-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">{reportData.averageHoursPerDay}</div>
+                    <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{reportData.averageHoursPerDay}</div>
                     <div className="text-sm text-gray-600">Avg Hours/Day</div>
                   </div>
                 </CardContent>
@@ -2255,7 +2254,7 @@ const MyReportsTab = () => {
               <Card>
                 <CardContent className="p-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">{reportData.expectedHours}</div>
+                    <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{reportData.expectedHours}</div>
                     <div className="text-sm text-gray-600">Expected Hours</div>
                   </div>
                 </CardContent>
@@ -2815,7 +2814,7 @@ const CommunicationTab = () => {
       <Dialog open={showComposer} onOpenChange={setShowComposer}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>New Message</DialogTitle>
+            <DialogTitle className="font-heading tracking-tight">New Message</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -2992,7 +2991,7 @@ const TeamOverviewTab = () => {
             <CardTitle className="text-sm font-medium">Active Today</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.activeToday}</div>
+            <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{stats.activeToday}</div>
           </CardContent>
         </Card>
 
@@ -3001,7 +3000,7 @@ const TeamOverviewTab = () => {
             <CardTitle className="text-sm font-medium">Completed Today</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.completedToday}</div>
+            <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{stats.completedToday}</div>
           </CardContent>
         </Card>
 
@@ -3160,8 +3159,7 @@ const RoomReportsTab = () => {
     <div className="space-y-6" data-testid="room-reports-tab">
       <div className="flex justify-between items-center">
         <h2 className="font-heading text-3xl font-bold tracking-tight">Room Reports</h2>
-        <Button variant="outline">
-          📊 Export Report
+        <Button variant="outline">Export Report
         </Button>
       </div>
 
@@ -3172,7 +3170,7 @@ const RoomReportsTab = () => {
             <CardTitle className="text-sm font-medium">Clean & Ready</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">23</div>
+            <div className="font-heading text-2xl font-bold tabular-nums text-foreground">23</div>
             <div className="flex items-center gap-1 mt-1">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               <span className="text-xs text-gray-600">Available now</span>
@@ -3185,7 +3183,7 @@ const RoomReportsTab = () => {
             <CardTitle className="text-sm font-medium">Occupied</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">8</div>
+            <div className="font-heading text-2xl font-bold tabular-nums text-foreground">8</div>
             <div className="flex items-center gap-1 mt-1">
               <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
               <span className="text-xs text-gray-600">Guests in room</span>
@@ -3198,7 +3196,7 @@ const RoomReportsTab = () => {
             <CardTitle className="text-sm font-medium">Guest Out</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">4</div>
+            <div className="font-heading text-2xl font-bold tabular-nums text-foreground">4</div>
             <div className="flex items-center gap-1 mt-1">
               <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
               <span className="text-xs text-gray-600">Ready for cleaning</span>
@@ -3211,7 +3209,7 @@ const RoomReportsTab = () => {
             <CardTitle className="text-sm font-medium">Needs Cleaning</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">3</div>
+            <div className="font-heading text-2xl font-bold tabular-nums text-foreground">3</div>
             <div className="flex items-center gap-1 mt-1">
               <div className="w-2 h-2 bg-red-500 rounded-full"></div>
               <span className="text-xs text-gray-600">Requires attention</span>
@@ -3273,7 +3271,7 @@ const RoomReportsTab = () => {
                   <p className="text-sm text-gray-600">Last: {stat.lastLaundry}</p>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-blue-600">{stat.laundryCount}</div>
+                  <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{stat.laundryCount}</div>
                   <div className="text-xs text-gray-600">loads today</div>
                 </div>
               </div>
@@ -3544,7 +3542,7 @@ const TimeOffApprovalsTab = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
+              <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{stats.total}</div>
               <div className="text-sm text-gray-600">Total Requests</div>
             </div>
           </CardContent>
@@ -3552,7 +3550,7 @@ const TimeOffApprovalsTab = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
+              <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{stats.pending}</div>
               <div className="text-sm text-gray-600">Pending Approval</div>
             </div>
           </CardContent>
@@ -3560,7 +3558,7 @@ const TimeOffApprovalsTab = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
+              <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{stats.approved}</div>
               <div className="text-sm text-gray-600">Approved</div>
             </div>
           </CardContent>
@@ -3568,7 +3566,7 @@ const TimeOffApprovalsTab = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
+              <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{stats.rejected}</div>
               <div className="text-sm text-gray-600">Rejected</div>
             </div>
           </CardContent>
@@ -3726,7 +3724,7 @@ const TimeOffApprovalsTab = () => {
       <Dialog open={showApprovalModal} onOpenChange={setShowApprovalModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="font-heading tracking-tight">
               {approvalAction === 'approve' ? '✅ Approve Request' : '❌ Reject Request'}
             </DialogTitle>
             <DialogDescription>
@@ -4087,7 +4085,7 @@ const TeamSchedulingTab = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{stats.totalShifts}</div>
+              <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{stats.totalShifts}</div>
               <div className="text-sm text-gray-600">Total Shifts</div>
             </div>
           </CardContent>
@@ -4095,7 +4093,7 @@ const TeamSchedulingTab = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{stats.confirmedShifts}</div>
+              <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{stats.confirmedShifts}</div>
               <div className="text-sm text-gray-600">Confirmed</div>
             </div>
           </CardContent>
@@ -4103,7 +4101,7 @@ const TeamSchedulingTab = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-600">{stats.pendingShifts}</div>
+              <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{stats.pendingShifts}</div>
               <div className="text-sm text-gray-600">Pending</div>
             </div>
           </CardContent>
@@ -4111,7 +4109,7 @@ const TeamSchedulingTab = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">{Math.round(stats.totalHours)}</div>
+              <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{Math.round(stats.totalHours)}</div>
               <div className="text-sm text-gray-600">Total Hours</div>
             </div>
           </CardContent>
@@ -4265,7 +4263,7 @@ const TeamSchedulingTab = () => {
       <Dialog open={showAssignModal} onOpenChange={setShowAssignModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>➕ Assign New Shift</DialogTitle>
+            <DialogTitle className="font-heading tracking-tight">Assign New Shift</DialogTitle>
             <DialogDescription>
               Create a new shift assignment for team members
             </DialogDescription>
@@ -4542,8 +4540,7 @@ const TeamReportsTab = () => {
             <option value="attendance">Attendance</option>
             <option value="productivity">Productivity</option>
           </select>
-          <Button onClick={exportTeamReport} variant="outline" size="sm">
-            📄 Export Report
+          <Button onClick={exportTeamReport} variant="outline" size="sm">Export Report
           </Button>
         </div>
       </div>
@@ -4561,7 +4558,7 @@ const TeamReportsTab = () => {
               <Card>
                 <CardContent className="p-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{teamSummary.totalAttendants}</div>
+                    <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{teamSummary.totalAttendants}</div>
                     <div className="text-sm text-gray-600">Team Members</div>
                   </div>
                 </CardContent>
@@ -4569,7 +4566,7 @@ const TeamReportsTab = () => {
               <Card>
                 <CardContent className="p-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">{teamSummary.totalHours}</div>
+                    <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{teamSummary.totalHours}</div>
                     <div className="text-sm text-gray-600">Total Hours</div>
                   </div>
                 </CardContent>
@@ -4577,7 +4574,7 @@ const TeamReportsTab = () => {
               <Card>
                 <CardContent className="p-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">{teamSummary.avgEfficiency}%</div>
+                    <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{teamSummary.avgEfficiency}%</div>
                     <div className="text-sm text-gray-600">Avg Efficiency</div>
                   </div>
                 </CardContent>
@@ -4585,7 +4582,7 @@ const TeamReportsTab = () => {
               <Card>
                 <CardContent className="p-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">{teamSummary.avgPunctuality}%</div>
+                    <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{teamSummary.avgPunctuality}%</div>
                     <div className="text-sm text-gray-600">Avg Punctuality</div>
                   </div>
                 </CardContent>
@@ -4593,7 +4590,7 @@ const TeamReportsTab = () => {
               <Card>
                 <CardContent className="p-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-indigo-600">{teamSummary.totalRoomsManaged}</div>
+                    <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{teamSummary.totalRoomsManaged}</div>
                     <div className="text-sm text-gray-600">Rooms Managed</div>
                   </div>
                 </CardContent>
@@ -4601,7 +4598,7 @@ const TeamReportsTab = () => {
               <Card>
                 <CardContent className="p-4">
                   <div className="text-center">
-                    <div className="text-xl font-bold text-yellow-600">⭐</div>
+                    <div className="font-heading text-xl font-bold tabular-nums text-foreground">⭐</div>
                     <div className="text-xs text-gray-600">Top Performer</div>
                     <div className="text-sm font-medium">{teamSummary.topPerformer?.name}</div>
                   </div>
@@ -5105,7 +5102,7 @@ const AttendantManagementTab = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{employees.length}</div>
+              <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{employees.length}</div>
               <div className="text-sm text-gray-600">Total Attendants</div>
             </div>
           </CardContent>
@@ -5113,7 +5110,7 @@ const AttendantManagementTab = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
+              <div className="font-heading text-2xl font-bold tabular-nums text-foreground">
                 {employees.filter(e => e.is_active).length}
               </div>
               <div className="text-sm text-gray-600">Active Users</div>
@@ -5123,7 +5120,7 @@ const AttendantManagementTab = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">
+              <div className="font-heading text-2xl font-bold tabular-nums text-foreground">
                 {employees.filter(e => e.timeData?.totalHours > 0).length}
               </div>
               <div className="text-sm text-gray-600">Working This Month</div>
@@ -5133,7 +5130,7 @@ const AttendantManagementTab = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">
+              <div className="font-heading text-2xl font-bold tabular-nums text-foreground">
                 {employees.reduce((sum, e) => sum + (e.scheduleData?.upcomingShifts || 0), 0)}
               </div>
               <div className="text-sm text-gray-600">Scheduled Shifts</div>
@@ -5143,7 +5140,7 @@ const AttendantManagementTab = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-indigo-600">
+              <div className="font-heading text-2xl font-bold tabular-nums text-foreground">
                 {employees.reduce((sum, e) => sum + (e.roomData?.roomsAssigned || 0), 0)}
               </div>
               <div className="text-sm text-gray-600">Rooms Assigned</div>
@@ -5153,7 +5150,7 @@ const AttendantManagementTab = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-teal-600">
+              <div className="font-heading text-2xl font-bold tabular-nums text-foreground">
                 {(employees.reduce((sum, e) => sum + (e.timeData?.efficiency || 0), 0) / employees.length).toFixed(1)}%
               </div>
               <div className="text-sm text-gray-600">Avg Efficiency</div>
@@ -5388,7 +5385,7 @@ const AttendantManagementTab = () => {
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>➕ Add New Attendant</DialogTitle>
+            <DialogTitle className="font-heading tracking-tight">Add New Attendant</DialogTitle>
             <DialogDescription>
               Create a new employee account in the system
             </DialogDescription>
@@ -5448,7 +5445,7 @@ const AttendantManagementTab = () => {
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>✏️ Edit Attendant</DialogTitle>
+            <DialogTitle className="font-heading tracking-tight">️ Edit Attendant</DialogTitle>
             <DialogDescription>
               Update employee information
             </DialogDescription>
@@ -5679,7 +5676,7 @@ const SystemAdminTab = () => {
             <Card>
               <CardContent className="p-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-600">{systemStats.total_users}</div>
+                  <div className="font-heading text-3xl font-bold tabular-nums text-foreground">{systemStats.total_users}</div>
                   <div className="text-sm text-gray-600 mt-2">Total Users</div>
                 </div>
               </CardContent>
@@ -5687,7 +5684,7 @@ const SystemAdminTab = () => {
             <Card>
               <CardContent className="p-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600">{systemStats.active_users}</div>
+                  <div className="font-heading text-3xl font-bold tabular-nums text-foreground">{systemStats.active_users}</div>
                   <div className="text-sm text-gray-600 mt-2">Active Users</div>
                 </div>
               </CardContent>
@@ -5695,7 +5692,7 @@ const SystemAdminTab = () => {
             <Card>
               <CardContent className="p-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-purple-600">✓</div>
+                  <div className="font-heading text-3xl font-bold tabular-nums text-foreground">✓</div>
                   <div className="text-sm text-gray-600 mt-2">System Healthy</div>
                 </div>
               </CardContent>
@@ -5703,7 +5700,7 @@ const SystemAdminTab = () => {
             <Card>
               <CardContent className="p-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-orange-600">v1.0</div>
+                  <div className="font-heading text-3xl font-bold tabular-nums text-foreground">v1.0</div>
                   <div className="text-sm text-gray-600 mt-2">App Version</div>
                 </div>
               </CardContent>
@@ -6153,7 +6150,7 @@ const ScheduleManagementSection = ({ token }) => {
       <Dialog open={showAssignModal} onOpenChange={setShowAssignModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>➕ Assign Schedule</DialogTitle>
+            <DialogTitle className="font-heading tracking-tight">Assign Schedule</DialogTitle>
             <DialogDescription>
               Assign a new schedule to an employee
             </DialogDescription>
@@ -6227,7 +6224,7 @@ const ScheduleManagementSection = ({ token }) => {
                   onChange={(e) => setFormData({...formData, is_recurring: e.target.checked})}
                   className="w-4 h-4"
                 />
-                <Label htmlFor="is_recurring" className="font-semibold">🔄 Make this a recurring shift</Label>
+                <Label htmlFor="is_recurring" className="font-semibold">Make this a recurring shift</Label>
               </div>
 
               {formData.is_recurring && (
@@ -6316,7 +6313,7 @@ const ScheduleManagementSection = ({ token }) => {
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>✏️ Edit Schedule</DialogTitle>
+            <DialogTitle className="font-heading tracking-tight">️ Edit Schedule</DialogTitle>
             <DialogDescription>
               Update schedule information
             </DialogDescription>
@@ -6861,7 +6858,7 @@ const AnalyticsTab = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="text-center p-4 bg-teal-50 rounded-lg">
-              <div className="text-4xl font-bold text-teal-600">{analytics.roomManagement.roomsCleaned}</div>
+              <div className="font-heading text-4xl font-bold tabular-nums text-foreground">{analytics.roomManagement.roomsCleaned}</div>
               <div className="text-sm text-gray-600 mt-2">Rooms Cleaned</div>
             </div>
             <div className="text-center p-4 bg-indigo-50 rounded-lg">
@@ -7183,7 +7180,7 @@ const OrganizationTab = () => {
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Organization Assignment</DialogTitle>
+            <DialogTitle className="font-heading tracking-tight">Edit Organization Assignment</DialogTitle>
           </DialogHeader>
           {selectedUser && (
             <div className="space-y-4">
@@ -7544,7 +7541,7 @@ const AddAttendantModal = ({ isOpen, onClose, onSuccess }) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add New Attendant</DialogTitle>
+          <DialogTitle className="font-heading tracking-tight">Add New Attendant</DialogTitle>
           <DialogDescription>
             Create a new employee account with time tracking settings.
           </DialogDescription>

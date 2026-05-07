@@ -3005,7 +3005,7 @@ const TeamTimeCardsTab = () => {
       <div className="flex justify-between items-center">
         <h2 className="font-heading text-3xl font-bold tracking-tight">Team Time Cards</h2>
         <Button onClick={() => setShowAddAttendant(true)} data-testid="add-employee-button">
-          ➕ Add Attendant
+          Add Attendant
         </Button>
       </div>
 
@@ -4878,12 +4878,11 @@ const AttendantManagementTab = () => {
               onClick={handleBulkDelete} 
               variant="destructive"
               disabled={loading}
-            >
-              🗑️ Delete Selected ({selectedEmployees.length})
+            >Delete Selected ({selectedEmployees.length})
             </Button>
           )}
           <Button onClick={() => setShowAddModal(true)} className="bg-blue-500 hover:bg-blue-600">
-            ➕ Add Employee
+            Add Employee
           </Button>
         </div>
       </div>
@@ -5455,7 +5454,7 @@ const SystemAdminTab = () => {
           className={`px-4 py-2 font-medium ${activeSection === 'schedules' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600'}`}
           onClick={() => setActiveSection('schedules')}
         >
-          📅 Schedule Management
+          Schedule Management
         </button>
       </div>
 

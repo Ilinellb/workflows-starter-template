@@ -1329,6 +1329,33 @@ async def approve_time_off_request(
 
 # ============ SCHEDULING API ============
 
+@api_router.get("/schedules/me")
+async def get_my_schedules(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get the current user's own schedules (any authenticated role)."""
+    try:
+        query = {"user_id": current_user.id}
+        if start_date and end_date:
+            query["date"] = {"$gte": start_date, "$lte": end_date}
+
+        schedules = await db.schedules.find(query).sort([("date", 1)]).to_list(1000)
+
+        result = []
+        for schedule in schedules:
+            if '_id' in schedule:
+                del schedule['_id']
+            schedule = parse_from_mongo(schedule)
+            result.append(schedule)
+
+        return {"schedules": result}
+    except Exception as e:
+        logger.error(f"Error fetching my schedules: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.get("/schedules/team")
 async def get_team_schedules(
     start_date: Optional[str] = None,

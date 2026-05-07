@@ -1282,55 +1282,15 @@ const TimeOffRequestsTab = () => {
       });
       setRequests(response.data.requests || []);
     } catch (error) {
-      // Generate demo data
-      generateDemoTimeOffData();
+      console.error('Failed to load time off requests', error);
+      setRequests([]);
     } finally {
       setLoading(false);
     }
   };
 
   const generateDemoTimeOffData = () => {
-    const demoRequests = [
-      {
-        id: 'req-1',
-        startDate: '2024-12-23',
-        endDate: '2024-12-27',
-        requestType: 'vacation',
-        reason: 'Holiday vacation with family',
-        status: 'approved',
-        submittedDate: '2024-11-15',
-        approvedBy: 'Assistant Manager Smith',
-        daysRequested: 5,
-        emergencyContact: 'John Doe - 555-0123',
-        workCoverage: 'Jane Smith will cover room assignments'
-      },
-      {
-        id: 'req-2',
-        startDate: '2024-11-28',
-        endDate: '2024-11-28',
-        requestType: 'sick',
-        reason: 'Medical appointment',
-        status: 'pending',
-        submittedDate: '2024-11-20',
-        daysRequested: 1,
-        emergencyContact: 'Jane Doe - 555-0456',
-        workCoverage: 'Mike Johnson will handle morning shift'
-      },
-      {
-        id: 'req-3',
-        startDate: '2024-10-15',
-        endDate: '2024-10-16',
-        requestType: 'personal',
-        reason: 'Family emergency',
-        status: 'rejected',
-        submittedDate: '2024-10-10',
-        rejectedReason: 'Insufficient coverage available',
-        daysRequested: 2,
-        emergencyContact: 'Emergency Contact - 555-0789',
-        workCoverage: 'No coverage arranged'
-      }
-    ];
-    setRequests(demoRequests);
+    setRequests([]);
   };
 
   const handleSubmitRequest = async () => {
@@ -1662,7 +1622,6 @@ const TimeOffRequestsTab = () => {
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <div className="text-4xl mb-2">📋</div>
               <p>No time off requests yet</p>
               <p className="text-sm mt-1">Click "New Request" to submit your first request</p>
             </div>
@@ -1782,48 +1741,80 @@ const TimeOffRequestsTab = () => {
 
 // My Schedule Tab - Attendant Calendar and Shift Management
 const MyScheduleTab = () => {
+  const { user } = React.useContext(AuthContext);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAddShiftModal, setShowAddShiftModal] = useState(false);
   const [selectedShift, setSelectedShift] = useState(null);
+  // Controlled fields for the "Request Shift Change" modal
+  const [shiftRequestType, setShiftRequestType] = useState('Schedule Change');
+  const [shiftRequestDate, setShiftRequestDate] = useState(new Date().toISOString().split('T')[0]);
+  const [shiftRequestReason, setShiftRequestReason] = useState('');
+  const [shiftRequestSubmitting, setShiftRequestSubmitting] = useState(false);
 
-  // Sample shift data - in real app this would come from backend
+  const submitShiftChangeRequest = async () => {
+    if (!shiftRequestDate || !shiftRequestReason.trim()) {
+      toast.error('Please fill out date and reason');
+      return;
+    }
+    setShiftRequestSubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `${API}/time-off/request`,
+        {
+          start_date: shiftRequestDate,
+          end_date: shiftRequestDate,
+          reason: `[${shiftRequestType}] ${shiftRequestReason.trim()}`,
+          notes: '',
+        },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      toast.success('Request submitted to your manager');
+      setShowAddShiftModal(false);
+      setShiftRequestReason('');
+      setShiftRequestType('Schedule Change');
+      setShiftRequestDate(new Date().toISOString().split('T')[0]);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to submit request');
+    } finally {
+      setShiftRequestSubmitting(false);
+    }
+  };
+
+  // Load this user's schedules from the backend.
+  const fetchMySchedules = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/schedules/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const list = response.data?.schedules || [];
+      const mine = list.map((s) => ({
+        id: s.id,
+        date: s.date,
+        startTime: s.shift_start,
+        endTime: s.shift_end,
+        type: 'Regular',
+        status: s.status === 'completed' ? 'Completed' : 'Scheduled',
+        location: 'Main Office',
+        notes: s.notes || '',
+      }));
+      setSchedules(mine);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to load schedule');
+      setSchedules([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const sampleSchedules = [
-      {
-        id: 'shift-1',
-        date: new Date().toISOString().split('T')[0],
-        startTime: '09:00',
-        endTime: '17:00',
-        type: 'Regular',
-        status: 'Scheduled',
-        location: 'Main Office',
-        notes: 'Regular day shift'
-      },
-      {
-        id: 'shift-2',
-        date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        startTime: '14:00',
-        endTime: '22:00',
-        type: 'Evening',
-        status: 'Scheduled',
-        location: 'Main Office',
-        notes: 'Evening shift'
-      },
-      {
-        id: 'shift-3',
-        date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        startTime: '10:00',
-        endTime: '18:00',
-        type: 'Regular',
-        status: 'Pending',
-        location: 'Remote',
-        notes: 'Work from home day'
-      }
-    ];
-    setSchedules(sampleSchedules);
-  }, []);
+    fetchMySchedules();
+  }, [user?.id]);
 
   const getSchedulesForDate = (date) => {
     if (!date) return [];
@@ -1950,7 +1941,6 @@ const MyScheduleTab = () => {
                 ))
               ) : (
                 <div className="text-center py-6 text-gray-500">
-                  <div className="text-2xl mb-2">📭</div>
                   <p>No shifts scheduled for this date</p>
                 </div>
               )}
@@ -2031,7 +2021,11 @@ const MyScheduleTab = () => {
           <div className="space-y-4 py-4">
             <div>
               <label className="text-sm font-medium">Request Type</label>
-              <select className="w-full mt-1 p-2 border rounded">
+              <select
+                className="w-full mt-1 p-2 border rounded"
+                value={shiftRequestType}
+                onChange={(e) => setShiftRequestType(e.target.value)}
+              >
                 <option>Shift Swap</option>
                 <option>Time Off Request</option>
                 <option>Schedule Change</option>
@@ -2040,30 +2034,36 @@ const MyScheduleTab = () => {
             </div>
             <div>
               <label className="text-sm font-medium">Date</label>
-              <input type="date" className="w-full mt-1 p-2 border rounded" />
+              <input
+                type="date"
+                className="w-full mt-1 p-2 border rounded"
+                value={shiftRequestDate}
+                onChange={(e) => setShiftRequestDate(e.target.value)}
+              />
             </div>
             <div>
               <label className="text-sm font-medium">Reason</label>
-              <textarea 
-                className="w-full mt-1 p-2 border rounded h-20" 
+              <textarea
+                className="w-full mt-1 p-2 border rounded h-20"
                 placeholder="Explain your request..."
+                value={shiftRequestReason}
+                onChange={(e) => setShiftRequestReason(e.target.value)}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setShowAddShiftModal(false)}
+              disabled={shiftRequestSubmitting}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={() => {
-                toast.success('Shift change request submitted!');
-                setShowAddShiftModal(false);
-              }}
+            <Button
+              onClick={submitShiftChangeRequest}
+              disabled={shiftRequestSubmitting}
             >
-              Submit Request
+              {shiftRequestSubmitting ? 'Submitting…' : 'Submit Request'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2316,7 +2316,6 @@ const MyReportsTab = () => {
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
-                  <div className="text-2xl mb-2">📊</div>
                   <p>No time entries found for the selected period</p>
                 </div>
               )}
@@ -2372,7 +2371,6 @@ const MyReportsTab = () => {
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
-                  <div className="text-4xl mb-2">📅</div>
                   <p>No time entries found for the selected period</p>
                   <p className="text-sm mt-1">Start punching in/out to see your timesheet here</p>
                 </div>
@@ -2733,7 +2731,6 @@ const CommunicationTab = () => {
           <CardContent>
             {!selectedThread ? (
               <div className="text-center py-20 text-gray-500">
-                <div className="text-6xl mb-4">💬</div>
                 <p>Select a conversation to view messages</p>
               </div>
             ) : (
@@ -3107,45 +3104,85 @@ const RoomReportsTab = () => {
   }, []);
 
   const fetchRoomReports = async () => {
-    // In real app, fetch from backend
-    // For demo, simulate data
-    const mockRoomData = [
-      { room: '1', status: 'open_clean', lastUpdated: '10:30 AM', employee: 'John Doe' },
-      { room: '2', status: 'occupied', lastUpdated: '9:15 AM', employee: 'Jane Smith' },
-      { room: '3', status: 'needs_cleaning', lastUpdated: '11:45 AM', employee: 'John Doe' },
-      { room: 'A', status: 'occupied_out', lastUpdated: '10:00 AM', employee: 'Jane Smith' }
-    ];
-    setRoomData(mockRoomData);
+    try {
+      // Source-of-truth for current room state mirrors the Room Management tab (localStorage).
+      const savedRooms = localStorage.getItem('roomStatuses');
+      const rooms = savedRooms ? JSON.parse(savedRooms) : [];
+      const items = rooms.map((r) => ({
+        room: r.number,
+        status: r.status,
+        lastUpdated: r.lastUpdated
+          ? new Date(r.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : '—',
+        employee: r.lastUpdatedBy || '—',
+      }));
+      setRoomData(items);
+    } catch (error) {
+      console.error('fetchRoomReports failed', error);
+      setRoomData([]);
+    }
   };
 
   const fetchLaundryStats = async () => {
-    const mockLaundryStats = [
-      { employee: 'John Doe', laundryCount: 3, lastLaundry: '2:30 PM' },
-      { employee: 'Jane Smith', laundryCount: 2, lastLaundry: '1:15 PM' }
-    ];
-    setAttendantLaundryStats(mockLaundryStats);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/laundry/stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      // Group by employee_name → laundry count
+      const grouped = {};
+      (response.data || []).forEach((rec) => {
+        const name = rec.employee_name || 'Unknown';
+        if (!grouped[name]) {
+          grouped[name] = { employee: name, laundryCount: 0, lastLaundry: null };
+        }
+        grouped[name].laundryCount += 1;
+        if (rec.timestamp) {
+          const t = new Date(rec.timestamp);
+          if (!grouped[name].lastLaundry || t > new Date(grouped[name].lastLaundry)) {
+            grouped[name].lastLaundry = rec.timestamp;
+          }
+        }
+      });
+      const items = Object.values(grouped).map((g) => ({
+        ...g,
+        lastLaundry: g.lastLaundry
+          ? new Date(g.lastLaundry).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : '—',
+      }));
+      setAttendantLaundryStats(items);
+    } catch (error) {
+      console.error('fetchLaundryStats failed', error);
+      setAttendantLaundryStats([]);
+    }
   };
 
   const fetchShiftReports = async () => {
-    const mockShiftReports = [
-      { 
-        employee: 'John Doe', 
-        shift: '6 AM - 2 PM', 
-        roomsCompleted: 12, 
-        roomsPending: 3, 
-        laundryCount: 3,
-        efficiency: 85 
-      },
-      { 
-        employee: 'Jane Smith', 
-        shift: '2 PM - 10 PM', 
-        roomsCompleted: 8, 
-        roomsPending: 2, 
-        laundryCount: 2,
-        efficiency: 90 
-      }
-    ];
-    setShiftReports(mockShiftReports);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/rooms/report`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const perf = (response.data && response.data.employee_performance) || {};
+      const items = Object.values(perf).map((p) => {
+        const totalRooms = (p.rooms_completed || 0) + (p.rooms_pending || 0);
+        const efficiency = totalRooms ? Math.round((p.rooms_completed / totalRooms) * 100) : 0;
+        return {
+          employee: p.employee_name || 'Unknown',
+          shift: p.last_activity
+            ? `Last activity ${new Date(p.last_activity).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+            : '—',
+          roomsCompleted: p.rooms_completed || 0,
+          roomsPending: p.rooms_pending || 0,
+          laundryCount: p.laundry_count || 0,
+          efficiency,
+        };
+      });
+      setShiftReports(items);
+    } catch (error) {
+      console.error('fetchShiftReports failed', error);
+      setShiftReports([]);
+    }
   };
 
   const roomStatusColors = {
@@ -3155,11 +3192,57 @@ const RoomReportsTab = () => {
     'needs_cleaning': 'bg-red-500'
   };
 
+  const statusCounts = roomData.reduce((acc, r) => {
+    acc[r.status] = (acc[r.status] || 0) + 1;
+    return acc;
+  }, {});
+  const cleanCount = statusCounts.open_clean || 0;
+  const occupiedCount = statusCounts.occupied || 0;
+  const guestOutCount = statusCounts.occupied_out || 0;
+  const needsCleaningCount = statusCounts.needs_cleaning || 0;
+
+  const handleExportReport = () => {
+    if (!roomData.length && !shiftReports.length && !employeeLaundryStats.length) {
+      toast.error('No data available to export');
+      return;
+    }
+    const lines = [];
+    lines.push('Room Reports — exported ' + new Date().toLocaleString());
+    lines.push('');
+    lines.push('STATUS SUMMARY');
+    lines.push(`Clean & Ready,${cleanCount}`);
+    lines.push(`Occupied,${occupiedCount}`);
+    lines.push(`Guest Out,${guestOutCount}`);
+    lines.push(`Needs Cleaning,${needsCleaningCount}`);
+    lines.push('');
+    lines.push('ROOM DETAIL');
+    lines.push('Room,Status,Last Updated,Employee');
+    roomData.forEach((r) => {
+      lines.push(`${r.room},${r.status},${r.lastUpdated},${r.employee}`);
+    });
+    lines.push('');
+    lines.push('SHIFT PERFORMANCE');
+    lines.push('Employee,Shift,Rooms Completed,Rooms Pending,Laundry,Efficiency %');
+    shiftReports.forEach((s) => {
+      lines.push(`${s.employee},${s.shift},${s.roomsCompleted},${s.roomsPending},${s.laundryCount},${s.efficiency}`);
+    });
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `room-report-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Room report exported');
+  };
+
   return (
     <div className="space-y-6" data-testid="room-reports-tab">
       <div className="flex justify-between items-center">
         <h2 className="font-heading text-3xl font-bold tracking-tight">Room Reports</h2>
-        <Button variant="outline">Export Report
+        <Button variant="outline" onClick={handleExportReport} data-testid="export-room-report-btn">Export Report
         </Button>
       </div>
 
@@ -3170,22 +3253,22 @@ const RoomReportsTab = () => {
             <CardTitle className="text-sm font-medium">Clean & Ready</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="font-heading text-2xl font-bold tabular-nums text-foreground">23</div>
+            <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{cleanCount}</div>
             <div className="flex items-center gap-1 mt-1">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
               <span className="text-xs text-gray-600">Available now</span>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Occupied</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="font-heading text-2xl font-bold tabular-nums text-foreground">8</div>
+            <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{occupiedCount}</div>
             <div className="flex items-center gap-1 mt-1">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+              <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
               <span className="text-xs text-gray-600">Guests in room</span>
             </div>
           </CardContent>
@@ -3196,7 +3279,7 @@ const RoomReportsTab = () => {
             <CardTitle className="text-sm font-medium">Guest Out</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="font-heading text-2xl font-bold tabular-nums text-foreground">4</div>
+            <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{guestOutCount}</div>
             <div className="flex items-center gap-1 mt-1">
               <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
               <span className="text-xs text-gray-600">Ready for cleaning</span>
@@ -3209,7 +3292,7 @@ const RoomReportsTab = () => {
             <CardTitle className="text-sm font-medium">Needs Cleaning</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="font-heading text-2xl font-bold tabular-nums text-foreground">3</div>
+            <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{needsCleaningCount}</div>
             <div className="flex items-center gap-1 mt-1">
               <div className="w-2 h-2 bg-red-500 rounded-full"></div>
               <span className="text-xs text-gray-600">Requires attention</span>
@@ -3337,89 +3420,17 @@ const TimeOffApprovalsTab = () => {
       setAllRequests(requests);
       setPendingRequests(requests.filter(req => req.status === 'pending'));
     } catch (error) {
-      // Generate demo data for manager approvals
-      generateDemoApprovalData();
+      console.error('Failed to load approval queue', error);
+      setAllRequests([]);
+      setPendingRequests([]);
     } finally {
       setLoading(false);
     }
   };
 
   const generateDemoApprovalData = () => {
-    const demoRequests = [
-      {
-        id: 'req-1',
-        employeeId: 'emp-1',
-        employeeName: 'John Attendant',
-        employeeDepartment: 'Operations',
-        startDate: '2024-12-23',
-        endDate: '2024-12-27',
-        requestType: 'vacation',
-        reason: 'Holiday vacation with family',
-        status: 'pending',
-        submittedDate: '2024-11-15',
-        daysRequested: 5,
-        emergencyContact: 'John Doe - 555-0123',
-        workCoverage: 'Jane Smith will cover room assignments',
-        priority: 'normal',
-        conflictsWith: []
-      },
-      {
-        id: 'req-2',
-        employeeId: 'emp-2',
-        employeeName: 'Jane Smith',
-        employeeDepartment: 'Operations',
-        startDate: '2024-11-28',
-        endDate: '2024-11-29',
-        requestType: 'sick',
-        reason: 'Medical appointment and recovery',
-        status: 'pending',
-        submittedDate: '2024-11-20',
-        daysRequested: 2,
-        emergencyContact: 'Jane Doe - 555-0456',
-        workCoverage: 'Mike Johnson will handle morning shift',
-        priority: 'urgent',
-        conflictsWith: []
-      },
-      {
-        id: 'req-3',
-        employeeId: 'emp-3',
-        employeeName: 'Mike Johnson',
-        employeeDepartment: 'Maintenance',
-        startDate: '2024-12-20',
-        endDate: '2024-12-22',
-        requestType: 'personal',
-        reason: 'Family event',
-        status: 'approved',
-        submittedDate: '2024-11-18',
-        approvedDate: '2024-11-19',
-        approvedBy: 'Assistant Manager Smith',
-        daysRequested: 3,
-        emergencyContact: 'Emergency Contact - 555-0789',
-        workCoverage: 'Sarah Wilson will cover maintenance duties',
-        priority: 'normal',
-        conflictsWith: []
-      },
-      {
-        id: 'req-4',
-        employeeId: 'emp-4',
-        employeeName: 'Sarah Wilson',
-        employeeDepartment: 'Operations',
-        startDate: '2024-12-24',
-        endDate: '2024-12-26',
-        requestType: 'vacation',
-        reason: 'Christmas holiday',
-        status: 'pending',
-        submittedDate: '2024-11-16',
-        daysRequested: 3,
-        emergencyContact: 'Wilson Family - 555-0321',
-        workCoverage: 'John Attendant will handle room assignments',
-        priority: 'high',
-        conflictsWith: ['req-1'] // Conflicts with John's vacation
-      }
-    ];
-
-    setAllRequests(demoRequests);
-    setPendingRequests(demoRequests.filter(req => req.status === 'pending'));
+    setAllRequests([]);
+    setPendingRequests([]);
   };
 
   const handleApprovalAction = async (request, action) => {
@@ -3713,7 +3724,6 @@ const TimeOffApprovalsTab = () => {
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <div className="text-4xl mb-2">📭</div>
               <p>No {filterStatus === 'all' ? '' : filterStatus} requests found</p>
             </div>
           )}
@@ -3825,96 +3835,31 @@ const TeamSchedulingTab = () => {
         department: emp.department || 'General'
       })));
 
-      // Fetch actual schedules (or use demo data for now)
-      try {
-        const schedulesResponse = await axios.get(`${API}/schedules/team`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setTeamSchedules(schedulesResponse.data.schedules || []);
-      } catch (scheduleError) {
-        // If schedules API doesn't exist yet, generate demo data for existing employees
-        generateDemoSchedulesForRealAttendants(activeAttendants);
-      }
+      // Fetch real schedules from backend
+      const schedulesResponse = await axios.get(`${API}/schedules/team`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const schedules = (schedulesResponse.data?.schedules || []).map((s) => ({
+        id: s.id,
+        employeeId: s.user_id,
+        employeeName: s.user_name,
+        date: s.date,
+        startTime: s.shift_start,
+        endTime: s.shift_end,
+        type: 'Regular',
+        status: s.status === 'completed' ? 'Completed' : 'Confirmed',
+        location: 'Main Office',
+        notes: s.notes || ''
+      }));
+      setTeamSchedules(schedules);
     } catch (error) {
-      console.error('Error fetching employees:', error);
-      toast.error('Failed to load employees. Using demo data.');
-      // Fallback to original demo data if API fails
-      const sampleAttendants = [
-        { id: 'emp-1', name: 'John Attendant', email: 'john@company.com', department: 'Operations' },
-        { id: 'emp-2', name: 'Jane Smith', email: 'jane@company.com', department: 'Operations' },
-        { id: 'emp-3', name: 'Mike Johnson', email: 'mike@company.com', department: 'Maintenance' }
-      ];
-      setAttendants(sampleAttendants);
-      generateDemoSchedulesForSampleAttendants();
+      console.error('Error fetching team scheduling data:', error);
+      toast.error(error.response?.data?.detail || 'Failed to load team scheduling data');
+      setAttendants([]);
+      setTeamSchedules([]);
     } finally {
       setLoading(false);
     }
-  };
-
-  const generateDemoSchedulesForRealAttendants = (realAttendants) => {
-    const schedules = [];
-    realAttendants.forEach((employee, index) => {
-      // Generate a few sample shifts for each real employee
-      const shifts = ['09:00-17:00', '14:00-22:00', '06:00-14:00'];
-      const shiftTypes = ['Regular', 'Evening', 'Early'];
-      
-      for (let i = 0; i < 3; i++) {
-        const date = new Date();
-        date.setDate(date.getDate() + i);
-        
-        schedules.push({
-          id: `schedule-${employee.id}-${i}`,
-          employeeId: employee.id,
-          employeeName: employee.name,
-          date: date.toISOString().split('T')[0],
-          startTime: shifts[i % shifts.length].split('-')[0],
-          endTime: shifts[i % shifts.length].split('-')[1],
-          type: shiftTypes[i % shiftTypes.length],
-          status: i === 0 ? 'Confirmed' : 'Pending',
-          location: 'Main Office'
-        });
-      }
-    });
-    setTeamSchedules(schedules);
-  };
-
-  const generateDemoSchedulesForSampleAttendants = () => {
-    const sampleTeamSchedules = [
-      {
-        id: 'team-shift-1',
-        employeeId: 'emp-1',
-        employeeName: 'John Attendant',
-        date: new Date().toISOString().split('T')[0],
-        startTime: '09:00',
-        endTime: '17:00',
-        type: 'Regular',
-        status: 'Confirmed',
-        location: 'Main Office'
-      },
-      {
-        id: 'team-shift-2',
-        employeeId: 'emp-2',
-        employeeName: 'Jane Smith',
-        date: new Date().toISOString().split('T')[0],
-        startTime: '14:00',
-        endTime: '22:00',
-        type: 'Evening',
-        status: 'Confirmed',
-        location: 'Main Office'
-      },
-      {
-        id: 'team-shift-3',
-        employeeId: 'emp-3',
-        employeeName: 'Mike Johnson',
-        date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        startTime: '06:00',
-        endTime: '14:00',
-        type: 'Early',
-        status: 'Pending',
-        location: 'Facility'
-      }
-    ];
-    setTeamSchedules(sampleTeamSchedules);
   };
 
   const getSchedulesForDate = (date) => {
@@ -4249,7 +4194,6 @@ const TeamSchedulingTab = () => {
                   ))
                 ) : (
                   <div className="text-center py-6 text-gray-500">
-                    <div className="text-2xl mb-2">📭</div>
                     <p>No team shifts scheduled for this date</p>
                   </div>
                 )}
@@ -4711,7 +4655,6 @@ const TeamReportsTab = () => {
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
-                  <div className="text-4xl mb-2">📊</div>
                   <p>No team analytics available</p>
                 </div>
               )}
@@ -4823,97 +4766,84 @@ const AttendantManagementTab = () => {
   const fetchAttendants = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API}/users`);
-      const employeesData = response.data;
-      
-      // Fetch integrated data for each employee
+      const token = localStorage.getItem('token');
+      const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
+
+      // Fetch the employees list + the team-wide aggregates in parallel.
+      const [usersRes, schedulesRes, roomReportRes] = await Promise.all([
+        axios.get(`${API}/users`, authHeaders),
+        axios.get(`${API}/schedules/team`, authHeaders).catch(() => ({ data: { schedules: [] } })),
+        axios.get(`${API}/rooms/report`, authHeaders).catch(() => ({ data: { employee_performance: {} } })),
+      ]);
+
+      const employeesData = usersRes.data || [];
+      const schedules = schedulesRes.data?.schedules || [];
+      const roomPerf = roomReportRes.data?.employee_performance || {};
+
+      // Per-user schedule aggregates (computed once, looked up per row)
+      const scheduleByUser = {};
+      const today = new Date().toISOString().split('T')[0];
+      schedules.forEach((s) => {
+        const uid = s.user_id;
+        if (!scheduleByUser[uid]) {
+          scheduleByUser[uid] = { upcomingShifts: 0, lastScheduleUpdate: null };
+        }
+        if (s.date && s.date >= today) {
+          scheduleByUser[uid].upcomingShifts += 1;
+        }
+        const ts = s.created_at || s.date;
+        if (ts && (!scheduleByUser[uid].lastScheduleUpdate || ts > scheduleByUser[uid].lastScheduleUpdate)) {
+          scheduleByUser[uid].lastScheduleUpdate = ts;
+        }
+      });
+
       const enrichedAttendants = await Promise.all(
         employeesData.map(async (employee) => {
+          let timeData = null;
           try {
-            // Get time tracking data
-            const timeResponse = await axios.get(`${API}/reports/employee/${employee.id}/time-summary`);
-            
-            // Get scheduling data
-            const scheduleResponse = await axios.get(`${API}/reports/employee/${employee.id}/schedule-summary`);
-            
-            // Get room management data
-            const roomResponse = await axios.get(`${API}/reports/employee/${employee.id}/room-summary`);
-            
-            return {
-              ...employee,
-              timeData: timeResponse.data || null,
-              scheduleData: scheduleResponse.data || null,
-              roomData: roomResponse.data || null
-            };
-          } catch (error) {
-            // If integration APIs fail, add demo data for realistic display
-            return {
-              ...employee,
-              timeData: generateDemoTimeData(employee.id),
-              scheduleData: generateDemoScheduleData(employee.id),
-              roomData: generateDemoRoomData(employee.id)
-            };
+            const timeResponse = await axios.get(
+              `${API}/reports/employee/${employee.id}/time-summary`,
+              authHeaders,
+            );
+            timeData = timeResponse.data;
+          } catch {
+            timeData = null;
           }
-        })
+
+          const sched = scheduleByUser[employee.id] || { upcomingShifts: 0, lastScheduleUpdate: null };
+          const scheduleData = {
+            upcomingShifts: sched.upcomingShifts,
+            preferredShift: '—',
+            schedulingConflicts: 0,
+            lastScheduleUpdate: sched.lastScheduleUpdate
+              ? sched.lastScheduleUpdate.split('T')[0]
+              : '—',
+          };
+
+          const perf = roomPerf[employee.id] || {};
+          const completed = perf.rooms_completed || 0;
+          const pending = perf.rooms_pending || 0;
+          const total = completed + pending;
+          const roomData = {
+            roomsAssigned: total,
+            roomsCompleted: completed,
+            roomEfficiency: total ? ((completed / total) * 100).toFixed(1) : '0.0',
+            avgRoomTime: '—',
+            specializations: '—',
+          };
+
+          return { ...employee, timeData, scheduleData, roomData };
+        }),
       );
-      
+
       setAttendants(enrichedAttendants);
     } catch (error) {
-      // Fallback to demo data if main API fails
-      const demoAttendants = generateDemoAttendantsWithIntegration();
-      setAttendants(demoAttendants);
+      console.error('Error loading employees:', error);
+      toast.error(error.response?.data?.detail || 'Failed to load employees');
+      setAttendants([]);
     } finally {
       setLoading(false);
     }
-  };
-
-  const generateDemoTimeData = (employeeId) => {
-    const baseData = {
-      'emp-1': { totalHours: 168.5, daysWorked: 21, avgDaily: 8.0, efficiency: 96.2, punctuality: 94.5 },
-      'emp-2': { totalHours: 172.0, daysWorked: 22, avgDaily: 7.8, efficiency: 98.1, punctuality: 98.2 },
-      'emp-3': { totalHours: 164.2, daysWorked: 20, avgDaily: 8.2, efficiency: 93.8, punctuality: 90.0 },
-      'emp-4': { totalHours: 176.5, daysWorked: 22, avgDaily: 8.0, efficiency: 99.2, punctuality: 100.0 }
-    };
-    return baseData[employeeId] || { totalHours: 160, daysWorked: 20, avgDaily: 8.0, efficiency: 95.0, punctuality: 95.0 };
-  };
-
-  const generateDemoScheduleData = (employeeId) => {
-    const scheduleTypes = ['Regular', 'Evening', 'Early', 'Night'];
-    const upcomingShifts = Math.floor(Math.random() * 8) + 3; // 3-10 shifts
-    return {
-      upcomingShifts,
-      preferredShift: scheduleTypes[Math.floor(Math.random() * scheduleTypes.length)],
-      schedulingConflicts: Math.floor(Math.random() * 3), // 0-2 conflicts
-      lastScheduleUpdate: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-    };
-  };
-
-  const generateDemoRoomData = (employeeId) => {
-    const roomsAssigned = Math.floor(Math.random() * 15) + 5; // 5-19 rooms
-    const roomsCompleted = Math.floor(roomsAssigned * (0.8 + Math.random() * 0.2)); // 80-100% completion
-    return {
-      roomsAssigned,
-      roomsCompleted,
-      roomEfficiency: ((roomsCompleted / roomsAssigned) * 100).toFixed(1),
-      avgRoomTime: (15 + Math.random() * 10).toFixed(1), // 15-25 minutes per room
-      specializations: ['Standard Cleaning', 'Deep Cleaning', 'Maintenance'][Math.floor(Math.random() * 3)]
-    };
-  };
-
-  const generateDemoAttendantsWithIntegration = () => {
-    return [
-      {
-        id: 'emp-1',
-        name: 'John Attendant',
-        email: 'john@company.com',
-        role: 'attendant',
-        is_active: true,
-        timeData: { totalHours: 168.5, daysWorked: 21, avgDaily: 8.0, efficiency: 96.2, punctuality: 94.5 },
-        scheduleData: { upcomingShifts: 7, preferredShift: 'Regular', schedulingConflicts: 1, lastScheduleUpdate: '2024-10-15' },
-        roomData: { roomsAssigned: 12, roomsCompleted: 11, roomEfficiency: '91.7', avgRoomTime: '18.5', specializations: 'Standard Cleaning' }
-      },
-      // Add more demo employees...
-    ];
   };
 
   const handleAddAttendant = async () => {
@@ -5374,7 +5304,6 @@ const AttendantManagementTab = () => {
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <div className="text-4xl mb-2">👥</div>
               <p>No employees found matching your criteria</p>
             </div>
           )}
@@ -6762,29 +6691,47 @@ const AnalyticsTab = () => {
         },
         roomManagement: {
           roomsCleaned: cleanedRooms,
-          averageTimePerRoom: '45', // Mock average
+          averageTimePerRoom: '—',
           efficiency: efficiency.toFixed(1),
           pendingRooms: pendingRooms
         }
       });
     } catch (error) {
       console.error('Error fetching analytics:', error);
-      // Set mock data on error
+      toast.error(error.response?.data?.detail || 'Failed to load analytics');
       setAnalytics({
-        timeTracking: {
-          totalHours: '320',
-          averageHoursPerAttendant: '40',
-          attendanceRate: '95',
-          totalAttendants: 8
-        },
-        roomManagement: {
-          roomsCleaned: 35,
-          averageTimePerRoom: '45',
-          efficiency: '92',
-          pendingRooms: 3
-        }
+        timeTracking: { totalHours: '0', averageHoursPerAttendant: '0', attendanceRate: '0', totalAttendants: 0 },
+        roomManagement: { roomsCleaned: 0, averageTimePerRoom: '—', efficiency: '0', pendingRooms: 0 }
       });
     }
+  };
+
+  const handleExportAnalytics = () => {
+    const lines = [];
+    lines.push('Analytics Report — exported ' + new Date().toLocaleString());
+    lines.push(`Date Range,${dateRange.start},${dateRange.end}`);
+    lines.push('');
+    lines.push('TIME TRACKING');
+    lines.push('Metric,Value');
+    lines.push(`Total Hours,${analytics.timeTracking.totalHours}`);
+    lines.push(`Avg Hours / Attendant,${analytics.timeTracking.averageHoursPerAttendant}`);
+    lines.push(`Attendance Rate (%),${analytics.timeTracking.attendanceRate}`);
+    lines.push(`Active Attendants,${analytics.timeTracking.totalAttendants}`);
+    lines.push('');
+    lines.push('ROOM MANAGEMENT');
+    lines.push(`Rooms Clean,${analytics.roomManagement.roomsCleaned}`);
+    lines.push(`Pending Rooms,${analytics.roomManagement.pendingRooms}`);
+    lines.push(`Efficiency (%),${analytics.roomManagement.efficiency}`);
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `analytics-${dateRange.start}-to-${dateRange.end}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Analytics report exported');
   };
 
   return (
@@ -6891,13 +6838,13 @@ const AnalyticsTab = () => {
             </div>
             <div>
               <div className="flex justify-between text-sm mb-2">
-                <span>Attendant Performance</span>
-                <span className="font-semibold">87%</span>
+                <span>Attendance Rate</span>
+                <span className="font-semibold">{analytics.timeTracking.attendanceRate}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-4">
-                <div 
-                  className="bg-gradient-to-r from-blue-400 to-blue-600 h-4 rounded-full transition-all duration-500"
-                  style={{width: '87%'}}
+                <div
+                  className="bg-zinc-900 h-4 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(parseFloat(analytics.timeTracking.attendanceRate) || 0, 100)}%` }}
                 ></div>
               </div>
             </div>
@@ -6959,7 +6906,7 @@ const AnalyticsTab = () => {
 
       {/* Export Button */}
       <div className="flex justify-end">
-        <Button onClick={() => toast.success('Analytics report exported successfully!')}>
+        <Button onClick={handleExportAnalytics} data-testid="export-analytics-btn">
           Export Analytics Report
         </Button>
       </div>

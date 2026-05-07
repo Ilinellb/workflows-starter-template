@@ -1289,10 +1289,6 @@ const TimeOffRequestsTab = () => {
     }
   };
 
-  const generateDemoTimeOffData = () => {
-    setRequests([]);
-  };
-
   const handleSubmitRequest = async () => {
     if (!requestForm.startDate || !requestForm.endDate || !requestForm.reason) {
       toast.error('Please fill in all required fields');
@@ -2095,58 +2091,13 @@ const MyReportsTab = () => {
       setTimeEntries(response.data.entries || []);
       setReportData(response.data.summary || null);
     } catch (error) {
-      // Fallback to demo data if API not available
-      generateDemoReportData();
+      console.error('fetchMyReports failed', error);
+      toast.error(error.response?.data?.detail || 'Failed to load reports');
+      setTimeEntries([]);
+      setReportData(null);
     } finally {
       setLoading(false);
     }
-  };
-
-  const generateDemoReportData = () => {
-    // Generate sample time entries for the last 30 days
-    const entries = [];
-    const today = new Date();
-    
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      
-      // Skip weekends for realistic data
-      if (date.getDay() === 0 || date.getDay() === 6) continue;
-      
-      // Randomly skip some days to simulate real work patterns
-      if (Math.random() > 0.85) continue;
-      
-      const punchIn = new Date(date);
-      punchIn.setHours(8 + Math.floor(Math.random() * 2), Math.floor(Math.random() * 60));
-      
-      const punchOut = new Date(punchIn);
-      punchOut.setHours(punchIn.getHours() + 8 + Math.floor(Math.random() * 2), Math.floor(Math.random() * 60));
-      
-      entries.push({
-        id: `entry-${i}`,
-        date: date.toISOString().split('T')[0],
-        punch_in_time: punchIn.toISOString(),
-        punch_out_time: punchOut.toISOString(),
-        total_hours: ((punchOut - punchIn) / (1000 * 60 * 60)).toFixed(2),
-        status: 'complete'
-      });
-    }
-    
-    setTimeEntries(entries);
-    
-    // Calculate summary data
-    const totalHours = entries.reduce((sum, entry) => sum + parseFloat(entry.total_hours), 0);
-    const avgHoursPerDay = entries.length > 0 ? (totalHours / entries.length).toFixed(2) : 0;
-    const daysWorked = entries.length;
-    
-    setReportData({
-      totalHours: totalHours.toFixed(2),
-      averageHoursPerDay: avgHoursPerDay,
-      daysWorked,
-      expectedHours: daysWorked * 8,
-      efficiency: ((totalHours / (daysWorked * 8)) * 100).toFixed(1)
-    });
   };
 
   const formatTime = (timeStr) => {
@@ -3428,11 +3379,6 @@ const TimeOffApprovalsTab = () => {
     }
   };
 
-  const generateDemoApprovalData = () => {
-    setAllRequests([]);
-    setPendingRequests([]);
-  };
-
   const handleApprovalAction = async (request, action) => {
     setSelectedRequest(request);
     setApprovalAction(action);
@@ -3923,47 +3869,17 @@ const TeamSchedulingTab = () => {
     }
 
     try {
-      // Try to call backend API for shift creation
-      const newShift = {
-        employeeId: shiftForm.employeeId,
+      await axios.post(`${API}/schedules/assign`, {
+        user_id: shiftForm.employeeId,
         date: shiftForm.date,
-        startTime: shiftForm.startTime,
-        endTime: shiftForm.endTime,
-        type: shiftForm.shiftType,
-        location: shiftForm.location,
-        status: 'Pending'
-      };
-
-      try {
-        await axios.post(`${API}/schedules/assign`, {
-          user_id: shiftForm.employeeId,
-          date: shiftForm.date,
-          shift_start: shiftForm.startTime,
-          shift_end: shiftForm.endTime,
-          notes: `${shiftForm.shiftType} - ${shiftForm.location}`
-        }, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        toast.success('Shift assigned successfully!');
-        fetchAttendantsAndSchedules(); // Refresh
-      } catch (apiError) {
-        // If API doesn't exist, add to local state for demo
-        const employee = employees.find(emp => emp.id === shiftForm.employeeId);
-        const localShift = {
-          id: `shift-${Date.now()}`,
-          employeeId: shiftForm.employeeId,
-          employeeName: employee ? employee.name : 'Unknown',
-          date: shiftForm.date,
-          startTime: shiftForm.startTime,
-          endTime: shiftForm.endTime,
-          type: shiftForm.shiftType,
-          status: 'Pending',
-          location: shiftForm.location
-        };
-        
-        setTeamSchedules(prev => [...prev, localShift]);
-        toast.success(`Shift assigned to ${employee?.name} successfully!`);
-      }
+        shift_start: shiftForm.startTime,
+        shift_end: shiftForm.endTime,
+        notes: `${shiftForm.shiftType} - ${shiftForm.location}`
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Shift assigned successfully!');
+      fetchAttendantsAndSchedules(); // Refresh
 
       // Reset form and close modal
       setShiftForm({
@@ -3975,10 +3891,9 @@ const TeamSchedulingTab = () => {
         location: 'Main Office'
       });
       setShowAssignModal(false);
-      
     } catch (error) {
       console.error('Error assigning shift:', error);
-      toast.error('Failed to assign shift');
+      toast.error(error.response?.data?.detail || 'Failed to assign shift');
     }
   };
 
@@ -4002,25 +3917,24 @@ const TeamSchedulingTab = () => {
       <div className="flex justify-between items-center">
         <h2 className="font-heading text-3xl font-bold tracking-tight">Team Scheduling</h2>
         <div className="flex gap-2">
-          <Button 
+          <Button
             variant={viewMode === 'week' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setViewMode('week')}
           >
-            📅 Week View
+            Week View
           </Button>
-          <Button 
+          <Button
             variant={viewMode === 'month' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setViewMode('month')}
           >
-            📊 Month View
+            Month View
           </Button>
-          <Button 
+          <Button
             onClick={() => setShowAssignModal(true)}
-            className="bg-blue-500 hover:bg-blue-600"
           >
-            ➕ Assign Shift
+            Assign Shift
           </Button>
         </div>
       </div>
@@ -4329,90 +4243,13 @@ const TeamReportsTab = () => {
       setTeamData(response.data.employees || []);
       setTeamSummary(response.data || null);
     } catch (error) {
-      // Generate demo data for team reports
-      generateDemoTeamData();
+      console.error('fetchTeamReports failed', error);
+      toast.error(error.response?.data?.detail || 'Failed to load team reports');
+      setTeamData([]);
+      setTeamSummary(null);
     } finally {
       setLoading(false);
     }
-  };
-
-  const generateDemoTeamData = () => {
-    const employees = [
-      { 
-        id: 'emp-1', 
-        name: 'John Attendant', 
-        role: 'attendant',
-        totalHours: 168.5, 
-        daysWorked: 21, 
-        avgHoursPerDay: 8.0, 
-        efficiency: 96.2,
-        punctuality: 94.5,
-        roomsManaged: 45,
-        lateArrivals: 2,
-        earlyDepartures: 1,
-        overtimeHours: 8.5
-      },
-      { 
-        id: 'emp-2', 
-        name: 'Jane Smith', 
-        role: 'attendant',
-        totalHours: 172.0, 
-        daysWorked: 22, 
-        avgHoursPerDay: 7.8, 
-        efficiency: 98.1,
-        punctuality: 98.2,
-        roomsManaged: 52,
-        lateArrivals: 1,
-        earlyDepartures: 0,
-        overtimeHours: 12.0
-      },
-      { 
-        id: 'emp-3', 
-        name: 'Mike Johnson', 
-        role: 'attendant',
-        totalHours: 164.2, 
-        daysWorked: 20, 
-        avgHoursPerDay: 8.2, 
-        efficiency: 93.8,
-        punctuality: 90.0,
-        roomsManaged: 38,
-        lateArrivals: 4,
-        earlyDepartures: 2,
-        overtimeHours: 4.2
-      },
-      { 
-        id: 'emp-4', 
-        name: 'Sarah Wilson', 
-        role: 'attendant',
-        totalHours: 176.5, 
-        daysWorked: 22, 
-        avgHoursPerDay: 8.0, 
-        efficiency: 99.2,
-        punctuality: 100.0,
-        roomsManaged: 58,
-        lateArrivals: 0,
-        earlyDepartures: 0,
-        overtimeHours: 16.5
-      }
-    ];
-
-    setTeamData(employees);
-
-    // Calculate team summary
-    const totalTeamHours = employees.reduce((sum, emp) => sum + emp.totalHours, 0);
-    const avgTeamEfficiency = employees.reduce((sum, emp) => sum + emp.efficiency, 0) / employees.length;
-    const avgPunctuality = employees.reduce((sum, emp) => sum + emp.punctuality, 0) / employees.length;
-    const totalRoomsManaged = employees.reduce((sum, emp) => sum + emp.roomsManaged, 0);
-
-    setTeamSummary({
-      totalAttendants: employees.length,
-      totalHours: totalTeamHours.toFixed(1),
-      avgEfficiency: avgTeamEfficiency.toFixed(1),
-      avgPunctuality: avgPunctuality.toFixed(1),
-      totalRoomsManaged,
-      topPerformer: employees.find(emp => emp.efficiency === Math.max(...employees.map(e => e.efficiency))),
-      mostPunctual: employees.find(emp => emp.punctuality === Math.max(...employees.map(e => e.punctuality)))
-    });
   };
 
   const getPerformanceColor = (value, type = 'efficiency') => {
@@ -4686,7 +4523,14 @@ const TeamReportsTab = () => {
                     <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
                       <h4 className="font-medium text-purple-800 mb-1">Room Management Leader</h4>
                       <p className="text-sm text-purple-700">
-                        Sarah Wilson - {teamData.find(emp => emp.name === 'Sarah Wilson')?.roomsManaged || 0} rooms managed
+                        {(() => {
+                          const leader = [...teamData].sort(
+                            (a, b) => (b.roomsManaged || 0) - (a.roomsManaged || 0),
+                          )[0];
+                          return leader && leader.roomsManaged
+                            ? `${leader.name} - ${leader.roomsManaged} rooms managed`
+                            : 'No data yet';
+                        })()}
                       </p>
                     </div>
                   </div>
@@ -4699,35 +4543,52 @@ const TeamReportsTab = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Management Insights</CardTitle>
-                <CardDescription>Actionable recommendations for team improvement</CardDescription>
+                <CardDescription>Computed from this period's data</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <h4 className="font-medium text-yellow-800 mb-2">️ Areas of Focus</h4>
-                    <ul className="text-sm text-yellow-700 space-y-1">
-                      <li>• Monitor late arrivals (6 instances this period)</li>
-                      <li>• Consider punctuality improvement program</li>
-                      <li>• Review room assignment efficiency</li>
-                    </ul>
-                  </div>
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <h4 className="font-medium text-green-800 mb-2">Strengths to Leverage</h4>
-                    <ul className="text-sm text-green-700 space-y-1">
-                      <li>• High overall team efficiency (96.8%)</li>
-                      <li>• Strong room management performance</li>
-                      <li>• Good overtime contribution (41.2h total)</li>
-                    </ul>
-                  </div>
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h4 className="font-medium text-blue-800 mb-2">Growth Opportunities</h4>
-                    <ul className="text-sm text-blue-700 space-y-1">
-                      <li>• Cross-train for room management skills</li>
-                      <li>• Implement peer mentoring program</li>
-                      <li>• Set team efficiency goals</li>
-                    </ul>
-                  </div>
-                </div>
+                {(() => {
+                  const observations = [];
+                  const totalLate = teamData.reduce((acc, e) => acc + (e.lateArrivals || 0), 0);
+                  const totalOvertime = teamData.reduce((acc, e) => acc + (e.overtimeHours || 0), 0);
+                  const avgEff = teamSummary?.avgEfficiency ? parseFloat(teamSummary.avgEfficiency) : null;
+                  const avgPunct = teamSummary?.avgPunctuality ? parseFloat(teamSummary.avgPunctuality) : null;
+
+                  if (totalLate >= teamData.length && teamData.length > 0) {
+                    observations.push({ kind: 'warn', text: `Late arrivals: ${totalLate} instance(s) this period` });
+                  }
+                  if (avgPunct !== null && avgPunct < 90) {
+                    observations.push({ kind: 'warn', text: `Average punctuality is ${avgPunct.toFixed(1)}% — below 90%` });
+                  }
+                  if (avgEff !== null && avgEff >= 95) {
+                    observations.push({ kind: 'good', text: `Strong team efficiency at ${avgEff.toFixed(1)}%` });
+                  }
+                  if (totalOvertime > 0) {
+                    observations.push({ kind: 'good', text: `Overtime contribution: ${totalOvertime.toFixed(1)}h across the team` });
+                  }
+                  if (teamSummary?.topPerformer) {
+                    observations.push({ kind: 'good', text: `Top performer: ${teamSummary.topPerformer.name}` });
+                  }
+
+                  if (observations.length === 0) {
+                    return <p className="text-sm text-muted-foreground">No data yet — insights appear once time entries and room work are logged.</p>;
+                  }
+                  return (
+                    <div className="space-y-2">
+                      {observations.map((o, i) => (
+                        <div
+                          key={i}
+                          className={`p-3 rounded-md border text-sm ${
+                            o.kind === 'good'
+                              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                              : 'bg-amber-50 border-amber-200 text-amber-800'
+                          }`}
+                        >
+                          {o.text}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           </div>
@@ -6642,10 +6503,14 @@ const AnalyticsTab = () => {
     },
     roomManagement: {
       roomsCleaned: 0,
-      averageTimePerRoom: 0,
+      averageTimePerRoom: '—',
       efficiency: 0,
       pendingRooms: 0
-    }
+    },
+    dailyHours: [0, 0, 0, 0, 0, 0, 0],
+    dailyLabels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    maxHours: 1,
+    topPerformers: []
   });
 
   useEffect(() => {
@@ -6682,6 +6547,33 @@ const AnalyticsTab = () => {
       const totalRooms = rooms.length;
       const efficiency = totalRooms > 0 ? (cleanedRooms / totalRooms) * 100 : 0;
 
+      // Per-day total hours over the last 7 days, for the trend chart
+      const dailyHours = [0, 0, 0, 0, 0, 0, 0]; // Mon..Sun
+      const dailyLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      entries.forEach((e) => {
+        if (!e.date) return;
+        const d = new Date(e.date);
+        const dayIdx = (d.getDay() + 6) % 7; // shift Sunday=0 → 6
+        dailyHours[dayIdx] += parseFloat(e.total_hours || 0);
+      });
+      const maxHours = Math.max(...dailyHours, 1);
+
+      // Top performers (per-employee aggregates from same time entries)
+      const perEmployee = {};
+      entries.forEach((e) => {
+        const id = e.employee_id;
+        if (!id) return;
+        if (!perEmployee[id]) {
+          perEmployee[id] = { name: e.employee_name || 'Unknown', hours: 0, days: new Set() };
+        }
+        perEmployee[id].hours += parseFloat(e.total_hours || 0);
+        if (e.date) perEmployee[id].days.add(e.date);
+      });
+      const topPerformers = Object.values(perEmployee)
+        .map((p) => ({ name: p.name, hours: `${p.hours.toFixed(1)}h`, days: p.days.size }))
+        .sort((a, b) => parseFloat(b.hours) - parseFloat(a.hours))
+        .slice(0, 3);
+
       setAnalytics({
         timeTracking: {
           totalHours: totalHours.toFixed(1),
@@ -6694,14 +6586,22 @@ const AnalyticsTab = () => {
           averageTimePerRoom: '—',
           efficiency: efficiency.toFixed(1),
           pendingRooms: pendingRooms
-        }
+        },
+        dailyHours,
+        dailyLabels,
+        maxHours,
+        topPerformers
       });
     } catch (error) {
       console.error('Error fetching analytics:', error);
       toast.error(error.response?.data?.detail || 'Failed to load analytics');
       setAnalytics({
         timeTracking: { totalHours: '0', averageHoursPerAttendant: '0', attendanceRate: '0', totalAttendants: 0 },
-        roomManagement: { roomsCleaned: 0, averageTimePerRoom: '—', efficiency: '0', pendingRooms: 0 }
+        roomManagement: { roomsCleaned: 0, averageTimePerRoom: '—', efficiency: '0', pendingRooms: 0 },
+        dailyHours: [0, 0, 0, 0, 0, 0, 0],
+        dailyLabels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        maxHours: 1,
+        topPerformers: []
       });
     }
   };
@@ -6780,18 +6680,27 @@ const AnalyticsTab = () => {
             </div>
           </div>
 
-          {/* Simple bar chart visualization */}
+          {/* Real per-day hours bar chart */}
           <div className="mt-6">
             <div className="font-semibold mb-3">Daily Hours Trend</div>
             <div className="flex items-end justify-between gap-2 h-40">
-              {[65, 72, 68, 80, 75, 82, 78].map((height, i) => (
-                <div key={`bar-${i}-${height}`} className="flex-1 bg-blue-500 rounded-t" style={{height: `${height}%`}}>
-                  <div className="text-xs text-white text-center mt-1">{height}</div>
-                </div>
-              ))}
+              {analytics.dailyHours.map((hours, i) => {
+                const heightPct = (hours / Math.max(analytics.maxHours, 1)) * 100;
+                return (
+                  <div
+                    key={`bar-${i}`}
+                    className="flex-1 bg-zinc-900 rounded-t flex items-end justify-center"
+                    style={{ height: `${Math.max(heightPct, 2)}%` }}
+                  >
+                    <div className="text-[10px] text-white pb-1 tabular-nums">{hours.toFixed(0)}</div>
+                  </div>
+                );
+              })}
             </div>
             <div className="flex justify-between text-xs text-gray-500 mt-2">
-              <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+              {analytics.dailyLabels.map((d) => (
+                <span key={d}>{d}</span>
+              ))}
             </div>
           </div>
         </CardContent>
@@ -6809,7 +6718,7 @@ const AnalyticsTab = () => {
               <div className="text-sm text-gray-600 mt-2">Rooms Cleaned</div>
             </div>
             <div className="text-center p-4 bg-indigo-50 rounded-lg">
-              <div className="text-4xl font-bold text-indigo-600">{analytics.roomManagement.averageTimePerRoom}m</div>
+              <div className="font-heading text-4xl font-bold tabular-nums text-foreground">{analytics.roomManagement.averageTimePerRoom}</div>
               <div className="text-sm text-gray-600 mt-2">Avg Time/Room</div>
             </div>
             <div className="text-center p-4 bg-pink-50 rounded-lg">
@@ -6859,45 +6768,49 @@ const AnalyticsTab = () => {
             <CardTitle>Top Performers</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {[
-                { name: 'John Attendant', hours: '45.5h', rooms: '28' },
-                { name: 'Jane Worker', hours: '43.2h', rooms: '26' },
-                { name: 'Bob Smith', hours: '41.8h', rooms: '24' }
-              ].map((performer, i) => (
-                <div key={performer.name ?? i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
-                      {i + 1}
+            {analytics.topPerformers.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No time entries in this period.</p>
+            ) : (
+              <div className="space-y-3">
+                {analytics.topPerformers.map((performer, i) => (
+                  <div key={performer.name ?? i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold">
+                        {i + 1}
+                      </div>
+                      <span className="font-semibold">{performer.name}</span>
                     </div>
-                    <span className="font-semibold">{performer.name}</span>
+                    <div className="text-sm text-gray-600">
+                      {performer.hours} • {performer.days} day{performer.days === 1 ? '' : 's'}
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600">
-                    {performer.hours} • {performer.rooms} rooms
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Key Insights</CardTitle>
+            <CardTitle>Key Metrics</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                <div className="font-semibold text-green-800">↑ Productivity Up</div>
-                <div className="text-sm text-gray-600">15% increase from last period</div>
+              <div className="flex items-center justify-between p-3 bg-zinc-50 border border-border rounded-md">
+                <span className="text-sm">Active attendants</span>
+                <span className="font-heading font-bold tabular-nums">{analytics.timeTracking.totalAttendants}</span>
               </div>
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="font-semibold text-blue-800">→ Attendance Stable</div>
-                <div className="text-sm text-gray-600">Maintaining 95% rate</div>
+              <div className="flex items-center justify-between p-3 bg-zinc-50 border border-border rounded-md">
+                <span className="text-sm">Avg hours / attendant</span>
+                <span className="font-heading font-bold tabular-nums">{analytics.timeTracking.averageHoursPerAttendant}h</span>
               </div>
-              <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                <div className="font-semibold text-orange-800">Peak Hours</div>
-                <div className="text-sm text-gray-600">Most active 10 AM - 2 PM</div>
+              <div className="flex items-center justify-between p-3 bg-zinc-50 border border-border rounded-md">
+                <span className="text-sm">Rooms ready</span>
+                <span className="font-heading font-bold tabular-nums">{analytics.roomManagement.roomsCleaned}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-zinc-50 border border-border rounded-md">
+                <span className="text-sm">Rooms needing cleaning</span>
+                <span className="font-heading font-bold tabular-nums">{analytics.roomManagement.pendingRooms}</span>
               </div>
             </div>
           </CardContent>

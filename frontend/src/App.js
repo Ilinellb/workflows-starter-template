@@ -5074,10 +5074,6 @@ const AttendantManagementTab = () => {
                                 <span className="font-medium">{employee.scheduleData?.upcomingShifts || 0}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-green-600">Preferred:</span>
-                                <span className="font-medium">{employee.scheduleData?.preferredShift || 'Regular'}</span>
-                              </div>
-                              <div className="flex justify-between">
                                 <span className="text-green-600">Conflicts:</span>
                                 <span className={`font-medium ${
                                   (employee.scheduleData?.schedulingConflicts || 0) > 0 ? 'text-red-600' : 'text-green-600'
@@ -5104,10 +5100,6 @@ const AttendantManagementTab = () => {
                                 <span className="text-purple-600">Room efficiency:</span>
                                 <span className="font-medium">{employee.roomData?.roomEfficiency || 0}%</span>
                               </div>
-                              <div className="flex justify-between">
-                                <span className="text-purple-600">Avg time/room:</span>
-                                <span className="font-medium">{employee.roomData?.avgRoomTime || 0}min</span>
-                              </div>
                             </div>
                           </div>
                         </div>
@@ -5121,9 +5113,6 @@ const AttendantManagementTab = () => {
                               (employee.timeData?.efficiency || 0) >= 75 ? 'bg-orange-500' : 'bg-red-500'
                             }`}></div>
                             <span className="text-xs text-gray-600">Overall Performance</span>
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Specialization: {employee.roomData?.specializations || 'General'}
                           </div>
                         </div>
                       </div>

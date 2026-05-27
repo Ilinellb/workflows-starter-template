@@ -64,6 +64,11 @@ class UserRole(str):
     OPS_MANAGER = "ops_manager"
     ASSISTANT_MANAGER = "assistant_manager"
     ATTENDANT = "attendant"
+    SUPER_ADMIN = "super_admin"
+
+# Roles that have full management access (treat super_admin as a strict superset of ops_manager).
+MANAGER_ROLES = [UserRole.SUPER_ADMIN, UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]
+FULL_ADMIN_ROLES = [UserRole.SUPER_ADMIN, UserRole.OPS_MANAGER]
 
 class User(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -509,7 +514,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
 @api_router.post("/users", dependencies=[Depends(get_current_user)])
 async def create_user(user_data: UserCreate, current_user: User = Depends(get_current_user)):
     # Check permissions
-    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+    if current_user.role not in MANAGER_ROLES:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     # Check if user already exists
@@ -552,7 +557,7 @@ async def get_users(current_user: User = Depends(get_current_user)):
     
     # OPS Managers and Assistant Managers can see all attendants
     # This is needed for scheduling, team management, etc.
-    if current_user.role in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+    if current_user.role in MANAGER_ROLES:
         # Return all users for ops managers, all attendants for assistant managers
         if current_user.role == UserRole.ASSISTANT_MANAGER:
             query["role"] = UserRole.ATTENDANT
@@ -575,7 +580,7 @@ async def get_users_for_messaging(current_user: User = Depends(get_current_user)
 @api_router.put("/users/{user_id}")
 async def update_user(user_id: str, user_data: UserUpdate, current_user: User = Depends(get_current_user)):
     # Check permissions
-    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+    if current_user.role not in MANAGER_ROLES:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     # Find the user to update
@@ -661,7 +666,7 @@ async def update_profile_demographics(
 @api_router.delete("/users/{user_id}")
 async def delete_user(user_id: str, current_user: User = Depends(get_current_user)):
     # Check permissions
-    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+    if current_user.role not in MANAGER_ROLES:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     # Prevent self-deletion
@@ -690,7 +695,7 @@ async def bulk_delete_users(
     current_user: User = Depends(get_current_user)
 ):
     # Check permissions
-    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+    if current_user.role not in MANAGER_ROLES:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
 
     if not payload.user_ids:
@@ -1267,7 +1272,7 @@ async def get_all_time_off_requests(
     current_user: User = Depends(get_current_user)
 ):
     """Get all time off requests (managers only)"""
-    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+    if current_user.role not in MANAGER_ROLES:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     try:
@@ -1297,7 +1302,7 @@ async def approve_time_off_request(
     current_user: User = Depends(get_current_user)
 ):
     """Approve or reject time off request (managers only)"""
-    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+    if current_user.role not in MANAGER_ROLES:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     try:
@@ -1363,7 +1368,7 @@ async def get_team_schedules(
     current_user: User = Depends(get_current_user)
 ):
     """Get team schedules (managers only)"""
-    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+    if current_user.role not in MANAGER_ROLES:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     try:
@@ -1392,7 +1397,7 @@ async def assign_schedule(
     current_user: User = Depends(get_current_user)
 ):
     """Assign schedule to user (managers only)"""
-    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+    if current_user.role not in MANAGER_ROLES:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     try:
@@ -1429,7 +1434,7 @@ async def assign_recurring_schedule(
     current_user: User = Depends(get_current_user)
 ):
     """Assign recurring schedule (daily, weekly, monthly) to user (managers only)"""
-    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+    if current_user.role not in MANAGER_ROLES:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
 
     try:
@@ -1544,7 +1549,7 @@ async def bulk_upload_schedules(
     current_user: User = Depends(get_current_user)
 ):
     """Bulk upload schedules from template (managers only)"""
-    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+    if current_user.role not in MANAGER_ROLES:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     try:
@@ -1617,7 +1622,7 @@ async def update_schedule(
     current_user: User = Depends(get_current_user)
 ):
     """Update an existing schedule (managers only)"""
-    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+    if current_user.role not in MANAGER_ROLES:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     try:
@@ -1660,7 +1665,7 @@ async def delete_schedule(
     current_user: User = Depends(get_current_user)
 ):
     """Delete a schedule (managers only)"""
-    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+    if current_user.role not in MANAGER_ROLES:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     try:
@@ -1691,7 +1696,7 @@ async def get_team_reports(
     current_user: User = Depends(get_current_user)
 ):
     """Get team reports (managers only)"""
-    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+    if current_user.role not in MANAGER_ROLES:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     try:
@@ -2104,7 +2109,7 @@ async def delete_message(
 @api_router.post("/notifications/check-missed-punches")
 async def check_missed_punches_endpoint(current_user: User = Depends(get_current_user)):
     """Manually trigger check for missed punches and send notifications"""
-    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+    if current_user.role not in MANAGER_ROLES:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     try:
@@ -2358,7 +2363,7 @@ async def update_user_organization(
     current_user: User = Depends(get_current_user)
 ):
     """Update user's department and/or manager"""
-    if current_user.role not in [UserRole.OPS_MANAGER, UserRole.ASSISTANT_MANAGER]:
+    if current_user.role not in MANAGER_ROLES:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     try:

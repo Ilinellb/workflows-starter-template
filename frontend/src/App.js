@@ -213,8 +213,8 @@ const getTabsForRole = (role) => {
     return [...baseTabs, ...profileTabs];
   }
 
-  // For OPS Manager - ALL management tabs
-  if (role === 'ops_manager') {
+  // For OPS Manager / Super Admin - ALL management tabs
+  if (role === 'ops_manager' || role === 'super_admin') {
     const managerTabs = [
       { id: 'overview', label: 'Team Overview', icon: 'Users', category: 'management' },
       { id: 'timecards', label: 'Team Time Cards', icon: 'Timer', category: 'time' },
@@ -2777,7 +2777,7 @@ const CommunicationTab = () => {
                 <SelectContent>
                   <SelectItem value="direct">Direct Message</SelectItem>
                   <SelectItem value="group">Group Chat</SelectItem>
-                  {(user?.role === 'assistant_manager' || user?.role === 'ops_manager') && (
+                  {(user?.role === 'super_admin' || user?.role === 'assistant_manager' || user?.role === 'ops_manager') && (
                     <SelectItem value="announcement">Announcement (to all employees)</SelectItem>
                   )}
                 </SelectContent>
@@ -6911,7 +6911,7 @@ const OrganizationTab = () => {
     return 'Front Desk Operations';
   };
 
-  const canEdit = user?.role === 'ops_manager' || user?.role === 'assistant_manager';
+  const canEdit = user?.role === 'super_admin' || user?.role === 'ops_manager' || user?.role === 'assistant_manager';
 
   const renderUserCard = (userData, deptUsers) => {
     const managerData = deptUsers.find(u => u.id === userData.manager_id);
@@ -7157,8 +7157,9 @@ const ProfileTab = ({ user }) => {
             <div>
               <Label>Role</Label>
               <Badge>
-                {user.role === 'ops_manager' ? 'OPS Manager' : 
-                 user.role === 'assistant_manager' ? 'Assistant Manager' : 
+                {user.role === 'super_admin' ? 'Super Admin' :
+                 user.role === 'ops_manager' ? 'OPS Manager' :
+                 user.role === 'assistant_manager' ? 'Assistant Manager' :
                  'Attendant'}
               </Badge>
             </div>
@@ -7629,7 +7630,8 @@ const AppContent = () => {
               <div className="hidden sm:flex items-center gap-2 text-sm whitespace-nowrap" data-testid="user-info">
                 <span className="font-medium text-foreground truncate max-w-[180px]">{user.name}</span>
                 <Badge variant="outline" className="font-normal text-xs">
-                  {user.role === 'ops_manager' ? 'OPS Manager' :
+                  {user.role === 'super_admin' ? 'Super Admin' :
+                   user.role === 'ops_manager' ? 'OPS Manager' :
                    user.role === 'assistant_manager' ? 'Assistant Manager' :
                    'Attendant'}
                 </Badge>

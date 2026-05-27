@@ -4674,11 +4674,10 @@ const AttendantManagementTab = () => {
           const sched = scheduleByUser[employee.id] || { upcomingShifts: 0, lastScheduleUpdate: null };
           const scheduleData = {
             upcomingShifts: sched.upcomingShifts,
-            preferredShift: '—',
             schedulingConflicts: 0,
             lastScheduleUpdate: sched.lastScheduleUpdate
               ? sched.lastScheduleUpdate.split('T')[0]
-              : '—',
+              : '',
           };
 
           const perf = roomPerf[employee.id] || {};
@@ -4689,8 +4688,6 @@ const AttendantManagementTab = () => {
             roomsAssigned: total,
             roomsCompleted: completed,
             roomEfficiency: total ? ((completed / total) * 100).toFixed(1) : '0.0',
-            avgRoomTime: '—',
-            specializations: '—',
           };
 
           return { ...employee, timeData, scheduleData, roomData };
@@ -6491,7 +6488,6 @@ const AnalyticsTab = () => {
     },
     roomManagement: {
       roomsCleaned: 0,
-      averageTimePerRoom: '—',
       efficiency: 0,
       pendingRooms: 0
     },
@@ -6571,7 +6567,6 @@ const AnalyticsTab = () => {
         },
         roomManagement: {
           roomsCleaned: cleanedRooms,
-          averageTimePerRoom: '—',
           efficiency: efficiency.toFixed(1),
           pendingRooms: pendingRooms
         },
@@ -6585,7 +6580,7 @@ const AnalyticsTab = () => {
       toast.error(error.response?.data?.detail || 'Failed to load analytics');
       setAnalytics({
         timeTracking: { totalHours: '0', averageHoursPerAttendant: '0', attendanceRate: '0', totalAttendants: 0 },
-        roomManagement: { roomsCleaned: 0, averageTimePerRoom: '—', efficiency: '0', pendingRooms: 0 },
+        roomManagement: { roomsCleaned: 0, efficiency: '0', pendingRooms: 0 },
         dailyHours: [0, 0, 0, 0, 0, 0, 0],
         dailyLabels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
         maxHours: 1,
@@ -6700,21 +6695,17 @@ const AnalyticsTab = () => {
           <CardTitle>Room Management Analytics</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center p-4 bg-teal-50 rounded-lg">
               <div className="font-heading text-4xl font-bold tabular-nums text-foreground">{analytics.roomManagement.roomsCleaned}</div>
               <div className="text-sm text-gray-600 mt-2">Rooms Cleaned</div>
             </div>
-            <div className="text-center p-4 bg-indigo-50 rounded-lg">
-              <div className="font-heading text-4xl font-bold tabular-nums text-foreground">{analytics.roomManagement.averageTimePerRoom}</div>
-              <div className="text-sm text-gray-600 mt-2">Avg Time/Room</div>
-            </div>
             <div className="text-center p-4 bg-pink-50 rounded-lg">
-              <div className="text-4xl font-bold text-pink-600">{analytics.roomManagement.efficiency}%</div>
+              <div className="font-heading text-4xl font-bold tabular-nums text-foreground">{analytics.roomManagement.efficiency}%</div>
               <div className="text-sm text-gray-600 mt-2">Efficiency Rate</div>
             </div>
             <div className="text-center p-4 bg-red-50 rounded-lg">
-              <div className="text-4xl font-bold text-red-600">{analytics.roomManagement.pendingRooms}</div>
+              <div className="font-heading text-4xl font-bold tabular-nums text-foreground">{analytics.roomManagement.pendingRooms}</div>
               <div className="text-sm text-gray-600 mt-2">Pending Rooms</div>
             </div>
           </div>

@@ -3898,16 +3898,31 @@ const TeamSchedulingTab = () => {
   };
 
   const getTeamStats = () => {
-    const totalShifts = teamSchedules.length;
-    const confirmedShifts = teamSchedules.filter(s => s.status === 'Confirmed').length;
-    const pendingShifts = teamSchedules.filter(s => s.status === 'Pending').length;
-    const totalHours = teamSchedules.reduce((sum, schedule) => {
-      const start = new Date(`2000-01-01T${schedule.startTime}:00`);
-      const end = new Date(`2000-01-01T${schedule.endTime}:00`);
-      return sum + (end - start) / (1000 * 60 * 60);
+    // Scope stats to the visible window so they match the grid:
+    // week view → current week (Sun–Sat), month view → current month.
+    const start = new Date(selectedDate);
+    const end = new Date(selectedDate);
+    if (viewMode === 'week') {
+      start.setDate(selectedDate.getDate() - selectedDate.getDay());
+      end.setDate(start.getDate() + 6);
+    } else {
+      start.setDate(1);
+      end.setMonth(selectedDate.getMonth() + 1, 0);
+    }
+    const startStr = start.toISOString().split('T')[0];
+    const endStr = end.toISOString().split('T')[0];
+    const visible = teamSchedules.filter((s) => s.date >= startStr && s.date <= endStr);
+
+    const totalShifts = visible.length;
+    const confirmedShifts = visible.filter(s => s.status === 'Confirmed').length;
+    const pendingShifts = visible.filter(s => s.status === 'Pending').length;
+    const totalHours = visible.reduce((sum, schedule) => {
+      const startT = new Date(`2000-01-01T${schedule.startTime}:00`);
+      const endT = new Date(`2000-01-01T${schedule.endTime}:00`);
+      return sum + (endT - startT) / (1000 * 60 * 60);
     }, 0);
 
-    return { totalShifts, confirmedShifts, pendingShifts, totalHours };
+    return { totalShifts, confirmedShifts, pendingShifts, totalHours, scopeLabel: viewMode === 'week' ? 'this week' : 'this month' };
   };
 
   const stats = getTeamStats();
@@ -3945,7 +3960,7 @@ const TeamSchedulingTab = () => {
           <CardContent className="p-4">
             <div className="text-center">
               <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{stats.totalShifts}</div>
-              <div className="text-sm text-gray-600">Total Shifts</div>
+              <div className="text-sm text-gray-600">Shifts {stats.scopeLabel}</div>
             </div>
           </CardContent>
         </Card>
@@ -3969,7 +3984,7 @@ const TeamSchedulingTab = () => {
           <CardContent className="p-4">
             <div className="text-center">
               <div className="font-heading text-2xl font-bold tabular-nums text-foreground">{Math.round(stats.totalHours)}</div>
-              <div className="text-sm text-gray-600">Total Hours</div>
+              <div className="text-sm text-gray-600">Hours {stats.scopeLabel}</div>
             </div>
           </CardContent>
         </Card>
@@ -7546,14 +7561,14 @@ const AppContent = () => {
       {/* Header with Navigation Tabs - Linear-style sticky glass */}
       <nav className="bg-white/75 backdrop-blur-xl border-b border-border sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-14">
-            <div className="flex items-center min-w-0">
+          <div className="flex justify-between items-center gap-4 h-14">
+            <div className="flex items-center min-w-0 flex-1">
               <h1 className="font-heading text-base font-bold tracking-tight text-foreground mr-6 whitespace-nowrap" data-testid="app-title">
                 RSBC Workflow Pro
               </h1>
 
               {/* Desktop Tabs */}
-              <div className="hidden md:flex items-center gap-0 -mb-px overflow-x-auto hide-scrollbar">
+              <div className="hidden md:flex items-center gap-0 -mb-px overflow-x-auto hide-scrollbar min-w-0 flex-1">
                 {tabs.map((tab) => {
                   const Icon = TAB_ICON_MAP[tab.icon];
                   const isActive = activeTab === tab.id;

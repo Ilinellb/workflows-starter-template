@@ -11,6 +11,7 @@ import os
 import uuid
 import logging
 import hashlib
+import bcrypt
 from pathlib import Path
 from dotenv import load_dotenv
 from openpyxl import Workbook
@@ -295,13 +296,24 @@ class ScheduleShiftCreate(BaseModel):
     notes: Optional[str] = None
 
 # Utility Functions
+def _is_bcrypt_hash(hashed: str) -> bool:
+    return isinstance(hashed, str) and hashed.startswith("$2")
+
 def verify_password(plain_password, hashed_password):
-    # Simplified password verification using hashlib (demo only)
+    """Verify password against bcrypt or legacy SHA-256 hash."""
+    if not hashed_password:
+        return False
+    if _is_bcrypt_hash(hashed_password):
+        try:
+            return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+        except (ValueError, TypeError):
+            return False
+    # Legacy SHA-256 hex digest (pre-migration)
     return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
 
 def get_password_hash(password):
-    # Simplified password hashing using hashlib (demo only - not secure for production)
-    return hashlib.sha256(password.encode()).hexdigest()
+    """Hash a password using bcrypt with a fresh salt."""
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 def create_access_token(data: dict):
     to_encode = data.copy()
@@ -449,10 +461,16 @@ async def login(user_data: UserLogin):
     user = await db.users.find_one({"email": user_data.email})
     if not user or not verify_password(user_data.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    
+
     if not user.get("is_active", True):
         raise HTTPException(status_code=401, detail="Account is inactive")
-    
+
+    # Auto-upgrade legacy SHA-256 hashes to bcrypt on successful login
+    if not _is_bcrypt_hash(user["password_hash"]):
+        new_hash = get_password_hash(user_data.password)
+        await db.users.update_one({"id": user["id"]}, {"$set": {"password_hash": new_hash}})
+        logger.info(f"Migrated password hash to bcrypt for user {user['email']}")
+
     access_token = create_access_token(data={"sub": user["id"]})
     user_obj = User(**parse_from_mongo(user))
     
@@ -627,13 +645,40 @@ async def update_user(user_id: str, user_data: UserUpdate, current_user: User = 
         update_data["password_hash"] = get_password_hash(user_data.password)
     
     update_data = prepare_for_mongo(update_data)
-    
+
     await db.users.update_one(
         {"id": user_id},
         {"$set": update_data}
     )
-    
+
+    # Audit log if role changed
+    old_role = existing_user.get("role")
+    if user_data.role != old_role:
+        audit_entry = {
+            "id": str(uuid.uuid4()),
+            "target_user_id": user_id,
+            "target_email": existing_user.get("email"),
+            "target_name": existing_user.get("name"),
+            "old_role": old_role,
+            "new_role": user_data.role,
+            "changed_by_id": current_user.id,
+            "changed_by_email": current_user.email,
+            "changed_by_name": current_user.name,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.role_audit_logs.insert_one(audit_entry)
+
     return {"message": "User updated successfully"}
+
+
+@api_router.get("/users/role-audit")
+async def get_role_audit_log(limit: int = 100, current_user: User = Depends(get_current_user)):
+    """Return chronological history of role changes. Full admins only."""
+    if current_user.role not in FULL_ADMIN_ROLES:
+        raise HTTPException(status_code=403, detail="Only OPS Manager or Super Admin can view role history")
+    limit = max(1, min(limit, 500))
+    cursor = db.role_audit_logs.find({}, {"_id": 0}).sort("timestamp", -1).limit(limit)
+    return await cursor.to_list(length=limit)
 
 @api_router.put("/profile/demographics")
 async def update_profile_demographics(

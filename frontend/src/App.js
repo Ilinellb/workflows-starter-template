@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select';
 import { Label } from './components/ui/label';
 import { Calendar } from './components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from './components/ui/popover';
 import {
   Clock,
   LayoutGrid,
@@ -52,6 +53,18 @@ const TAB_ICON_MAP = {
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Format a duration in hours into human-readable text.
+// Returns "<1m" for sub-minute non-zero durations, "Xm" for sub-hour, "X.Yh" otherwise.
+const formatHours = (h) => {
+  const num = parseFloat(h);
+  if (isNaN(num)) return '0h';
+  if (num === 0) return '0h';
+  const totalMinutes = Math.round(num * 60);
+  if (totalMinutes < 1) return '<1m';
+  if (totalMinutes < 60) return `${totalMinutes}m`;
+  return `${num}h`;
+};
 
 // PWA Install Hook
 const usePWAInstall = () => {
@@ -622,7 +635,7 @@ const TimeCardTab = () => {
             <div className="p-4 bg-zinc-50 rounded-md border border-border">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Hours Today</p>
               <p className="font-heading text-2xl font-semibold tabular-nums" data-testid="total-hours">
-                {timeStatus.total_hours || 0}h
+                {formatHours(timeStatus.total_hours)}
               </p>
             </div>
           </div>
@@ -679,7 +692,7 @@ const TimeCardTab = () => {
                   </div>
                   <div className="text-right">
                     <Badge variant={entry.status === 'complete' ? 'default' : 'secondary'} className="text-xs font-normal tabular-nums">
-                      {entry.total_hours ? `${entry.total_hours}h` : entry.status}
+                      {entry.total_hours ? formatHours(entry.total_hours) : entry.status}
                     </Badge>
                   </div>
                 </div>
@@ -2030,12 +2043,34 @@ const MyScheduleTab = () => {
             </div>
             <div>
               <label className="text-sm font-medium">Date</label>
-              <input
-                type="date"
-                className="w-full mt-1 p-2 border rounded"
-                value={shiftRequestDate}
-                onChange={(e) => setShiftRequestDate(e.target.value)}
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full mt-1 justify-start text-left font-normal h-10"
+                    data-testid="shift-request-date-trigger"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                    {shiftRequestDate
+                      ? new Date(shiftRequestDate + 'T00:00:00').toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+                      : <span className="text-muted-foreground">Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={shiftRequestDate ? new Date(shiftRequestDate + 'T00:00:00') : undefined}
+                    onSelect={(d) => {
+                      if (!d) return;
+                      const y = d.getFullYear();
+                      const m = String(d.getMonth() + 1).padStart(2, '0');
+                      const dd = String(d.getDate()).padStart(2, '0');
+                      setShiftRequestDate(`${y}-${m}-${dd}`);
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div>
               <label className="text-sm font-medium">Reason</label>
@@ -2299,7 +2334,7 @@ const MyReportsTab = () => {
                       <div className="font-medium">{formatDate(entry.date)}</div>
                       <div className="text-green-600">{formatTime(entry.punch_in_time)}</div>
                       <div className="text-red-600">{formatTime(entry.punch_out_time)}</div>
-                      <div className="font-medium">{entry.total_hours}h</div>
+                      <div className="font-medium">{formatHours(entry.total_hours)}</div>
                       <div>
                         <Badge 
                           variant={entry.status === 'complete' ? 'default' : 'secondary'}
@@ -4625,6 +4660,9 @@ const AttendantManagementTab = () => {
   const [selectAll, setSelectAll] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
+  const [showAuditModal, setShowAuditModal] = useState(false);
+  const [auditEntries, setAuditEntries] = useState([]);
+  const [auditLoading, setAuditLoading] = useState(false);
 
   // Form states for add/edit employee
   const [formData, setFormData] = useState({
@@ -4905,6 +4943,22 @@ const AttendantManagementTab = () => {
     }
   };
 
+  const openAuditModal = async () => {
+    setShowAuditModal(true);
+    setAuditLoading(true);
+    try {
+      const res = await axios.get(`${API}/users/role-audit`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAuditEntries(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to load role history');
+      setAuditEntries([]);
+    } finally {
+      setAuditLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6" data-testid="employee-management-tab">
       <div className="flex justify-between items-center">
@@ -4918,6 +4972,9 @@ const AttendantManagementTab = () => {
             >Delete Selected ({selectedEmployees.length})
             </Button>
           )}
+          <Button onClick={openAuditModal} variant="outline" data-testid="open-role-history-btn">
+            Role History
+          </Button>
           <Button onClick={() => setShowAddModal(true)} className="bg-blue-500 hover:bg-blue-600">
             Add Employee
           </Button>
@@ -5315,6 +5372,49 @@ const AttendantManagementTab = () => {
             <Button onClick={handleEditAttendant}>
               Update Attendant
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Role-change audit log modal */}
+      <Dialog open={showAuditModal} onOpenChange={setShowAuditModal}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto" data-testid="role-audit-modal">
+          <DialogHeader>
+            <DialogTitle className="font-heading tracking-tight">Role Change History</DialogTitle>
+            <DialogDescription>
+              All role promotions and demotions, most recent first.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            {auditLoading ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Loading…</p>
+            ) : auditEntries.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">No role changes recorded yet.</p>
+            ) : (
+              <div className="divide-y divide-border">
+                {auditEntries.map((e) => (
+                  <div key={e.id} className="py-3 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2" data-testid="audit-entry">
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{e.target_name || e.target_email}</p>
+                      <p className="text-xs text-muted-foreground">
+                        <span className="line-through">{getRoleDisplay(e.old_role)}</span>
+                        {' → '}
+                        <span className="font-medium text-foreground">{getRoleDisplay(e.new_role)}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        By {e.changed_by_name || e.changed_by_email}
+                      </p>
+                    </div>
+                    <div className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+                      {e.timestamp ? new Date(e.timestamp).toLocaleString() : ''}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAuditModal(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

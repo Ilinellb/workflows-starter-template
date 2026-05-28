@@ -4769,6 +4769,31 @@ const AttendantManagementTab = () => {
     }
   };
 
+  const ROLE_LABELS = {
+    super_admin: 'Super Admin',
+    ops_manager: 'OPS Manager',
+    assistant_manager: 'Assistant Manager',
+    attendant: 'Attendant',
+  };
+
+  const handleChangeRole = async (employee, newRole) => {
+    if (newRole === employee.role) return;
+    if (!confirm(`Change ${employee.name}'s role to ${ROLE_LABELS[newRole]}?`)) {
+      return;
+    }
+    try {
+      await axios.put(
+        `${API}/users/${employee.id}`,
+        { name: employee.name, email: employee.email, role: newRole },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(`${employee.name} is now ${ROLE_LABELS[newRole]}`);
+      fetchAttendants();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to change role');
+    }
+  };
+
   const handleBulkDelete = async () => {
     if (selectedEmployees.length === 0) {
       toast.error('Please select at least one employee to delete');
@@ -5132,12 +5157,26 @@ const AttendantManagementTab = () => {
 
                     {/* Action Buttons */}
                     <div className="flex flex-col gap-2 ml-4">
+                      <Select
+                        value={employee.role}
+                        onValueChange={(val) => handleChangeRole(employee, val)}
+                      >
+                        <SelectTrigger className="h-8 w-[160px]" data-testid={`role-select-${employee.id}`}>
+                          <SelectValue placeholder="Change role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="super_admin">Super Admin</SelectItem>
+                          <SelectItem value="ops_manager">OPS Manager</SelectItem>
+                          <SelectItem value="assistant_manager">Assistant Manager</SelectItem>
+                          <SelectItem value="attendant">Attendant</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => openEditModal(employee)}
                       >
-                        ✏️ Edit
+                        Edit
                       </Button>
                       <Button
                         size="sm"
@@ -5145,18 +5184,7 @@ const AttendantManagementTab = () => {
                         className="text-red-600 hover:text-red-700"
                         onClick={() => handleDeleteAttendant(employee.id, employee.name)}
                       >
-                        🗑️ Delete
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-blue-600 hover:text-blue-700"
-                        onClick={() => {
-                          toast.info(`Viewing detailed analytics for ${employee.name}`);
-                          // Could open a detailed employee analytics modal
-                        }}
-                      >
-                        📊 Analytics
+                        Delete
                       </Button>
                     </div>
                   </div>

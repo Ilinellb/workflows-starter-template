@@ -816,10 +816,11 @@ async def punch_time(punch_data: PunchRequest, current_user: User = Depends(get_
         if time_entry.get("punch_out_time"):
             raise HTTPException(status_code=400, detail="Already punched out today")
         
-        # Calculate total hours
+        # Calculate total hours — preserve enough precision so sub-minute punches
+        # surface as '<1m' in the UI instead of being rounded to 0h.
         punch_in = datetime.fromisoformat(time_entry["punch_in_time"])
         total_seconds = (now - punch_in).total_seconds()
-        total_hours = round(total_seconds / 3600, 2)
+        total_hours = round(total_seconds / 3600, 4)
         
         update_data = {
             "punch_out_time": now.isoformat(),

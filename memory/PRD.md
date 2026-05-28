@@ -53,6 +53,12 @@ Progressive Web App for hotel/rooming-house operations. Supports time tracking, 
 - ✅ Backend role-change guard added: only `super_admin` / `ops_manager` may change roles; self-demotion blocked.
 - ✅ Header overlap fixed — two-row navigation (brand+user on row 1, scrollable tabs on row 2). "System Admin" tab no longer covered by user badge.
 - ✅ Team Scheduling stat cards now scoped to the visible week/month (labels read "Shifts this week" / "Hours this week"), matching the grid.
+- ✅ **QA backlog cleared**:
+   - Password hashing migrated SHA-256 → **bcrypt** with transparent auto-upgrade on next successful login (no users locked out). New `_is_bcrypt_hash` helper.
+   - `formatHours` util added — sub-minute punches now display `<1m` / `Xm` instead of `0h`. Backend punch-out precision raised to 4 decimals so the formatter can surface seconds-level durations.
+   - Native `<input type="date">` in Request Shift Change modal replaced with **shadcn Popover + Calendar**.
+   - **Role-change audit log** — new `role_audit_logs` Mongo collection; entries inserted on every role change in `PUT /api/users/{id}`; new `GET /api/users/role-audit` endpoint (403 for AM/attendant); "Role History" modal added to Employee Management.
+- 34/34 backend pytest pass; frontend regressions verified clean.
 
 ## Resolved (2026-04-23 audit sweep)
 - ✅ Assistant Manager login (`lbj1288@outlook.com / admin123`) — working; prior 401 was stale.

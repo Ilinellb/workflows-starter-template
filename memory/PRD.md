@@ -48,6 +48,12 @@ Progressive Web App for hotel/rooming-house operations. Supports time tracking, 
 - P3: Refactor monolithic `App.js` (7.7k LOC) into feature modules.
 - P3: Refactor monolithic `server.py` into `/app/backend/routes` and `/app/backend/models`.
 
+## Resolved (2026-05-28)
+- ✅ Inline role promote/demote dropdown in Employee Management — wired to `PUT /api/users/{user_id}`.
+- ✅ Backend role-change guard added: only `super_admin` / `ops_manager` may change roles; self-demotion blocked.
+- ✅ Header overlap fixed — two-row navigation (brand+user on row 1, scrollable tabs on row 2). "System Admin" tab no longer covered by user badge.
+- ✅ Team Scheduling stat cards now scoped to the visible week/month (labels read "Shifts this week" / "Hours this week"), matching the grid.
+
 ## Resolved (2026-04-23 audit sweep)
 - ✅ Assistant Manager login (`lbj1288@outlook.com / admin123`) — working; prior 401 was stale.
 - ✅ `/api/config` endpoints — actual paths are `/api/config/app` and `/api/config/app/draft`; both return 200. Prior "404" was a wrong test URL.

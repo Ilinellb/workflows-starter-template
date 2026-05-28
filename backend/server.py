@@ -587,7 +587,15 @@ async def update_user(user_id: str, user_data: UserUpdate, current_user: User = 
     existing_user = await db.users.find_one({"id": user_id})
     if not existing_user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
+    # Only full admins (super_admin / ops_manager) can change roles
+    if user_data.role != existing_user.get("role") and current_user.role not in FULL_ADMIN_ROLES:
+        raise HTTPException(status_code=403, detail="Only OPS Manager or Super Admin can change roles")
+
+    # Prevent demoting yourself out of an admin role (lockout protection)
+    if user_id == current_user.id and user_data.role != existing_user.get("role"):
+        raise HTTPException(status_code=400, detail="You cannot change your own role")
+
     # Check if email is being changed and if it's already taken
     if user_data.email != existing_user["email"]:
         email_taken = await db.users.find_one({"email": user_data.email})

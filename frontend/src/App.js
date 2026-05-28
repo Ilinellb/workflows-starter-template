@@ -7590,34 +7590,12 @@ const AppContent = () => {
       {/* Header with Navigation Tabs - Linear-style sticky glass */}
       <nav className="bg-white/75 backdrop-blur-xl border-b border-border sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Row 1 — Brand + User actions */}
           <div className="flex justify-between items-center gap-4 h-14">
-            <div className="flex items-center min-w-0 flex-1">
-              <h1 className="font-heading text-base font-bold tracking-tight text-foreground mr-6 whitespace-nowrap" data-testid="app-title">
+            <div className="flex items-center min-w-0">
+              <h1 className="font-heading text-base font-bold tracking-tight text-foreground whitespace-nowrap" data-testid="app-title">
                 RSBC Workflow Pro
               </h1>
-
-              {/* Desktop Tabs */}
-              <div className="hidden md:flex items-center gap-0 -mb-px overflow-x-auto hide-scrollbar min-w-0 flex-1">
-                {tabs.map((tab) => {
-                  const Icon = TAB_ICON_MAP[tab.icon];
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`relative flex items-center gap-2 px-3 h-14 text-sm font-medium transition-colors whitespace-nowrap border-b-2 ${
-                        isActive
-                          ? 'border-primary text-foreground'
-                          : 'border-transparent text-muted-foreground hover:text-foreground'
-                      }`}
-                      data-testid={`tab-${tab.id}`}
-                    >
-                      {Icon && <Icon className="h-4 w-4" strokeWidth={1.75} />}
-                      <span>{tab.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
 
               {/* Mobile Menu Button */}
               <Button
@@ -7632,7 +7610,7 @@ const AppContent = () => {
               </Button>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               {/* PWA Install Button */}
               {isInstallable && !isInstalled && (
                 <Button
@@ -7649,15 +7627,15 @@ const AppContent = () => {
 
               {/* App Status Indicator */}
               {isInstalled && (
-                <Badge variant="secondary" className="hidden sm:flex items-center gap-1 font-normal">
+                <Badge variant="secondary" className="hidden lg:flex items-center gap-1 font-normal">
                   <CheckCircle2 className="h-3 w-3" />
                   Installed
                 </Badge>
               )}
 
-              <div className="hidden sm:flex items-center gap-2 text-sm whitespace-nowrap" data-testid="user-info">
-                <span className="font-medium text-foreground truncate max-w-[180px]">{user.name}</span>
-                <Badge variant="outline" className="font-normal text-xs">
+              <div className="hidden sm:flex items-center gap-2 text-sm min-w-0" data-testid="user-info">
+                <span className="font-medium text-foreground truncate max-w-[140px] lg:max-w-[220px]">{user.name}</span>
+                <Badge variant="outline" className="font-normal text-xs whitespace-nowrap">
                   {user.role === 'super_admin' ? 'Super Admin' :
                    user.role === 'ops_manager' ? 'OPS Manager' :
                    user.role === 'assistant_manager' ? 'Assistant Manager' :
@@ -7668,6 +7646,29 @@ const AppContent = () => {
                 Logout
               </Button>
             </div>
+          </div>
+
+          {/* Row 2 — Desktop Tabs (full width, scrollable, no overlap with user info) */}
+          <div className="hidden md:flex items-center gap-0 -mb-px overflow-x-auto hide-scrollbar border-t border-border/40">
+            {tabs.map((tab) => {
+              const Icon = TAB_ICON_MAP[tab.icon];
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`relative flex items-center gap-2 px-3 h-11 text-sm font-medium transition-colors whitespace-nowrap border-b-2 ${
+                    isActive
+                      ? 'border-primary text-foreground'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                  data-testid={`tab-${tab.id}`}
+                >
+                  {Icon && <Icon className="h-4 w-4" strokeWidth={1.75} />}
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Mobile Tabs */}
